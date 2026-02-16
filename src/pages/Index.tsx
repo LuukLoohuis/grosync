@@ -1,13 +1,16 @@
 import { useState } from 'react';
-import { ShoppingCart, ChefHat } from 'lucide-react';
+import { ShoppingCart, ChefHat, LogOut } from 'lucide-react';
 import GroceryList from '@/components/GroceryList';
 import RecipeList from '@/components/RecipeList';
 import ShareButton from '@/components/ShareButton';
 import { useStore } from '@/store';
+import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/ui/button';
 
 const Index = () => {
   const [tab, setTab] = useState<'list' | 'recipes'>('list');
   const { groceryItems } = useStore();
+  const { signOut } = useAuth();
   const uncheckedCount = groceryItems.filter((i) => !i.checked).length;
 
   return (
@@ -19,7 +22,12 @@ const Index = () => {
             <h1 className="font-display text-2xl text-foreground">CoupleCart</h1>
             <p className="text-xs text-muted-foreground">Your shared grocery list 🛒</p>
           </div>
-          <ShareButton />
+          <div className="flex items-center gap-2">
+            <ShareButton />
+            <Button variant="ghost" size="icon" onClick={signOut} title="Sign out">
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </header>
 
