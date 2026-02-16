@@ -11,6 +11,7 @@ interface AppState {
   removeGroceryItem: (id: string) => void;
   clearCheckedItems: () => void;
   addRecipe: (recipe: Omit<Recipe, 'id'>) => void;
+  updateRecipe: (id: string, updates: Partial<Omit<Recipe, 'id'>>) => void;
   removeRecipe: (id: string) => void;
   addRecipeToGroceryList: (recipeId: string) => void;
 }
@@ -63,6 +64,12 @@ export const useStore = create<AppState>()(
       addRecipe: (recipe) =>
         set((state) => ({
           recipes: [...state.recipes, { ...recipe, id: crypto.randomUUID() }],
+        })),
+      updateRecipe: (id, updates) =>
+        set((state) => ({
+          recipes: state.recipes.map((r) =>
+            r.id === id ? { ...r, ...updates } : r
+          ),
         })),
       removeRecipe: (id) =>
         set((state) => ({
