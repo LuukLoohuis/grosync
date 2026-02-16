@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { ChefHat, Plus, ShoppingCart, Trash2, X } from 'lucide-react';
+import { ChefHat, ChevronDown, Plus, ShoppingCart, Trash2, X } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useStore } from '@/store';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -111,14 +112,31 @@ const RecipeList = () => {
             </button>
             <h3 className="font-display text-lg text-foreground">{recipe.name}</h3>
             <p className="text-sm text-muted-foreground mt-1">{recipe.description}</p>
-            <ul className="mt-3 space-y-1">
-              {recipe.ingredients.map((ing, i) => (
-                <li key={i} className="text-sm text-foreground/80 flex items-start gap-2">
-                  <span className="text-primary mt-0.5">•</span>
-                  {ing}
-                </li>
-              ))}
-            </ul>
+            <Collapsible>
+              <CollapsibleTrigger className="text-sm text-primary hover:underline mt-2 flex items-center gap-1 cursor-pointer">
+                <ChevronDown className="h-3.5 w-3.5" /> Ingredients ({recipe.ingredients.length})
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <ul className="mt-2 space-y-1">
+                  {recipe.ingredients.map((ing, i) => (
+                    <li key={i} className="text-sm text-foreground/80 flex items-start gap-2">
+                      <span className="text-primary mt-0.5">•</span>
+                      {ing}
+                    </li>
+                  ))}
+                </ul>
+              </CollapsibleContent>
+            </Collapsible>
+            {recipe.instructions && (
+              <Collapsible>
+                <CollapsibleTrigger className="text-sm text-primary hover:underline mt-2 flex items-center gap-1 cursor-pointer">
+                  <ChevronDown className="h-3.5 w-3.5" /> Instructions
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <p className="mt-2 text-sm text-foreground/80 whitespace-pre-line">{recipe.instructions}</p>
+                </CollapsibleContent>
+              </Collapsible>
+            )}
             <Button
               variant="outline"
               size="sm"
