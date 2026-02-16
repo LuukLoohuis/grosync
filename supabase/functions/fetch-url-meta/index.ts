@@ -48,7 +48,8 @@ Deno.serve(async (req) => {
             || html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i);
           imageUrl = ogMatch?.[1] || fcData.data?.metadata?.ogImage || null;
         } else {
-          console.error('Firecrawl error:', fcResponse.status);
+          const errBody = await fcResponse.text();
+          console.error('Firecrawl error:', fcResponse.status, errBody);
         }
       } catch (e) {
         console.error('Firecrawl failed:', e);
