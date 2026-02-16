@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import RecipeEditDialog from '@/components/RecipeEditDialog';
+import RecipeViewDialog from '@/components/RecipeViewDialog';
 
 const RecipeList = () => {
   const { recipes, addRecipe, removeRecipe, addRecipeToGroceryList, updateRecipeImage } = useStore();
@@ -299,6 +300,7 @@ const RecipeList = () => {
                 </Collapsible>
               )}
               <div className="mt-4 flex gap-2">
+                <RecipeViewDialog recipe={recipe} />
                 <RecipeEditDialog recipe={recipe} />
                 <Button
                   variant="outline"
