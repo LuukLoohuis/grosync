@@ -6,6 +6,7 @@ interface AppState {
   groceryItems: GroceryItem[];
   recipes: Recipe[];
   addGroceryItem: (name: string, fromRecipe?: string) => void;
+  updateRecipeImage: (id: string, imageUrl: string) => void;
   toggleGroceryItem: (id: string) => void;
   removeGroceryItem: (id: string) => void;
   clearCheckedItems: () => void;
@@ -66,6 +67,12 @@ export const useStore = create<AppState>()(
       removeRecipe: (id) =>
         set((state) => ({
           recipes: state.recipes.filter((r) => r.id !== id),
+        })),
+      updateRecipeImage: (id, imageUrl) =>
+        set((state) => ({
+          recipes: state.recipes.map((r) =>
+            r.id === id ? { ...r, imageUrl } : r
+          ),
         })),
       addRecipeToGroceryList: (recipeId) => {
         const recipe = get().recipes.find((r) => r.id === recipeId);
