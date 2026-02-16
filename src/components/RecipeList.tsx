@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import RecipeEditDialog from '@/components/RecipeEditDialog';
 
 const RecipeList = () => {
   const { recipes, addRecipe, removeRecipe, addRecipeToGroceryList, updateRecipeImage } = useStore();
@@ -210,14 +211,17 @@ const RecipeList = () => {
                   </CollapsibleContent>
                 </Collapsible>
               )}
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-4 w-full gap-2"
-                onClick={() => handleCook(recipe.id, recipe.name)}
-              >
-                <ShoppingCart className="h-3.5 w-3.5" /> Add to Grocery List
-              </Button>
+              <div className="mt-4 flex gap-2">
+                <RecipeEditDialog recipe={recipe} />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 gap-2"
+                  onClick={() => handleCook(recipe.id, recipe.name)}
+                >
+                  <ShoppingCart className="h-3.5 w-3.5" /> Add to Grocery List
+                </Button>
+              </div>
             </div>
           </div>
         ))}
