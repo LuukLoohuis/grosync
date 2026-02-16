@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChefHat, ChevronDown, Plus, ShoppingCart, Link, X, Loader2 } from 'lucide-react';
+import { ChefHat, ChevronDown, Plus, ShoppingCart, Link, X, Loader2, PenLine, Globe } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useStore } from '@/store';
 import { Input } from '@/components/ui/input';
@@ -13,12 +13,22 @@ import RecipeEditDialog from '@/components/RecipeEditDialog';
 const RecipeList = () => {
   const { recipes, addRecipe, removeRecipe, addRecipeToGroceryList, updateRecipeImage } = useStore();
   const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<'choose' | 'manual' | 'url'>('choose');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [ingredientText, setIngredientText] = useState('');
   const [instructions, setInstructions] = useState('');
   const [sourceUrl, setSourceUrl] = useState('');
   const [fetchingMeta, setFetchingMeta] = useState(false);
+
+  const resetForm = () => {
+    setName('');
+    setDescription('');
+    setIngredientText('');
+    setInstructions('');
+    setSourceUrl('');
+    setMode('choose');
+  };
 
   const fetchFromUrl = async () => {
     const url = sourceUrl.trim();
@@ -29,15 +39,15 @@ const RecipeList = () => {
         body: { url },
       });
       if (error) throw error;
-      if (data?.title && !name) setName(data.title);
-      if (data?.description && !description) setDescription(data.description);
-      if (data?.ingredients?.length && !ingredientText) {
+      if (data?.title) setName(data.title);
+      if (data?.description) setDescription(data.description);
+      if (data?.ingredients?.length) {
         setIngredientText(data.ingredients.join('\n'));
       }
-      if (data?.instructions && !instructions) {
+      if (data?.instructions) {
         setInstructions(data.instructions);
       }
-      toast.success('Recept opgehaald van URL!');
+      toast.success('Recept opgehaald! Je kunt alles nog aanpassen.');
     } catch (e) {
       console.error('Failed to fetch from URL:', e);
       toast.error('Kon recept niet ophalen van URL');
@@ -74,13 +84,9 @@ const RecipeList = () => {
       })();
     }
 
-    setName('');
-    setDescription('');
-    setIngredientText('');
-    setInstructions('');
-    setSourceUrl('');
+    resetForm();
     setOpen(false);
-    toast.success('Recipe added!');
+    toast.success('Recept toegevoegd!');
   };
 
   const handleCook = (recipeId: string, recipeName: string) => {
@@ -90,77 +96,134 @@ const RecipeList = () => {
 
   return (
     <div className="space-y-4">
-      <Dialog open={open} onOpenChange={setOpen}>
+       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
         <DialogTrigger asChild>
           <Button className="w-full gap-2">
-            <Plus className="h-4 w-4" /> Add Recipe
+            <Plus className="h-4 w-4" /> Recept toevoegen
           </Button>
         </DialogTrigger>
         <DialogContent className="bg-background max-h-[90vh] overflow-y-auto sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle className="font-display text-xl">New Recipe</DialogTitle>
+            <DialogTitle className="font-display text-xl">Nieuw recept</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <Input
-              placeholder="Recipe name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-            <Input
-              placeholder="Short description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-            <div>
-              <label className="text-sm text-muted-foreground mb-1 flex items-center gap-1">
-                <Link className="h-3.5 w-3.5" /> Recipe URL (optional)
-              </label>
-              <div className="flex gap-2">
-                <Input
-                  type="url"
-                  placeholder="https://example.com/recipe"
-                  value={sourceUrl}
-                  onChange={(e) => setSourceUrl(e.target.value)}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={fetchFromUrl}
-                  disabled={!sourceUrl.trim() || fetchingMeta}
-                  className="shrink-0"
+
+          {mode === 'choose' && (
+            <div className="space-y-3 py-4">
+              <p className="text-sm text-muted-foreground text-center">Hoe wil je het recept toevoegen?</p>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setMode('url')}
+                  className="flex flex-col items-center gap-3 p-6 rounded-lg border-2 border-border hover:border-primary hover:bg-primary/5 transition-all"
                 >
-                  {fetchingMeta ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Ophalen'}
+                  <Globe className="h-8 w-8 text-primary" />
+                  <span className="font-medium text-foreground">Via een link</span>
+                  <span className="text-xs text-muted-foreground text-center">Plak een URL en we halen het recept op</span>
+                </button>
+                <button
+                  onClick={() => setMode('manual')}
+                  className="flex flex-col items-center gap-3 p-6 rounded-lg border-2 border-border hover:border-primary hover:bg-primary/5 transition-all"
+                >
+                  <PenLine className="h-8 w-8 text-primary" />
+                  <span className="font-medium text-foreground">Handmatig</span>
+                  <span className="text-xs text-muted-foreground text-center">Voer het recept zelf in</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {mode === 'url' && !name && !ingredientText && (
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm text-muted-foreground mb-1 flex items-center gap-1">
+                  <Link className="h-3.5 w-3.5" /> Plak de recept-URL
+                </label>
+                <div className="flex gap-2">
+                  <Input
+                    type="url"
+                    placeholder="https://example.com/recipe"
+                    value={sourceUrl}
+                    onChange={(e) => setSourceUrl(e.target.value)}
+                    autoFocus
+                  />
+                  <Button
+                    type="button"
+                    onClick={fetchFromUrl}
+                    disabled={!sourceUrl.trim() || fetchingMeta}
+                    className="shrink-0 gap-2"
+                  >
+                    {fetchingMeta ? <><Loader2 className="h-4 w-4 animate-spin" /> Ophalen...</> : 'Ophalen'}
+                  </Button>
+                </div>
+              </div>
+              <button onClick={() => setMode('choose')} className="text-xs text-muted-foreground hover:underline">
+                ← Terug
+              </button>
+            </div>
+          )}
+
+          {(mode === 'manual' || (mode === 'url' && (name || ingredientText))) && (
+            <div className="space-y-4">
+              {mode === 'url' && (
+                <div className="text-xs text-muted-foreground bg-muted/50 rounded-md p-2">
+                  ✅ Recept opgehaald van URL — je kunt alles hieronder aanpassen.
+                </div>
+              )}
+              <Input
+                placeholder="Recept naam"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+              <Input
+                placeholder="Korte beschrijving"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+              {mode === 'manual' && (
+                <div>
+                  <label className="text-sm text-muted-foreground mb-1 flex items-center gap-1">
+                    <Link className="h-3.5 w-3.5" /> Recept URL (optioneel)
+                  </label>
+                  <Input
+                    type="url"
+                    placeholder="https://example.com/recipe"
+                    value={sourceUrl}
+                    onChange={(e) => setSourceUrl(e.target.value)}
+                  />
+                </div>
+              )}
+              <div>
+                <label className="text-sm text-muted-foreground mb-1 block">
+                  Ingrediënten (één per regel)
+                </label>
+                <Textarea
+                  placeholder={"Kipfilet (500g)\nRijst (300g)\nSojasaus"}
+                  value={ingredientText}
+                  onChange={(e) => setIngredientText(e.target.value)}
+                  rows={6}
+                />
+              </div>
+              <div>
+                <label className="text-sm text-muted-foreground mb-1 block">
+                  Instructies
+                </label>
+                <Textarea
+                  placeholder={"1. Verwarm de oven voor op 180°C\n2. Kruid de kip...\n3. Bak 25 minuten..."}
+                  value={instructions}
+                  onChange={(e) => setInstructions(e.target.value)}
+                  rows={10}
+                  className="min-h-[200px]"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => { resetForm(); }} className="text-xs text-muted-foreground hover:underline">
+                  ← Terug
+                </button>
+                <Button onClick={handleAdd} className="flex-1">
+                  Recept opslaan
                 </Button>
               </div>
             </div>
-            <div>
-              <label className="text-sm text-muted-foreground mb-1 block">
-                Ingredients (one per line)
-              </label>
-              <Textarea
-                placeholder={"Chicken breast (500g)\nRice (300g)\nSoy sauce"}
-                value={ingredientText}
-                onChange={(e) => setIngredientText(e.target.value)}
-                rows={6}
-              />
-            </div>
-            <div>
-              <label className="text-sm text-muted-foreground mb-1 block">
-                Instructions
-              </label>
-              <Textarea
-                placeholder={"1. Preheat the oven to 180°C\n2. Season the chicken...\n3. Cook for 25 minutes..."}
-                value={instructions}
-                onChange={(e) => setInstructions(e.target.value)}
-                rows={10}
-                className="min-h-[200px]"
-              />
-            </div>
-            <Button onClick={handleAdd} className="w-full">
-              Save Recipe
-            </Button>
-          </div>
+          )}
         </DialogContent>
       </Dialog>
 
