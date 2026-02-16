@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
             messages: [
               {
                 role: 'system',
-                content: 'You extract recipe data from web page text. Return valid JSON only, no markdown code blocks. Schema: {"name":"string","description":"string","ingredients":["string"],"instructions":"string"}. For ingredients include quantities. IMPORTANT: Convert all imperial measurements to metric. Convert cups, ounces, pounds, tablespoons, teaspoons to grams or milliliters. For example: "1 cup flour" → "125g bloem", "1 cup sugar" → "200g suiker", "1 cup milk" → "240ml melk", "1 lb chicken" → "450g kip", "1 oz butter" → "28g boter". Keep the ingredient names in their original language. For instructions write clear numbered steps. If no recipe found, return empty arrays/strings.'
+                content: 'You extract recipe data from web page text. Return valid JSON only, no markdown code blocks. Schema: {"name":"string","description":"string","ingredients":["string"],"instructions":"string"}. For ingredients include quantities. IMPORTANT: Convert ONLY cups to grams or milliliters (e.g. "1 cup flour" → "125g flour", "1 cup milk" → "240ml milk"). Keep tablespoons, teaspoons, ounces, and all other measurements as-is. Keep the ingredient names in their original language. For instructions write clear numbered steps. If no recipe found, return empty arrays/strings.'
               },
               {
                 role: 'user',
