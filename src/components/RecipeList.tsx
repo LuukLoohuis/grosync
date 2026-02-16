@@ -13,6 +13,7 @@ const RecipeList = () => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [ingredientText, setIngredientText] = useState('');
+  const [instructions, setInstructions] = useState('');
 
   const handleAdd = () => {
     if (!name.trim() || !ingredientText.trim()) return;
@@ -20,10 +21,12 @@ const RecipeList = () => {
       name: name.trim(),
       description: description.trim(),
       ingredients: ingredientText.split('\n').map((l) => l.trim()).filter(Boolean),
+      instructions: instructions.trim() || undefined,
     });
     setName('');
     setDescription('');
     setIngredientText('');
+    setInstructions('');
     setOpen(false);
     toast.success('Recipe added!');
   };
@@ -41,7 +44,7 @@ const RecipeList = () => {
             <Plus className="h-4 w-4" /> Add Recipe
           </Button>
         </DialogTrigger>
-        <DialogContent className="bg-background">
+        <DialogContent className="bg-background max-h-[90vh] overflow-y-auto sm:max-w-xl">
           <DialogHeader>
             <DialogTitle className="font-display text-xl">New Recipe</DialogTitle>
           </DialogHeader>
@@ -65,6 +68,18 @@ const RecipeList = () => {
                 value={ingredientText}
                 onChange={(e) => setIngredientText(e.target.value)}
                 rows={6}
+              />
+            </div>
+            <div>
+              <label className="text-sm text-muted-foreground mb-1 block">
+                Instructions
+              </label>
+              <Textarea
+                placeholder={"1. Preheat the oven to 180°C\n2. Season the chicken...\n3. Cook for 25 minutes..."}
+                value={instructions}
+                onChange={(e) => setInstructions(e.target.value)}
+                rows={10}
+                className="min-h-[200px]"
               />
             </div>
             <Button onClick={handleAdd} className="w-full">
