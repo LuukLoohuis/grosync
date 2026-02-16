@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChefHat, ChevronDown, Plus, ShoppingCart, Trash2, X } from 'lucide-react';
+import { ChefHat, ChevronDown, Plus, ShoppingCart, Link, X, Loader2 } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useStore } from '@/store';
 import { Input } from '@/components/ui/input';
@@ -7,27 +7,65 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const RecipeList = () => {
-  const { recipes, addRecipe, removeRecipe, addRecipeToGroceryList } = useStore();
+  const { recipes, addRecipe, removeRecipe, addRecipeToGroceryList, updateRecipeImage } = useStore();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [ingredientText, setIngredientText] = useState('');
   const [instructions, setInstructions] = useState('');
+  const [sourceUrl, setSourceUrl] = useState('');
+  const [fetchingImage, setFetchingImage] = useState(false);
+
+  const fetchUrlMeta = async (url: string, recipeId: string) => {
+    try {
+      setFetchingImage(true);
+      const { data, error } = await supabase.functions.invoke('fetch-url-meta', {
+        body: { url },
+      });
+      if (error) throw error;
+      if (data?.imageUrl) {
+        updateRecipeImage(recipeId, data.imageUrl);
+      }
+    } catch (e) {
+      console.error('Failed to fetch image from URL:', e);
+    } finally {
+      setFetchingImage(false);
+    }
+  };
 
   const handleAdd = () => {
     if (!name.trim() || !ingredientText.trim()) return;
-    addRecipe({
+    const recipeId = crypto.randomUUID();
+    const trimmedUrl = sourceUrl.trim() || undefined;
+
+    // We need to manually create the recipe with id since we need the id for image fetching
+    const newRecipe = {
+      id: recipeId,
       name: name.trim(),
       description: description.trim(),
       ingredients: ingredientText.split('\n').map((l) => l.trim()).filter(Boolean),
       instructions: instructions.trim() || undefined,
-    });
+      sourceUrl: trimmedUrl,
+    };
+
+    // Use store's addRecipe but we need the id, so we'll add directly
+    useStore.setState((state) => ({
+      recipes: [...state.recipes, newRecipe],
+    }));
+
+    // Fetch image from URL if provided
+    if (trimmedUrl) {
+      fetchUrlMeta(trimmedUrl, recipeId);
+    }
+
     setName('');
     setDescription('');
     setIngredientText('');
     setInstructions('');
+    setSourceUrl('');
     setOpen(false);
     toast.success('Recipe added!');
   };
@@ -60,6 +98,17 @@ const RecipeList = () => {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
+            <div>
+              <label className="text-sm text-muted-foreground mb-1 flex items-center gap-1">
+                <Link className="h-3.5 w-3.5" /> Recipe URL (optional)
+              </label>
+              <Input
+                type="url"
+                placeholder="https://example.com/recipe"
+                value={sourceUrl}
+                onChange={(e) => setSourceUrl(e.target.value)}
+              />
+            </div>
             <div>
               <label className="text-sm text-muted-foreground mb-1 block">
                 Ingredients (one per line)
@@ -102,49 +151,74 @@ const RecipeList = () => {
         {recipes.map((recipe) => (
           <div
             key={recipe.id}
-            className="bg-card rounded-lg p-4 shadow-soft animate-fade-in group relative"
+            className="bg-card rounded-lg overflow-hidden shadow-soft animate-fade-in group relative"
           >
-            <button
-              onClick={() => removeRecipe(recipe.id)}
-              className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 text-destructive transition-opacity"
-            >
-              <X className="h-4 w-4" />
-            </button>
-            <h3 className="font-display text-lg text-foreground">{recipe.name}</h3>
-            <p className="text-sm text-muted-foreground mt-1">{recipe.description}</p>
-            <Collapsible>
-              <CollapsibleTrigger className="text-sm text-primary hover:underline mt-2 flex items-center gap-1 cursor-pointer">
-                <ChevronDown className="h-3.5 w-3.5" /> Ingredients ({recipe.ingredients.length})
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <ul className="mt-2 space-y-1">
-                  {recipe.ingredients.map((ing, i) => (
-                    <li key={i} className="text-sm text-foreground/80 flex items-start gap-2">
-                      <span className="text-primary mt-0.5">•</span>
-                      {ing}
-                    </li>
-                  ))}
-                </ul>
-              </CollapsibleContent>
-            </Collapsible>
-            {recipe.instructions && (
+            {recipe.imageUrl && (
+              <div className="aspect-video w-full overflow-hidden bg-muted">
+                <img
+                  src={recipe.imageUrl}
+                  alt={recipe.name}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                />
+              </div>
+            )}
+            <div className="p-4">
+              <button
+                onClick={() => removeRecipe(recipe.id)}
+                className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 text-destructive bg-background/80 rounded-full p-1 transition-opacity"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <h3 className="font-display text-lg text-foreground">{recipe.name}</h3>
+              <p className="text-sm text-muted-foreground mt-1">{recipe.description}</p>
+              {recipe.sourceUrl && (
+                <a
+                  href={recipe.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-primary hover:underline mt-1 flex items-center gap-1"
+                >
+                  <Link className="h-3 w-3" /> View original recipe
+                </a>
+              )}
               <Collapsible>
                 <CollapsibleTrigger className="text-sm text-primary hover:underline mt-2 flex items-center gap-1 cursor-pointer">
-                  <ChevronDown className="h-3.5 w-3.5" /> Instructions
+                  <ChevronDown className="h-3.5 w-3.5" /> Ingredients ({recipe.ingredients.length})
                 </CollapsibleTrigger>
                 <CollapsibleContent>
-                  <p className="mt-2 text-sm text-foreground/80 whitespace-pre-line">{recipe.instructions}</p>
+                  <ul className="mt-2 space-y-1">
+                    {recipe.ingredients.map((ing, i) => (
+                      <li key={i} className="text-sm text-foreground/80 flex items-start gap-2">
+                        <span className="text-primary mt-0.5">•</span>
+                        {ing}
+                      </li>
+                    ))}
+                  </ul>
                 </CollapsibleContent>
               </Collapsible>
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-4 w-full gap-2"
-              onClick={() => handleCook(recipe.id, recipe.name)}
-            >
-              <ShoppingCart className="h-3.5 w-3.5" /> Add to Grocery List
-            </Button>
+              {recipe.instructions && (
+                <Collapsible>
+                  <CollapsibleTrigger className="text-sm text-primary hover:underline mt-2 flex items-center gap-1 cursor-pointer">
+                    <ChevronDown className="h-3.5 w-3.5" /> Instructions
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <p className="mt-2 text-sm text-foreground/80 whitespace-pre-line">{recipe.instructions}</p>
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-4 w-full gap-2"
+                onClick={() => handleCook(recipe.id, recipe.name)}
+              >
+                <ShoppingCart className="h-3.5 w-3.5" /> Add to Grocery List
+              </Button>
+            </div>
           </div>
         ))}
       </div>
