@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 
 const GroceryList = () => {
   const [newItem, setNewItem] = useState('');
-  const { groceryItems, addGroceryItem, toggleGroceryItem, removeGroceryItem, clearCheckedItems } = useStore();
+  const { groceryItems, addGroceryItem, toggleGroceryItem, removeGroceryItem, clearCheckedItems, clearAllItems } = useStore();
 
   const handleAdd = () => {
     if (newItem.trim()) {
@@ -33,6 +33,18 @@ const GroceryList = () => {
           <Plus className="h-4 w-4" />
         </Button>
       </div>
+
+      {/* Clear all */}
+      {groceryItems.length > 0 && (
+        <div className="flex justify-end">
+          <button
+            onClick={clearAllItems}
+            className="text-xs text-destructive hover:underline flex items-center gap-1"
+          >
+            <Trash2 className="h-3 w-3" /> Clear entire cart
+          </button>
+        </div>
+      )}
 
       {/* Unchecked items */}
       {unchecked.length === 0 && checked.length === 0 && (

@@ -10,6 +10,7 @@ interface AppState {
   toggleGroceryItem: (id: string) => void;
   removeGroceryItem: (id: string) => void;
   clearCheckedItems: () => void;
+  clearAllItems: () => void;
   addRecipe: (recipe: Omit<Recipe, 'id'>) => void;
   updateRecipe: (id: string, updates: Partial<Omit<Recipe, 'id'>>) => void;
   removeRecipe: (id: string) => void;
@@ -61,6 +62,7 @@ export const useStore = create<AppState>()(
         set((state) => ({
           groceryItems: state.groceryItems.filter((item) => !item.checked),
         })),
+      clearAllItems: () => set({ groceryItems: [] }),
       addRecipe: (recipe) =>
         set((state) => ({
           recipes: [...state.recipes, { ...recipe, id: crypto.randomUUID() }],
