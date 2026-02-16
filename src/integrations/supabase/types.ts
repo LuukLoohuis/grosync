@@ -14,7 +14,62 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      shared_grocery_items: {
+        Row: {
+          checked: boolean
+          created_at: string
+          from_recipe: string | null
+          id: string
+          list_id: string
+          name: string
+        }
+        Insert: {
+          checked?: boolean
+          created_at?: string
+          from_recipe?: string | null
+          id?: string
+          list_id: string
+          name: string
+        }
+        Update: {
+          checked?: boolean
+          created_at?: string
+          from_recipe?: string | null
+          id?: string
+          list_id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_grocery_items_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "shared_lists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shared_lists: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          share_code: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name?: string
+          share_code?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          share_code?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -1,9 +1,10 @@
-import { Share2, MessageCircle, FileDown } from 'lucide-react';
+import { Share2, MessageCircle, FileDown, Link2 } from 'lucide-react';
 import { useStore } from '@/store';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
+import { supabase } from '@/integrations/supabase/client';
 
 const ShareButton = () => {
   const { groceryItems } = useStore();
@@ -22,6 +23,44 @@ const ShareButton = () => {
     }
     const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank');
+  };
+
+  const shareViaLink = async () => {
+    const unchecked = groceryItems.filter((i) => !i.checked);
+    if (unchecked.length === 0) {
+      toast.error('No items to share!');
+      return;
+    }
+
+    toast.loading('Deellink aanmaken...');
+
+    // Create shared list
+    const { data: list, error: listError } = await supabase
+      .from('shared_lists')
+      .insert({ name: 'CoupleCart' })
+      .select()
+      .single();
+
+    if (listError || !list) {
+      toast.dismiss();
+      toast.error('Kon geen deellink aanmaken');
+      return;
+    }
+
+    // Insert all items
+    const itemsToInsert = groceryItems.map((item) => ({
+      list_id: list.id,
+      name: item.name,
+      checked: item.checked,
+      from_recipe: item.fromRecipe || null,
+    }));
+
+    await supabase.from('shared_grocery_items').insert(itemsToInsert);
+
+    const url = `${window.location.origin}/shared/${list.share_code}`;
+    await navigator.clipboard.writeText(url);
+    toast.dismiss();
+    toast.success('Link gekopieerd naar klembord!');
   };
 
   const downloadPDF = () => {
@@ -62,6 +101,9 @@ const ShareButton = () => {
         </DropdownMenuItem>
         <DropdownMenuItem onClick={downloadPDF} className="gap-2 cursor-pointer">
           <FileDown className="h-4 w-4" /> Download PDF
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={shareViaLink} className="gap-2 cursor-pointer">
+          <Link2 className="h-4 w-4" /> Deel via link
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
