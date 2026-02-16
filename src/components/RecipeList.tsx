@@ -18,22 +18,31 @@ const RecipeList = () => {
   const [ingredientText, setIngredientText] = useState('');
   const [instructions, setInstructions] = useState('');
   const [sourceUrl, setSourceUrl] = useState('');
-  const [fetchingImage, setFetchingImage] = useState(false);
+  const [fetchingMeta, setFetchingMeta] = useState(false);
 
-  const fetchUrlMeta = async (url: string, recipeId: string) => {
+  const fetchFromUrl = async () => {
+    const url = sourceUrl.trim();
+    if (!url) return;
     try {
-      setFetchingImage(true);
+      setFetchingMeta(true);
       const { data, error } = await supabase.functions.invoke('fetch-url-meta', {
         body: { url },
       });
       if (error) throw error;
-      if (data?.imageUrl) {
-        updateRecipeImage(recipeId, data.imageUrl);
+      if (data?.title && !name) setName(data.title);
+      if (data?.description && !description) setDescription(data.description);
+      if (data?.ingredients?.length && !ingredientText) {
+        setIngredientText(data.ingredients.join('\n'));
       }
+      if (data?.instructions && !instructions) {
+        setInstructions(data.instructions);
+      }
+      toast.success('Recept opgehaald van URL!');
     } catch (e) {
-      console.error('Failed to fetch image from URL:', e);
+      console.error('Failed to fetch from URL:', e);
+      toast.error('Kon recept niet ophalen van URL');
     } finally {
-      setFetchingImage(false);
+      setFetchingMeta(false);
     }
   };
 
@@ -42,7 +51,6 @@ const RecipeList = () => {
     const recipeId = crypto.randomUUID();
     const trimmedUrl = sourceUrl.trim() || undefined;
 
-    // We need to manually create the recipe with id since we need the id for image fetching
     const newRecipe = {
       id: recipeId,
       name: name.trim(),
@@ -52,14 +60,18 @@ const RecipeList = () => {
       sourceUrl: trimmedUrl,
     };
 
-    // Use store's addRecipe but we need the id, so we'll add directly
     useStore.setState((state) => ({
       recipes: [...state.recipes, newRecipe],
     }));
 
     // Fetch image from URL if provided
     if (trimmedUrl) {
-      fetchUrlMeta(trimmedUrl, recipeId);
+      (async () => {
+        try {
+          const { data } = await supabase.functions.invoke('fetch-url-meta', { body: { url: trimmedUrl } });
+          if (data?.imageUrl) updateRecipeImage(recipeId, data.imageUrl);
+        } catch (e) { console.error(e); }
+      })();
     }
 
     setName('');
@@ -103,12 +115,24 @@ const RecipeList = () => {
               <label className="text-sm text-muted-foreground mb-1 flex items-center gap-1">
                 <Link className="h-3.5 w-3.5" /> Recipe URL (optional)
               </label>
-              <Input
-                type="url"
-                placeholder="https://example.com/recipe"
-                value={sourceUrl}
-                onChange={(e) => setSourceUrl(e.target.value)}
-              />
+              <div className="flex gap-2">
+                <Input
+                  type="url"
+                  placeholder="https://example.com/recipe"
+                  value={sourceUrl}
+                  onChange={(e) => setSourceUrl(e.target.value)}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={fetchFromUrl}
+                  disabled={!sourceUrl.trim() || fetchingMeta}
+                  className="shrink-0"
+                >
+                  {fetchingMeta ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Ophalen'}
+                </Button>
+              </div>
             </div>
             <div>
               <label className="text-sm text-muted-foreground mb-1 block">
