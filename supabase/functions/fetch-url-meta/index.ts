@@ -89,6 +89,7 @@ Deno.serve(async (req) => {
     let instructions = '';
     let recipeName = '';
     let description = '';
+    let macros: { calories: number; protein: number; carbs: number; fat: number; fiber: number } | null = null;
 
     const apiKey = Deno.env.get('LOVABLE_API_KEY');
     if (apiKey && pageContent) {
@@ -106,7 +107,7 @@ Deno.serve(async (req) => {
             messages: [
               {
                 role: 'system',
-                content: 'You extract recipe data from web page text. Return valid JSON only, no markdown code blocks. Schema: {"name":"string","description":"string","ingredients":["string"],"instructions":"string"}. For ingredients include quantities. IMPORTANT: You MUST convert EVERY occurrence of "cup" or "cups" to grams (for solids) or milliliters (for liquids). This applies to ALL ingredients without exception — flour, sugar, olives, cheese, vegetables, nuts, everything. Examples: "1 cup flour" → "125g flour", "1 cup milk" → "240ml milk", "½ cup olives" → "75g olives", "1 cup spinach" → "30g spinach". Keep tablespoons, teaspoons, ounces, and all other units unchanged. Keep ingredient names in their original language. For instructions write clear numbered steps. If no recipe found, return empty arrays/strings.'
+                content: 'You extract recipe data from web page text. Return valid JSON only, no markdown code blocks. Schema: {"name":"string","description":"string","ingredients":["string"],"instructions":"string","macros":{"calories":number,"protein":number,"carbs":number,"fat":number,"fiber":number}}. For ingredients include quantities. IMPORTANT: You MUST convert EVERY occurrence of "cup" or "cups" to grams (for solids) or milliliters (for liquids). This applies to ALL ingredients without exception — flour, sugar, olives, cheese, vegetables, nuts, everything. Examples: "1 cup flour" → "125g flour", "1 cup milk" → "240ml milk", "½ cup olives" → "75g olives", "1 cup spinach" → "30g spinach". Keep tablespoons, teaspoons, ounces, and all other units unchanged. Keep ingredient names in their original language. For instructions write clear numbered steps. For macros, estimate the total nutritional values for the ENTIRE recipe (all servings combined) based on the ingredients. Provide calories in kcal, protein/carbs/fat/fiber in grams as whole numbers. If no recipe found, return empty arrays/strings and null for macros.'
               },
               {
                 role: 'user',
@@ -126,7 +127,10 @@ Deno.serve(async (req) => {
           instructions = parsed.instructions || '';
           recipeName = parsed.name || '';
           description = parsed.description || '';
-          console.log('AI extraction successful:', recipeName, ingredients.length, 'ingredients');
+          if (parsed.macros && typeof parsed.macros.calories === 'number') {
+            macros = parsed.macros;
+          }
+          console.log('AI extraction successful:', recipeName, ingredients.length, 'ingredients', macros ? 'with macros' : 'no macros');
         }
       } catch (e) {
         console.error('AI extraction failed:', e);
@@ -139,6 +143,7 @@ Deno.serve(async (req) => {
       description,
       ingredients,
       instructions,
+      macros,
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
