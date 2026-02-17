@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { AppProvider } from "@/contexts/AppContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import SharedList from "./pages/SharedList";
@@ -15,7 +16,11 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { session, loading } = useAuth();
   if (loading) return null;
   if (!session) return <Navigate to="/auth" replace />;
-  return <>{children}</>;
+  return (
+    <AppProvider userId={session.user.id}>
+      {children}
+    </AppProvider>
+  );
 };
 
 const App = () => (

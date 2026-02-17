@@ -14,6 +14,69 @@ export type Database = {
   }
   public: {
     Tables: {
+      grocery_items: {
+        Row: {
+          checked: boolean
+          created_at: string
+          from_recipe: string | null
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          checked?: boolean
+          created_at?: string
+          from_recipe?: string | null
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          checked?: boolean
+          created_at?: string
+          from_recipe?: string | null
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      recipes: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          image_url: string | null
+          ingredients: string[]
+          instructions: string | null
+          name: string
+          source_url: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string
+          id?: string
+          image_url?: string | null
+          ingredients?: string[]
+          instructions?: string | null
+          name: string
+          source_url?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          image_url?: string | null
+          ingredients?: string[]
+          instructions?: string | null
+          name?: string
+          source_url?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       shared_grocery_items: {
         Row: {
           checked: boolean
@@ -55,18 +118,21 @@ export type Database = {
           id: string
           name: string
           share_code: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           name?: string
           share_code?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           name?: string
           share_code?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -75,7 +141,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      user_has_shared_list: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never

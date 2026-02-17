@@ -3,20 +3,19 @@ import { ShoppingCart, ChefHat, LogOut } from 'lucide-react';
 import GroceryList from '@/components/GroceryList';
 import RecipeList from '@/components/RecipeList';
 import ShareButton from '@/components/ShareButton';
-import { useStore } from '@/store';
 import { useAuth } from '@/hooks/useAuth';
+import { useAppContext } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
 import groveraLogo from '@/assets/grovera-logo.png';
 
 const Index = () => {
   const [tab, setTab] = useState<'list' | 'recipes'>('list');
-  const { groceryItems } = useStore();
+  const { groceryItems } = useAppContext();
   const { signOut } = useAuth();
   const uncheckedCount = groceryItems.filter((i) => !i.checked).length;
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex flex-col items-center">
@@ -32,15 +31,12 @@ const Index = () => {
         </div>
       </header>
 
-      {/* Tab bar */}
       <div className="max-w-lg mx-auto px-4 pt-4">
         <div className="flex bg-muted rounded-lg p-1 gap-1">
           <button
             onClick={() => setTab('list')}
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-md text-sm font-medium transition-all ${
-              tab === 'list'
-                ? 'bg-card shadow-soft text-foreground'
-                : 'text-muted-foreground hover:text-foreground'
+              tab === 'list' ? 'bg-card shadow-soft text-foreground' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             <ShoppingCart className="h-4 w-4" />
@@ -54,9 +50,7 @@ const Index = () => {
           <button
             onClick={() => setTab('recipes')}
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-md text-sm font-medium transition-all ${
-              tab === 'recipes'
-                ? 'bg-card shadow-soft text-foreground'
-                : 'text-muted-foreground hover:text-foreground'
+              tab === 'recipes' ? 'bg-card shadow-soft text-foreground' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             <ChefHat className="h-4 w-4" />
@@ -65,7 +59,6 @@ const Index = () => {
         </div>
       </div>
 
-      {/* Content */}
       <main className="max-w-lg mx-auto px-4 py-6">
         {tab === 'list' ? <GroceryList /> : <RecipeList />}
       </main>
