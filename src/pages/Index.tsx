@@ -20,9 +20,9 @@ const Index = () => {
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src={groveraLogo} alt="Grovera" className="h-24 w-24" />
+            <img src={groveraLogo} alt="Grovera" className="h-16 w-16" />
             <div>
-              <p className="text-xs text-muted-foreground">Your shared grocery list 🛒</p>
+              <p className="text-sm font-medium text-muted-foreground">Your shared grocery list 🛒</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
