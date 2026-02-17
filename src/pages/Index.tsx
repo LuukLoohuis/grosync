@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { ShoppingCart, ChefHat, LogOut } from 'lucide-react';
+import { ShoppingCart, ChefHat, LogOut, Star } from 'lucide-react';
 import GroceryList from '@/components/GroceryList';
 import RecipeList from '@/components/RecipeList';
+import UsualsList from '@/components/UsualsList';
 import ShareButton from '@/components/ShareButton';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppContext } from '@/contexts/AppContext';
@@ -9,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import groveraLogo from '@/assets/grovera-logo.png';
 
 const Index = () => {
-  const [tab, setTab] = useState<'list' | 'recipes'>('list');
+  const [tab, setTab] = useState<'list' | 'usuals' | 'recipes'>('list');
   const { groceryItems } = useAppContext();
   const { signOut } = useAuth();
   const uncheckedCount = groceryItems.filter((i) => !i.checked).length;
@@ -35,7 +36,7 @@ const Index = () => {
         <div className="flex bg-muted rounded-lg p-1 gap-1">
           <button
             onClick={() => setTab('list')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-md text-sm font-medium transition-all ${
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-md text-sm font-medium transition-all ${
               tab === 'list' ? 'bg-card shadow-soft text-foreground' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -48,8 +49,17 @@ const Index = () => {
             )}
           </button>
           <button
+            onClick={() => setTab('usuals')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-md text-sm font-medium transition-all ${
+              tab === 'usuals' ? 'bg-card shadow-soft text-foreground' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Star className="h-4 w-4" />
+            Usuals
+          </button>
+          <button
             onClick={() => setTab('recipes')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-md text-sm font-medium transition-all ${
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-md text-sm font-medium transition-all ${
               tab === 'recipes' ? 'bg-card shadow-soft text-foreground' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -60,7 +70,9 @@ const Index = () => {
       </div>
 
       <main className="max-w-lg mx-auto px-4 py-6">
-        {tab === 'list' ? <GroceryList /> : <RecipeList />}
+        {tab === 'list' && <GroceryList />}
+        {tab === 'usuals' && <UsualsList />}
+        {tab === 'recipes' && <RecipeList />}
       </main>
     </div>
   );

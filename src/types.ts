@@ -6,6 +6,11 @@ export interface GroceryItem {
   fromRecipe?: string;
 }
 
+export interface UsualItem {
+  id: string;
+  name: string;
+}
+
 export interface Recipe {
   id: string;
   name: string;

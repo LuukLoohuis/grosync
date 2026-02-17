@@ -1,13 +1,14 @@
 import React, { createContext, useContext } from 'react';
-import { useAuth } from '@/hooks/useAuth';
 import { useGroceryItems } from '@/hooks/useGroceryItems';
 import { useRecipes } from '@/hooks/useRecipes';
-import { GroceryItem, Recipe } from '@/types';
+import { useUsuals } from '@/hooks/useUsuals';
+import { GroceryItem, Recipe, UsualItem } from '@/types';
 
 interface AppContextType {
   userId: string | null;
   groceryItems: GroceryItem[];
   recipes: Recipe[];
+  usuals: UsualItem[];
   loading: boolean;
   addGroceryItem: (name: string, fromRecipe?: string) => Promise<void>;
   toggleGroceryItem: (id: string) => Promise<void>;
@@ -19,6 +20,8 @@ interface AppContextType {
   updateRecipe: (id: string, updates: Partial<Omit<Recipe, 'id'>>) => Promise<void>;
   removeRecipe: (id: string) => Promise<void>;
   updateRecipeImage: (id: string, imageUrl: string) => Promise<void>;
+  addUsual: (name: string) => Promise<void>;
+  removeUsual: (id: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -32,12 +35,14 @@ export const useAppContext = () => {
 export const AppProvider = ({ children, userId }: { children: React.ReactNode; userId: string | null }) => {
   const grocery = useGroceryItems({ userId });
   const recipeHook = useRecipes({ userId });
+  const usualsHook = useUsuals({ userId });
 
   const value: AppContextType = {
     userId,
     groceryItems: grocery.groceryItems,
     recipes: recipeHook.recipes,
-    loading: grocery.loading || recipeHook.loading,
+    usuals: usualsHook.usuals,
+    loading: grocery.loading || recipeHook.loading || usualsHook.loading,
     addGroceryItem: grocery.addGroceryItem,
     toggleGroceryItem: grocery.toggleGroceryItem,
     removeGroceryItem: grocery.removeGroceryItem,
@@ -48,6 +53,8 @@ export const AppProvider = ({ children, userId }: { children: React.ReactNode; u
     updateRecipe: recipeHook.updateRecipe,
     removeRecipe: recipeHook.removeRecipe,
     updateRecipeImage: recipeHook.updateRecipeImage,
+    addUsual: usualsHook.addUsual,
+    removeUsual: usualsHook.removeUsual,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
