@@ -59,7 +59,7 @@ const RecipeEditDialog = ({ recipe }: RecipeEditDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="gap-1.5">
+        <Button variant="outline" size="sm" className="w-full gap-1.5 font-medium">
           <Pencil className="h-3.5 w-3.5" /> Edit
         </Button>
       </DialogTrigger>
