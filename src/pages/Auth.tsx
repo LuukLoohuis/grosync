@@ -68,7 +68,7 @@ const Auth = () => {
       <div className="w-full max-w-sm space-y-6 text-center">
         <div className="flex flex-col items-center">
           <img src={groveraLogo} alt="Grovera" className="h-72 w-72" />
-          <p className="text-muted-foreground -mt-10 relative z-10">Your shared grocery list 🛒</p>
+          <p className="text-muted-foreground -mt-16 relative z-10 font-medium">Your shared grocery list 🛒</p>
         </div>
 
         <Button
