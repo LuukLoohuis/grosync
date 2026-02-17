@@ -5,7 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { useStore } from '@/store';
+import { useAppContext } from '@/contexts/AppContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Recipe } from '@/types';
 
@@ -14,7 +14,7 @@ interface RecipeEditDialogProps {
 }
 
 const RecipeEditDialog = ({ recipe }: RecipeEditDialogProps) => {
-  const { updateRecipe, updateRecipeImage } = useStore();
+  const { updateRecipe, updateRecipeImage } = useAppContext();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -37,7 +37,7 @@ const RecipeEditDialog = ({ recipe }: RecipeEditDialogProps) => {
     const trimmedUrl = sourceUrl.trim() || undefined;
     const urlChanged = trimmedUrl !== recipe.sourceUrl;
 
-    updateRecipe(recipe.id, {
+    await updateRecipe(recipe.id, {
       name: name.trim(),
       description: description.trim(),
       ingredients: ingredientText.split('\n').map((l) => l.trim()).filter(Boolean),
@@ -47,15 +47,9 @@ const RecipeEditDialog = ({ recipe }: RecipeEditDialogProps) => {
 
     if (urlChanged && trimmedUrl) {
       try {
-        const { data, error } = await supabase.functions.invoke('fetch-url-meta', {
-          body: { url: trimmedUrl },
-        });
-        if (!error && data?.imageUrl) {
-          updateRecipeImage(recipe.id, data.imageUrl);
-        }
-      } catch (e) {
-        console.error('Failed to fetch image:', e);
-      }
+        const { data, error } = await supabase.functions.invoke('fetch-url-meta', { body: { url: trimmedUrl } });
+        if (!error && data?.imageUrl) updateRecipeImage(recipe.id, data.imageUrl);
+      } catch (e) { console.error('Failed to fetch image:', e); }
     }
 
     setOpen(false);
