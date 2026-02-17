@@ -13,8 +13,8 @@ const RecipeViewDialog = ({ recipe }: RecipeViewDialogProps) => {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="w-full gap-1.5 font-medium">
-          <Eye className="h-3.5 w-3.5" /> Bekijk
+        <Button variant="outline" size="icon" className="w-full" title="Bekijken">
+          <Eye className="h-4 w-4" />
         </Button>
       </DialogTrigger>
       <DialogContent className="bg-background max-h-[90vh] sm:max-w-2xl p-0 overflow-hidden">

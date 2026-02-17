@@ -102,8 +102,8 @@ const MacrosDialog = ({ recipe, onMacrosCalculated }: MacrosDialogProps) => {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="w-full gap-1.5 font-medium">
-          <Flame className="h-3.5 w-3.5" /> Macro's
+        <Button variant="outline" size="icon" className="w-full" title="Macro's">
+          <Flame className="h-4 w-4" />
         </Button>
       </DialogTrigger>
       <DialogContent className="bg-background sm:max-w-md">
