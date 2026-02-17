@@ -41,7 +41,7 @@ const MacrosDialog = ({ recipe }: MacrosDialogProps) => {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="gap-1.5">
+        <Button variant="secondary" size="sm" className="gap-1.5 font-bold">
           <Flame className="h-3.5 w-3.5" /> Macro's
         </Button>
       </DialogTrigger>
