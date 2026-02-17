@@ -1,1 +1,4 @@
 project_id = "fozdfaabofgsjksaonzv"
+
+[functions.calculate-macros]
+verify_jwt = false

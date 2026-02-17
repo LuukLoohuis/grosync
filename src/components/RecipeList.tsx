@@ -225,7 +225,7 @@ const RecipeList = () => {
                 <div className="flex gap-2">
                   <RecipeViewDialog recipe={recipe} />
                   <RecipeEditDialog recipe={recipe} />
-                  <MacrosDialog recipe={recipe} />
+                  <MacrosDialog recipe={recipe} onMacrosCalculated={(id, macros) => updateRecipe(id, { macros })} />
                 </div>
               </div>
             </div>
