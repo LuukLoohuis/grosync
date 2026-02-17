@@ -11,6 +11,14 @@ export interface UsualItem {
   name: string;
 }
 
+export interface Macros {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber: number;
+}
+
 export interface Recipe {
   id: string;
   name: string;
@@ -19,4 +27,5 @@ export interface Recipe {
   instructions?: string;
   imageUrl?: string;
   sourceUrl?: string;
+  macros?: Macros;
 }

@@ -10,9 +10,10 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import RecipeEditDialog from '@/components/RecipeEditDialog';
 import RecipeViewDialog from '@/components/RecipeViewDialog';
+import MacrosDialog from '@/components/MacrosDialog';
 
 const RecipeList = () => {
-  const { recipes, addRecipe, removeRecipe, addRecipeToGroceryList, updateRecipeImage } = useAppContext();
+  const { recipes, addRecipe, removeRecipe, addRecipeToGroceryList, updateRecipeImage, updateRecipe } = useAppContext();
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<'choose' | 'manual' | 'url'>('choose');
   const [name, setName] = useState('');
@@ -21,9 +22,10 @@ const RecipeList = () => {
   const [instructions, setInstructions] = useState('');
   const [sourceUrl, setSourceUrl] = useState('');
   const [fetchingMeta, setFetchingMeta] = useState(false);
+  const [fetchedMacros, setFetchedMacros] = useState<any>(null);
 
   const resetForm = () => {
-    setName(''); setDescription(''); setIngredientText(''); setInstructions(''); setSourceUrl(''); setMode('choose');
+    setName(''); setDescription(''); setIngredientText(''); setInstructions(''); setSourceUrl(''); setMode('choose'); setFetchedMacros(null);
   };
 
   const fetchFromUrl = async () => {
@@ -37,6 +39,7 @@ const RecipeList = () => {
       if (data?.description) setDescription(data.description);
       if (data?.ingredients?.length) setIngredientText(data.ingredients.join('\n'));
       if (data?.instructions) setInstructions(data.instructions);
+      if (data?.macros) setFetchedMacros(data.macros);
       toast.success('Recept opgehaald! Je kunt alles nog aanpassen.');
     } catch (e) {
       console.error('Failed to fetch from URL:', e);
@@ -56,14 +59,16 @@ const RecipeList = () => {
       ingredients: ingredientText.split('\n').map((l) => l.trim()).filter(Boolean),
       instructions: instructions.trim() || undefined,
       sourceUrl: trimmedUrl,
+      macros: fetchedMacros || undefined,
     });
 
-    // Fetch image from URL if provided
+    // Fetch image and macros from URL if provided
     if (trimmedUrl && recipeId) {
       (async () => {
         try {
           const { data } = await supabase.functions.invoke('fetch-url-meta', { body: { url: trimmedUrl } });
           if (data?.imageUrl) updateRecipeImage(recipeId, data.imageUrl);
+          if (data?.macros) updateRecipe(recipeId, { macros: data.macros });
         } catch (e) { console.error(e); }
       })();
     }
@@ -220,6 +225,7 @@ const RecipeList = () => {
                 <div className="flex gap-2">
                   <RecipeViewDialog recipe={recipe} />
                   <RecipeEditDialog recipe={recipe} />
+                  <MacrosDialog recipe={recipe} />
                 </div>
               </div>
             </div>
