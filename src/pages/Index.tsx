@@ -6,6 +6,7 @@ import ShareButton from '@/components/ShareButton';
 import { useStore } from '@/store';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
+import groveraLogo from '@/assets/grovera-logo.png';
 
 const Index = () => {
   const [tab, setTab] = useState<'list' | 'recipes'>('list');
@@ -18,9 +19,12 @@ const Index = () => {
       {/* Header */}
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="font-display text-2xl text-foreground">CoupleCart</h1>
-            <p className="text-xs text-muted-foreground">Your shared grocery list 🛒</p>
+          <div className="flex items-center gap-2">
+            <img src={groveraLogo} alt="Grovera" className="h-9 w-9" />
+            <div>
+              <h1 className="font-display text-2xl text-foreground">Grovera</h1>
+              <p className="text-xs text-muted-foreground">Your shared grocery list 🛒</p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <ShareButton />
