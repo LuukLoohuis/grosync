@@ -70,6 +70,7 @@ export const useUsuals = ({ userId }: UseUsualsOptions = {}) => {
   }, [userId]);
 
   const removeUsual = useCallback(async (id: string) => {
+    setUsuals((prev) => prev.filter((i) => i.id !== id));
     await supabase.from('usuals').delete().eq('id', id);
   }, []);
 
