@@ -74,10 +74,12 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
   const toggleGroceryItem = useCallback(async (id: string) => {
     const item = groceryItems.find((i) => i.id === id);
     if (!item) return;
+    setGroceryItems((prev) => prev.map((i) => i.id === id ? { ...i, checked: !i.checked } : i));
     await supabase.from('grocery_items').update({ checked: !item.checked }).eq('id', id);
   }, [groceryItems]);
 
   const removeGroceryItem = useCallback(async (id: string) => {
+    setGroceryItems((prev) => prev.filter((i) => i.id !== id));
     await supabase.from('grocery_items').delete().eq('id', id);
   }, []);
 
@@ -85,11 +87,13 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
     if (!userId) return;
     const checkedIds = groceryItems.filter((i) => i.checked).map((i) => i.id);
     if (checkedIds.length === 0) return;
+    setGroceryItems((prev) => prev.filter((i) => !i.checked));
     await supabase.from('grocery_items').delete().in('id', checkedIds);
   }, [userId, groceryItems]);
 
   const clearAllItems = useCallback(async () => {
     if (!userId) return;
+    setGroceryItems([]);
     await supabase.from('grocery_items').delete().eq('user_id', userId);
   }, [userId]);
 
