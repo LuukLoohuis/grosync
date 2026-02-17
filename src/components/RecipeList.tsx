@@ -222,7 +222,7 @@ const RecipeList = () => {
                 <Button size="sm" className="w-full gap-2" onClick={() => handleCook(recipe.id, recipe.name)}>
                   <ShoppingCart className="h-3.5 w-3.5" /> Toevoegen aan boodschappenlijst
                 </Button>
-                <div className="flex gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <RecipeViewDialog recipe={recipe} />
                   <RecipeEditDialog recipe={recipe} />
                   <MacrosDialog recipe={recipe} onMacrosCalculated={(id, macros) => updateRecipe(id, { macros })} />
