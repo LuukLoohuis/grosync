@@ -299,17 +299,18 @@ const RecipeList = () => {
                   </CollapsibleContent>
                 </Collapsible>
               )}
-              <div className="mt-4 flex gap-2">
-                <RecipeViewDialog recipe={recipe} />
-                <RecipeEditDialog recipe={recipe} />
+              <div className="mt-4 space-y-2">
                 <Button
-                  variant="outline"
                   size="sm"
-                  className="flex-1 gap-2"
+                  className="w-full gap-2"
                   onClick={() => handleCook(recipe.id, recipe.name)}
                 >
-                  <ShoppingCart className="h-3.5 w-3.5" /> Add to Grocery List
+                  <ShoppingCart className="h-3.5 w-3.5" /> Toevoegen aan boodschappenlijst
                 </Button>
+                <div className="flex gap-2">
+                  <RecipeViewDialog recipe={recipe} />
+                  <RecipeEditDialog recipe={recipe} />
+                </div>
               </div>
             </div>
           </div>

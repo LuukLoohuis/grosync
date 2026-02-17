@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable/index';
-import { ShoppingCart, Mail, Eye, EyeOff } from 'lucide-react';
+import { Mail, Eye, EyeOff } from 'lucide-react';
+import groveraLogo from '@/assets/grovera-logo.png';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -66,10 +67,8 @@ const Auth = () => {
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-sm space-y-6 text-center">
         <div className="space-y-2">
-          <div className="flex items-center justify-center gap-2">
-            <ShoppingCart className="h-8 w-8 text-primary" />
-            <h1 className="font-display text-3xl text-foreground">CoupleCart</h1>
-          </div>
+          <img src={groveraLogo} alt="Grovera" className="h-20 w-20 mx-auto" />
+          <h1 className="font-display text-3xl text-foreground">Grovera</h1>
           <p className="text-muted-foreground">Your shared grocery list 🛒</p>
         </div>
 
