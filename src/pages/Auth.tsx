@@ -67,8 +67,7 @@ const Auth = () => {
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-sm space-y-6 text-center">
         <div className="space-y-2">
-          <img src={groveraLogo} alt="Grovera" className="h-20 w-20 mx-auto" />
-          <h1 className="font-display text-3xl text-foreground">Grovera</h1>
+          <img src={groveraLogo} alt="Grovera" className="h-32 w-32 mx-auto" />
           <p className="text-muted-foreground">Your shared grocery list 🛒</p>
         </div>
 

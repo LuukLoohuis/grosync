@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { Check, Plus, Trash2, X, Link2 } from 'lucide-react';
+import groveraLogo from '@/assets/grovera-logo.png';
 import { supabase } from '@/integrations/supabase/client';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -146,9 +147,12 @@ const SharedList = () => {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="font-display text-2xl text-foreground">{listName}</h1>
-            <p className="text-xs text-muted-foreground">Gedeeld lijstje 🛒</p>
+          <div className="flex items-center gap-2">
+            <img src={groveraLogo} alt="Grovera" className="h-12 w-12" />
+            <div>
+              <h1 className="font-display text-xl text-foreground">{listName}</h1>
+              <p className="text-xs text-muted-foreground">Gedeeld lijstje 🛒</p>
+            </div>
           </div>
           <Button variant="outline" size="icon" onClick={copyLink} title="Kopieer link">
             <Link2 className="h-4 w-4" />
