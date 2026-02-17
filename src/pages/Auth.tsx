@@ -66,9 +66,9 @@ const Auth = () => {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-sm space-y-6 text-center">
-        <div className="space-y-2">
-          <img src={groveraLogo} alt="Grovera" className="h-48 w-48 mx-auto" />
-          <p className="text-muted-foreground">Your shared grocery list 🛒</p>
+        <div className="space-y-0">
+          <img src={groveraLogo} alt="Grovera" className="h-64 w-64 mx-auto" />
+          <p className="text-muted-foreground -mt-2">Your shared grocery list 🛒</p>
         </div>
 
         <Button
