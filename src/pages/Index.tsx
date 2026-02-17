@@ -19,11 +19,9 @@ const Index = () => {
       {/* Header */}
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col items-center">
             <img src={groveraLogo} alt="Grovera" className="h-[200px] w-[200px]" />
-            <div>
-              <p className="text-base font-semibold text-muted-foreground">Your shared grocery list 🛒</p>
-            </div>
+            <p className="text-base font-semibold text-muted-foreground -mt-14 relative z-10">Your shared grocery list 🛒</p>
           </div>
           <div className="flex items-center gap-2">
             <ShareButton />
