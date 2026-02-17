@@ -148,7 +148,7 @@ const SharedList = () => {
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src={groveraLogo} alt="Grovera" className="h-12 w-12" />
+            <img src={groveraLogo} alt="Grovera" className="h-20 w-20" />
             <div>
               <h1 className="font-display text-xl text-foreground">{listName}</h1>
               <p className="text-xs text-muted-foreground">Gedeeld lijstje 🛒</p>
