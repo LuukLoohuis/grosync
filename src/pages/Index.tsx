@@ -21,7 +21,7 @@ const Index = () => {
         <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex flex-col items-center">
             <img src={groveraLogo} alt="Grovera" className="h-[200px] w-[200px]" />
-            <p className="text-base font-semibold text-muted-foreground -mt-14 relative z-10">Your shared grocery list 🛒</p>
+            <p className="text-base font-bold text-muted-foreground -mt-14 relative z-10">Your shared grocery list 🛒</p>
           </div>
           <div className="flex items-center gap-2">
             <ShareButton />
@@ -41,7 +41,7 @@ const Index = () => {
             }`}
           >
             <ShoppingCart className="h-4 w-4" />
-            List
+            <span className="font-bold">List</span>
             {uncheckedCount > 0 && (
               <span className="bg-primary text-primary-foreground text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
                 {uncheckedCount}
@@ -55,7 +55,7 @@ const Index = () => {
             }`}
           >
             <Star className="h-4 w-4" />
-            Usuals
+            <span className="font-bold">Usuals</span>
           </button>
           <button
             onClick={() => setTab('recipes')}
@@ -64,7 +64,7 @@ const Index = () => {
             }`}
           >
             <ChefHat className="h-4 w-4" />
-            Recipes
+            <span className="font-bold">Recipes</span>
           </button>
         </div>
       </div>
