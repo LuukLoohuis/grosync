@@ -83,11 +83,9 @@ const SharedList = () => {
     if (!shareCode) return;
 
     const loadList = async () => {
-      const { data: list, error } = await supabase
-        .from('shared_lists')
-        .select('*')
-        .eq('share_code', shareCode)
-        .maybeSingle();
+      const { data: lists, error } = await supabase
+        .rpc('get_shared_list_by_code', { _share_code: shareCode });
+      const list = lists?.[0] ?? null;
 
       if (error || !list || !list.user_id) {
         setNotFound(true);
