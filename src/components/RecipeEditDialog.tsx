@@ -68,30 +68,30 @@ const RecipeEditDialog = ({ recipe }: RecipeEditDialogProps) => {
       </DialogTrigger>
       <DialogContent className="bg-background max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
-          <DialogTitle className="font-display text-xl">Edit Recipe</DialogTitle>
+          <DialogTitle className="font-display text-xl">Recept bewerken</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <Input placeholder="Recipe name" value={name} onChange={(e) => setName(e.target.value)} />
-          <Input placeholder="Short description" value={description} onChange={(e) => setDescription(e.target.value)} />
+          <Input placeholder="Naam recept" value={name} onChange={(e) => setName(e.target.value)} />
+          <Input placeholder="Korte beschrijving" value={description} onChange={(e) => setDescription(e.target.value)} />
           <div>
             <label className="text-sm text-muted-foreground mb-1 flex items-center gap-1">
-              <Link className="h-3.5 w-3.5" /> Recipe URL (optional)
+              <Link className="h-3.5 w-3.5" /> Recept URL (optioneel)
             </label>
             <Input type="url" placeholder="https://example.com/recipe" value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} />
           </div>
           <div>
-            <label className="text-sm text-muted-foreground mb-1 block">Ingredients (one per line)</label>
-            <Textarea placeholder={"Chicken breast (500g)\nRice (300g)"} value={ingredientText} onChange={(e) => setIngredientText(e.target.value)} rows={6} />
+            <label className="text-sm text-muted-foreground mb-1 block">Ingrediënten (één per regel)</label>
+            <Textarea placeholder={"Kipfilet (500g)\nRijst (300g)"} value={ingredientText} onChange={(e) => setIngredientText(e.target.value)} rows={6} />
           </div>
           <div>
             <label className="text-sm text-muted-foreground mb-1 block">Aantal personen</label>
             <Input type="number" min={1} max={100} value={servings} onChange={(e) => setServings(parseInt(e.target.value) || 4)} />
           </div>
           <div>
-            <label className="text-sm text-muted-foreground mb-1 block">Instructions</label>
-            <Textarea placeholder={"1. Preheat oven..."} value={instructions} onChange={(e) => setInstructions(e.target.value)} rows={10} className="min-h-[200px]" />
+            <label className="text-sm text-muted-foreground mb-1 block">Instructies</label>
+            <Textarea placeholder={"1. Verwarm de oven voor..."} value={instructions} onChange={(e) => setInstructions(e.target.value)} rows={10} className="min-h-[200px]" />
           </div>
-          <Button onClick={handleSave} className="w-full">Save Changes</Button>
+          <Button onClick={handleSave} className="w-full">Wijzigingen opslaan</Button>
         </div>
       </DialogContent>
     </Dialog>

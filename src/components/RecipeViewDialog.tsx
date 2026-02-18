@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { Eye, ExternalLink, Minus, Plus, Users } from 'lucide-react';
+import { Eye, ExternalLink, Minus, Plus, Users, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useAppContext } from '@/contexts/AppContext';
+import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -13,39 +15,58 @@ interface RecipeViewDialogProps {
 /**
  * Scale an ingredient string by a multiplier.
  * Handles patterns like "500g kip", "2 eieren", "1.5 el olie", "½ cup flour"
+ * Also handles numbers within parentheses or after descriptive words.
  */
 const scaleIngredient = (ingredient: string, multiplier: number): string => {
   if (multiplier === 1) return ingredient;
 
-  // Match a leading number (int, decimal, or fraction like ½ ¼ ¾)
-  const match = ingredient.match(/^(\d+(?:[.,]\d+)?)\s*(.*)/);
-  if (match) {
-    const qty = parseFloat(match[1].replace(',', '.'));
-    const rest = match[2];
-    const scaled = qty * multiplier;
-    const display = scaled % 1 === 0 ? scaled.toString() : scaled.toFixed(1).replace(/\.0$/, '');
-    return `${display} ${rest}`;
-  }
-
-  // Handle unicode fractions
+  // Fraction map for unicode fractions
   const fractionMap: Record<string, number> = { '½': 0.5, '¼': 0.25, '¾': 0.75, '⅓': 1/3, '⅔': 2/3 };
-  const fracMatch = ingredient.match(/^([½¼¾⅓⅔])\s*(.*)/);
-  if (fracMatch) {
-    const qty = fractionMap[fracMatch[1]] || 0.5;
-    const rest = fracMatch[2];
-    const scaled = qty * multiplier;
-    const display = scaled % 1 === 0 ? scaled.toString() : scaled.toFixed(1).replace(/\.0$/, '');
-    return `${display} ${rest}`;
+
+  // Function to format a number for display
+  const formatNumber = (num: number) => {
+    return num % 1 === 0 ? num.toString() : num.toFixed(1).replace(/\.0$/, '').replace('.', ',');
+  };
+
+  // 1. Check for unicode fractions
+  let result = ingredient;
+  for (const [char, val] of Object.entries(fractionMap)) {
+    if (result.includes(char)) {
+      const scaled = val * multiplier;
+      result = result.replace(char, formatNumber(scaled));
+    }
   }
 
-  // No quantity found, return as-is
-  return ingredient;
+  // 2. Match numbers (integers or decimals)
+  // We use a regex that looks for numbers that are likely quantities.
+  // This avoids scaling numbers that might be part of a brand name or instruction.
+  // We target numbers at the start of the string or preceded by a space/parenthesis.
+  return result.replace(/(\b\d+(?:[.,]\d+)?\b)/g, (match) => {
+    // If it's a year or seems like part of a name (very high number), maybe don't scale?
+    // But for recipes, usually any number is a quantity.
+    const num = parseFloat(match.replace(',', '.'));
+    if (isNaN(num)) return match;
+    
+    // Don't scale numbers that look like years or temperatures (heuristically)
+    if (num > 1000 && !ingredient.toLowerCase().includes(' gram') && !ingredient.toLowerCase().includes(' ml')) {
+      return match;
+    }
+
+    return formatNumber(num * multiplier);
+  });
 };
 
 const RecipeViewDialog = ({ recipe }: RecipeViewDialogProps) => {
+  const { addRecipeToGroceryList } = useAppContext();
   const baseServings = recipe.servings || 4;
   const [currentServings, setCurrentServings] = useState(baseServings);
   const multiplier = currentServings / baseServings;
+
+  const handleCook = () => {
+    const scaledIngredients = recipe.ingredients.map(ing => scaleIngredient(ing, multiplier));
+    addRecipeToGroceryList(scaledIngredients, recipe.name);
+    toast.success(`Ingrediënten voor "${recipe.name}" (${currentServings} pers.) toegevoegd aan je lijst!`);
+  };
 
   return (
     <Dialog onOpenChange={() => setCurrentServings(baseServings)}>
@@ -134,6 +155,13 @@ const RecipeViewDialog = ({ recipe }: RecipeViewDialogProps) => {
                 </div>
               </>
             )}
+
+            <Separator />
+            
+            <Button className="w-full gap-2" onClick={handleCook}>
+              <ShoppingCart className="h-4 w-4" />
+              Toevoegen aan lijst ({currentServings} pers.)
+            </Button>
           </div>
         </ScrollArea>
       </DialogContent>

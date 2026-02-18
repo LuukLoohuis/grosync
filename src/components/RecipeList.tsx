@@ -85,7 +85,7 @@ const RecipeList = () => {
     const recipe = recipes.find((r) => r.id === recipeId);
     if (!recipe) return;
     addRecipeToGroceryList(recipe.ingredients, recipeName);
-    toast.success(`Added ingredients from "${recipeName}" to your list!`);
+    toast.success(`Ingrediënten voor "${recipeName}" toegevoegd aan je lijst!`);
   };
 
   return (
