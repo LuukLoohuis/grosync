@@ -21,7 +21,7 @@ const Index = () => {
         <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex flex-col items-center">
             <img src={grosyncLogo} alt="GroSync" className="h-64 w-auto" />
-            <p className="text-base font-bold text-muted-foreground -mt-8">Your shared grocery list 🛒</p>
+            <p className="text-base font-bold text-muted-foreground -mt-16">Your shared grocery list 🛒</p>
           </div>
           <div className="flex items-center gap-2">
             <ShareButton />
