@@ -68,7 +68,7 @@ const Auth = () => {
       <div className="w-full max-w-sm space-y-6 text-center">
         <div className="flex flex-col items-center">
           <img src={grosyncLogo} alt="GroSync" className="h-92 w-auto" />
-          <p className="text-muted-foreground -mt-12 font-medium text-xl">Your shared grocery list 🛒</p>
+          <p className="text-muted-foreground -mt-20 font-medium text-xl">Your shared grocery list 🛒</p>
         </div>
 
         <Button
