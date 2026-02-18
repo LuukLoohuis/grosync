@@ -32,10 +32,32 @@ const Auth = () => {
   }, [navigate]);
 
   const handleGoogleLogin = async () => {
-    const { error } = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
-    });
-    if (error) console.error('Login error:', error);
+    const isCustomDomain =
+      !window.location.hostname.includes('lovable.app') &&
+      !window.location.hostname.includes('lovableproject.com') &&
+      !window.location.hostname.includes('localhost');
+
+    if (isCustomDomain) {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+          skipBrowserRedirect: true,
+        },
+      });
+      if (error) {
+        console.error('Login error:', error);
+        return;
+      }
+      if (data?.url) {
+        window.location.href = data.url;
+      }
+    } else {
+      const { error } = await lovable.auth.signInWithOAuth('google', {
+        redirect_uri: window.location.origin,
+      });
+      if (error) console.error('Login error:', error);
+    }
   };
 
   const handleEmailAuth = async (e: React.FormEvent) => {
