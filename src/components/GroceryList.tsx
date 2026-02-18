@@ -1,12 +1,12 @@
 import { useState } from 'react';
-import { Check, Plus, Trash2, X } from 'lucide-react';
+import { Check, Plus, Trash2, X, Merge } from 'lucide-react';
 import { useAppContext } from '@/contexts/AppContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 
 const GroceryList = () => {
   const [newItem, setNewItem] = useState('');
-  const { groceryItems, addGroceryItem, toggleGroceryItem, removeGroceryItem, clearCheckedItems, clearAllItems } = useAppContext();
+  const { groceryItems, addGroceryItem, toggleGroceryItem, removeGroceryItem, clearCheckedItems, clearAllItems, mergeDuplicateItems } = useAppContext();
 
   const handleAdd = () => {
     if (newItem.trim()) {
@@ -36,7 +36,13 @@ const GroceryList = () => {
 
       {/* Clear all */}
       {groceryItems.length > 0 && (
-        <div className="flex justify-end">
+        <div className="flex justify-end gap-3">
+          <button
+            onClick={mergeDuplicateItems}
+            className="text-xs text-primary hover:underline flex items-center gap-1"
+          >
+            <Merge className="h-3 w-3" /> Dubbele samenvoegen
+          </button>
           <button
             onClick={clearAllItems}
             className="text-xs text-destructive hover:underline flex items-center gap-1"
