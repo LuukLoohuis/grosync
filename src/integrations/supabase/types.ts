@@ -168,6 +168,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_shared_list_by_code: {
+        Args: { _share_code: string }
+        Returns: {
+          created_at: string
+          id: string
+          name: string
+          share_code: string
+          user_id: string
+        }[]
+      }
       user_has_shared_list: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {

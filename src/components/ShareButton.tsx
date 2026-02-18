@@ -27,7 +27,7 @@ const ShareButton = () => {
 
     toast.loading('Deellink aanmaken...');
 
-    // Check if user already has a shared list
+    // Check if user already has a shared list (owner can query directly via RLS)
     const { data: existing } = await supabase
       .from('shared_lists')
       .select('*')
