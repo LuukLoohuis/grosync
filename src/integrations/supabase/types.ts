@@ -178,6 +178,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      is_valid_shared_list: { Args: { _list_id: string }; Returns: boolean }
       user_has_shared_list: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
