@@ -99,14 +99,11 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
 
   const addRecipeToGroceryList = useCallback(async (ingredients: string[], recipeName: string) => {
     if (!userId) return;
-    const existing = groceryItems.map((i) => i.name.toLowerCase());
-    const newItems = ingredients
-      .filter((ing) => !existing.includes(ing.toLowerCase()))
-      .map((ing) => ({ user_id: userId, name: ing, from_recipe: recipeName }));
+    const newItems = ingredients.map((ing) => ({ user_id: userId, name: ing, from_recipe: recipeName }));
     if (newItems.length > 0) {
       await supabase.from('grocery_items').insert(newItems);
     }
-  }, [userId, groceryItems]);
+  }, [userId]);
 
   const mergeDuplicateItems = useCallback(async () => {
     if (!userId) return;
