@@ -17,13 +17,6 @@ const UsualsList = () => {
   };
 
   const handleAddToList = (name: string) => {
-    const alreadyInList = groceryItems.some(
-      (i) => i.name.toLowerCase() === name.toLowerCase() && !i.checked
-    );
-    if (alreadyInList) {
-      toast.info(`"${name}" staat al op je lijstje`);
-      return;
-    }
     addGroceryItem(name);
     toast.success(`"${name}" toegevoegd aan je lijstje`);
   };
