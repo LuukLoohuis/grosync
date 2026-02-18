@@ -28,4 +28,5 @@ export interface Recipe {
   imageUrl?: string;
   sourceUrl?: string;
   macros?: Macros;
+  servings?: number;
 }

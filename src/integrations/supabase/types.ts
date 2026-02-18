@@ -51,6 +51,7 @@ export type Database = {
           instructions: string | null
           macros: Json | null
           name: string
+          servings: number | null
           source_url: string | null
           user_id: string
         }
@@ -63,6 +64,7 @@ export type Database = {
           instructions?: string | null
           macros?: Json | null
           name: string
+          servings?: number | null
           source_url?: string | null
           user_id: string
         }
@@ -75,6 +77,7 @@ export type Database = {
           instructions?: string | null
           macros?: Json | null
           name?: string
+          servings?: number | null
           source_url?: string | null
           user_id?: string
         }

@@ -21,6 +21,7 @@ const RecipeEditDialog = ({ recipe }: RecipeEditDialogProps) => {
   const [ingredientText, setIngredientText] = useState('');
   const [instructions, setInstructions] = useState('');
   const [sourceUrl, setSourceUrl] = useState('');
+  const [servings, setServings] = useState<number>(4);
 
   useEffect(() => {
     if (open) {
@@ -29,6 +30,7 @@ const RecipeEditDialog = ({ recipe }: RecipeEditDialogProps) => {
       setIngredientText(recipe.ingredients.join('\n'));
       setInstructions(recipe.instructions || '');
       setSourceUrl(recipe.sourceUrl || '');
+      setServings(recipe.servings || 4);
     }
   }, [open, recipe]);
 
@@ -43,6 +45,7 @@ const RecipeEditDialog = ({ recipe }: RecipeEditDialogProps) => {
       ingredients: ingredientText.split('\n').map((l) => l.trim()).filter(Boolean),
       instructions: instructions.trim() || undefined,
       sourceUrl: trimmedUrl,
+      servings: servings,
     });
 
     if (urlChanged && trimmedUrl) {
@@ -79,6 +82,10 @@ const RecipeEditDialog = ({ recipe }: RecipeEditDialogProps) => {
           <div>
             <label className="text-sm text-muted-foreground mb-1 block">Ingredients (one per line)</label>
             <Textarea placeholder={"Chicken breast (500g)\nRice (300g)"} value={ingredientText} onChange={(e) => setIngredientText(e.target.value)} rows={6} />
+          </div>
+          <div>
+            <label className="text-sm text-muted-foreground mb-1 block">Aantal personen</label>
+            <Input type="number" min={1} max={100} value={servings} onChange={(e) => setServings(parseInt(e.target.value) || 4)} />
           </div>
           <div>
             <label className="text-sm text-muted-foreground mb-1 block">Instructions</label>
