@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable/index';
 import { Mail, Eye, EyeOff } from 'lucide-react';
-import groveraLogo from '@/assets/grovera-logo.png';
+import grosyncLogo from '@/assets/grosync-logo.png';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -67,8 +67,8 @@ const Auth = () => {
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-sm space-y-6 text-center">
         <div className="flex flex-col items-center">
-          <img src={groveraLogo} alt="Grovera" className="h-[500px] w-[600px]" />
-          <p className="text-muted-foreground -mt-40 relative z-10 font-medium text-xl">Your shared grocery list 🛒</p>
+          <img src={grosyncLogo} alt="GroSync" className="h-40 w-auto" />
+          <p className="text-muted-foreground mt-3 font-medium text-xl">Your shared grocery list 🛒</p>
         </div>
 
         <Button
