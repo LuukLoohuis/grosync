@@ -20,43 +20,112 @@ Deno.serve(async (req) => {
     let pageContent = '';
     let imageUrl: string | null = null;
 
-    // Try Firecrawl first for JS-rendered pages
-    const firecrawlKey = Deno.env.get('FIRECRAWL_API_KEY');
-    if (firecrawlKey) {
+    // Check if this is an Instagram URL — use oEmbed API (public, no auth needed)
+    const isInstagram = /instagram\.com\/(p|reel|reels)\//i.test(url);
+    if (isInstagram) {
       try {
-        console.log('Using Firecrawl to scrape:', url);
-        const fcResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${firecrawlKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            url,
-            formats: ['markdown', 'html'],
-            waitFor: 5000,
-          }),
-        });
+        console.log('Using Instagram oEmbed for:', url);
+        // Try multiple oEmbed endpoints
+        const endpoints = [
+          `https://api.instagram.com/oembed?url=${encodeURIComponent(url)}&maxwidth=640`,
+          `https://graph.facebook.com/v18.0/instagram_oembed?url=${encodeURIComponent(url)}&maxwidth=640`,
+        ];
+        
+        for (const oembedUrl of endpoints) {
+          try {
+            const oembedResp = await fetch(oembedUrl, {
+              headers: { 'User-Agent': 'Mozilla/5.0 (compatible; bot/1.0)' },
+            });
+            const contentType = oembedResp.headers.get('content-type') || '';
+            if (oembedResp.ok && contentType.includes('application/json')) {
+              const oembedData = await oembedResp.json();
+              pageContent = oembedData.title || '';
+              imageUrl = oembedData.thumbnail_url || null;
+              console.log('Instagram oEmbed success, caption length:', pageContent.length);
+              break;
+            } else {
+              console.log('oEmbed endpoint returned:', oembedResp.status, contentType);
+            }
+          } catch (e) {
+            console.log('oEmbed endpoint failed:', e);
+          }
+        }
 
-        if (fcResponse.ok) {
-          const fcData = await fcResponse.json();
-          pageContent = fcData.data?.markdown || fcData.data?.html || '';
-
-          // Extract OG image from HTML
-          const html = fcData.data?.html || '';
-          const ogMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i)
+        // If oEmbed didn't work, try fetching the page directly and extracting from meta tags
+        if (!pageContent) {
+          console.log('oEmbed failed, trying direct meta tag extraction');
+          const resp = await fetch(url, {
+            headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' },
+            redirect: 'follow',
+          });
+          const html = await resp.text();
+          
+          // Extract description from og:description or meta description (contains caption)
+          const descMatch = html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["']/i)
+            || html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:description["']/i)
+            || html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i);
+          
+          const ogImageMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i)
             || html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i);
-          imageUrl = ogMatch?.[1] || fcData.data?.metadata?.ogImage || null;
-        } else {
-          const errBody = await fcResponse.text();
-          console.error('Firecrawl error:', fcResponse.status, errBody);
+          
+          if (descMatch?.[1]) {
+            // Decode HTML entities
+            pageContent = descMatch[1]
+              .replace(/&amp;/g, '&')
+              .replace(/&lt;/g, '<')
+              .replace(/&gt;/g, '>')
+              .replace(/&quot;/g, '"')
+              .replace(/&#039;/g, "'")
+              .replace(/&#x27;/g, "'");
+            console.log('Extracted caption from meta tags, length:', pageContent.length);
+          }
+          if (ogImageMatch?.[1] && !imageUrl) {
+            imageUrl = ogImageMatch[1].replace(/&amp;/g, '&');
+          }
         }
       } catch (e) {
-        console.error('Firecrawl failed:', e);
+        console.error('Instagram extraction error:', e);
       }
     }
 
-    // Fallback to simple fetch if Firecrawl didn't work
+    // For non-Instagram URLs, try Firecrawl first for JS-rendered pages
+    if (!pageContent && !isInstagram) {
+      const firecrawlKey = Deno.env.get('FIRECRAWL_API_KEY');
+      if (firecrawlKey) {
+        try {
+          console.log('Using Firecrawl to scrape:', url);
+          const fcResponse = await fetch('https://api.firecrawl.dev/v1/scrape', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${firecrawlKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              url,
+              formats: ['markdown', 'html'],
+              waitFor: 5000,
+            }),
+          });
+
+          if (fcResponse.ok) {
+            const fcData = await fcResponse.json();
+            pageContent = fcData.data?.markdown || fcData.data?.html || '';
+
+            const html = fcData.data?.html || '';
+            const ogMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i)
+              || html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i);
+            imageUrl = ogMatch?.[1] || fcData.data?.metadata?.ogImage || null;
+          } else {
+            const errBody = await fcResponse.text();
+            console.error('Firecrawl error:', fcResponse.status, errBody);
+          }
+        } catch (e) {
+          console.error('Firecrawl failed:', e);
+        }
+      }
+    }
+
+    // Fallback to simple fetch if nothing worked yet
     if (!pageContent) {
       console.log('Falling back to simple fetch');
       const response = await fetch(url, {
@@ -66,9 +135,8 @@ Deno.serve(async (req) => {
 
       const ogImageMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i)
         || html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i);
-      imageUrl = ogImageMatch?.[1] || null;
+      if (!imageUrl) imageUrl = ogImageMatch?.[1] || null;
 
-      // Strip tags for AI
       pageContent = html
         .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
         .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
