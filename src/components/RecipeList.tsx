@@ -21,11 +21,12 @@ const RecipeList = () => {
   const [ingredientText, setIngredientText] = useState('');
   const [instructions, setInstructions] = useState('');
   const [sourceUrl, setSourceUrl] = useState('');
+  const [servings, setServings] = useState<number>(4);
   const [fetchingMeta, setFetchingMeta] = useState(false);
   const [fetchedMacros, setFetchedMacros] = useState<any>(null);
 
   const resetForm = () => {
-    setName(''); setDescription(''); setIngredientText(''); setInstructions(''); setSourceUrl(''); setMode('choose'); setFetchedMacros(null);
+    setName(''); setDescription(''); setIngredientText(''); setInstructions(''); setSourceUrl(''); setMode('choose'); setFetchedMacros(null); setServings(4);
   };
 
   const fetchFromUrl = async () => {
@@ -40,6 +41,7 @@ const RecipeList = () => {
       if (data?.ingredients?.length) setIngredientText(data.ingredients.join('\n'));
       if (data?.instructions) setInstructions(data.instructions);
       if (data?.macros) setFetchedMacros(data.macros);
+      if (data?.servings) setServings(data.servings);
       toast.success('Recept opgehaald! Je kunt alles nog aanpassen.');
     } catch (e) {
       console.error('Failed to fetch from URL:', e);
@@ -60,6 +62,7 @@ const RecipeList = () => {
       instructions: instructions.trim() || undefined,
       sourceUrl: trimmedUrl,
       macros: fetchedMacros || undefined,
+      servings: servings,
     });
 
     // Fetch image and macros from URL if provided
@@ -153,6 +156,10 @@ const RecipeList = () => {
               <div>
                 <label className="text-sm text-muted-foreground mb-1 block">Ingrediënten (één per regel)</label>
                 <Textarea placeholder={"Kipfilet (500g)\nRijst (300g)\nSojasaus"} value={ingredientText} onChange={(e) => setIngredientText(e.target.value)} rows={6} />
+              </div>
+              <div>
+                <label className="text-sm text-muted-foreground mb-1 block">Aantal personen</label>
+                <Input type="number" min={1} max={100} value={servings} onChange={(e) => setServings(parseInt(e.target.value) || 4)} />
               </div>
               <div>
                 <label className="text-sm text-muted-foreground mb-1 block">Instructies</label>
