@@ -73,7 +73,7 @@ const Auth = () => {
           options: { emailRedirectTo: window.location.origin },
         });
         if (error) throw error;
-        toast.success('Verificatie e-mail verstuurd! Check je inbox.');
+        toast.success('Verificatie e-mail verstuurd! Check je inbox en spamfolder.', { duration: 8000 });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -143,6 +143,12 @@ const Auth = () => {
             {loading ? 'Even geduld...' : isSignUp ? 'Account aanmaken' : 'Inloggen'}
           </Button>
         </form>
+
+        {isSignUp && (
+          <p className="text-xs text-muted-foreground bg-muted/50 rounded-md p-3 text-left">
+            💡 De verificatie-e-mail kan in je <strong>spam- of ongewenste mail</strong> terechtkomen. Check daar als je hem niet ziet!
+          </p>
+        )}
 
         <p className="text-sm text-muted-foreground">
           {isSignUp ? 'Al een account?' : 'Nog geen account?'}{' '}
