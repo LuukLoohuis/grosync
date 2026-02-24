@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { ShoppingCart, ChefHat, Link2, Star } from 'lucide-react';
-import groveraLogo from '@/assets/grovera-logo.png';
+import grosyncLogo from '@/assets/grosync-logo.png';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -23,7 +23,7 @@ const SharedListContent = () => {
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src={groveraLogo} alt="Grovera" className="h-24 w-24" />
+            <img src={grosyncLogo} alt="GroSync" className="h-24 w-24" />
             <div>
               <h1 className="font-display text-xl text-foreground">Grovera</h1>
               <p className="text-xs text-muted-foreground">Gedeeld lijstje 🛒</p>
