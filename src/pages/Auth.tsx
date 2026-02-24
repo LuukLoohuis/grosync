@@ -159,6 +159,28 @@ const Auth = () => {
             {isSignUp ? 'Inloggen' : 'Account aanmaken'}
           </button>
         </p>
+
+        <div className="flex items-center gap-3">
+          <Separator className="flex-1" />
+          <span className="text-xs text-muted-foreground">of</span>
+          <Separator className="flex-1" />
+        </div>
+
+        <Button
+          variant="ghost"
+          className="w-full text-muted-foreground"
+          onClick={async () => {
+            setLoading(true);
+            const { error } = await supabase.auth.signInAnonymously();
+            if (error) {
+              toast.error('Er ging iets mis bij het starten als gast');
+              setLoading(false);
+            }
+          }}
+          disabled={loading}
+        >
+          {loading ? 'Even geduld...' : 'Doorgaan zonder account'}
+        </Button>
       </div>
     </div>
   );
