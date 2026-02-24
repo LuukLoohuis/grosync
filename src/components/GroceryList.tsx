@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { Check, Plus, Trash2, X, Merge } from 'lucide-react';
+import { Check, Plus, Trash2, X, Merge, Route } from 'lucide-react';
 import { useAppContext } from '@/contexts/AppContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { sortByStoreRoute } from '@/lib/storeRouteSort';
 
 const GroceryList = () => {
   const [newItem, setNewItem] = useState('');
+  const [routeMode, setRouteMode] = useState(false);
   const { groceryItems, addGroceryItem, toggleGroceryItem, removeGroceryItem, clearCheckedItems, clearAllItems, mergeDuplicateItems } = useAppContext();
 
   const handleAdd = () => {
@@ -17,6 +19,23 @@ const GroceryList = () => {
 
   const unchecked = groceryItems.filter((i) => !i.checked);
   const checked = groceryItems.filter((i) => i.checked);
+  const categorized = routeMode ? sortByStoreRoute(unchecked) : null;
+
+  const renderItem = (item: typeof unchecked[0]) => (
+    <div key={item.id} className="flex items-center gap-3 p-3 bg-card rounded-lg shadow-soft animate-fade-in group">
+      <button
+        onClick={() => toggleGroceryItem(item.id)}
+        className="h-5 w-5 rounded-full border-2 border-primary shrink-0 flex items-center justify-center hover:bg-primary/10 transition-colors"
+      />
+      <div className="flex-1 min-w-0">
+        <span className="font-body">{item.name}</span>
+        {item.fromRecipe && <span className="text-xs text-muted-foreground ml-2">from {item.fromRecipe}</span>}
+      </div>
+      <button onClick={() => removeGroceryItem(item.id)} className="opacity-0 group-hover:opacity-100 text-destructive transition-opacity">
+        <X className="h-4 w-4" />
+      </button>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -34,21 +53,32 @@ const GroceryList = () => {
         </Button>
       </div>
 
-      {/* Clear all */}
+      {/* Actions */}
       {groceryItems.length > 0 && (
-        <div className="flex justify-end gap-3">
+        <div className="flex justify-between items-center gap-3">
           <button
-            onClick={mergeDuplicateItems}
-            className="text-xs text-primary hover:underline flex items-center gap-1"
+            onClick={() => setRouteMode(!routeMode)}
+            className={`text-xs flex items-center gap-1 font-medium transition-colors ${
+              routeMode ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+            }`}
           >
-            <Merge className="h-3 w-3" /> Dubbele samenvoegen
+            <Route className="h-3 w-3" />
+            {routeMode ? 'Looproute aan' : 'Looproute'}
           </button>
-          <button
-            onClick={clearAllItems}
-            className="text-xs text-destructive hover:underline flex items-center gap-1"
-          >
-            <Trash2 className="h-3 w-3" /> Clear entire cart
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={mergeDuplicateItems}
+              className="text-xs text-primary hover:underline flex items-center gap-1"
+            >
+              <Merge className="h-3 w-3" /> Dubbele samenvoegen
+            </button>
+            <button
+              onClick={clearAllItems}
+              className="text-xs text-destructive hover:underline flex items-center gap-1"
+            >
+              <Trash2 className="h-3 w-3" /> Clear entire cart
+            </button>
+          </div>
         </div>
       )}
 
@@ -60,23 +90,28 @@ const GroceryList = () => {
         </div>
       )}
 
-      <div className="space-y-2">
-        {unchecked.map((item) => (
-          <div key={item.id} className="flex items-center gap-3 p-3 bg-card rounded-lg shadow-soft animate-fade-in group">
-            <button
-              onClick={() => toggleGroceryItem(item.id)}
-              className="h-5 w-5 rounded-full border-2 border-primary shrink-0 flex items-center justify-center hover:bg-primary/10 transition-colors"
-            />
-            <div className="flex-1 min-w-0">
-              <span className="font-body">{item.name}</span>
-              {item.fromRecipe && <span className="text-xs text-muted-foreground ml-2">from {item.fromRecipe}</span>}
+      {/* Items - route mode (grouped by category) */}
+      {routeMode && categorized && (
+        <div className="space-y-4">
+          {categorized.map((group) => (
+            <div key={group.category}>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2">
+                {group.label}
+              </p>
+              <div className="space-y-2">
+                {group.items.map(renderItem)}
+              </div>
             </div>
-            <button onClick={() => removeGroceryItem(item.id)} className="opacity-0 group-hover:opacity-100 text-destructive transition-opacity">
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
+
+      {/* Items - normal mode */}
+      {!routeMode && (
+        <div className="space-y-2">
+          {unchecked.map(renderItem)}
+        </div>
+      )}
 
       {/* Checked items */}
       {checked.length > 0 && (
