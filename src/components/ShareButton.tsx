@@ -41,7 +41,7 @@ const ShareButton = () => {
     } else {
       const { data: list, error } = await supabase
         .from('shared_lists')
-        .insert({ name: 'Grovera', user_id: userId })
+        .insert({ name: 'GroSync', user_id: userId })
         .select()
         .single();
 
