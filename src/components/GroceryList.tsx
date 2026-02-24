@@ -58,11 +58,11 @@ const GroceryList = () => {
         <div className="flex justify-between items-center gap-3">
           <button
             onClick={() => setRouteMode(!routeMode)}
-            className={`text-xs flex items-center gap-1 font-medium transition-colors ${
-              routeMode ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+            className={`text-sm flex items-center gap-1.5 font-semibold py-1 px-2 rounded-md transition-colors ${
+              routeMode ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
             }`}
           >
-            <Route className="h-3 w-3" />
+            <Route className="h-4 w-4" />
             {routeMode ? 'Looproute aan' : 'Looproute'}
           </button>
           <div className="flex gap-3">
