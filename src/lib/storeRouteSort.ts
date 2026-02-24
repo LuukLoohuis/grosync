@@ -43,6 +43,18 @@ const CATEGORY_KEYWORDS: Record<RouteCategory, string[]> = {
     'munt', 'gember', 'aardappel', 'aardappelen', 'zoete aardappel', 'krieltjes',
     'rode kool', 'witte kool', 'selderij', 'venkel', 'artisjok', 'asperge',
     'lente-ui', 'bosui', 'veldsla', 'spruiten', 'spruitjes', 'boerenkool',
+    // English
+    'apple', 'pear', 'banana', 'grape', 'grapes', 'strawberry', 'raspberry',
+    'blueberry', 'lemon', 'lime', 'orange', 'tangerine', 'pineapple',
+    'melon', 'watermelon', 'peach', 'plum', 'cherry', 'cherries',
+    'tomato', 'tomatoes', 'cucumber', 'bell pepper', 'onion', 'onions', 'garlic',
+    'carrot', 'carrots', 'cauliflower', 'spinach', 'lettuce', 'arugula',
+    'leek', 'zucchini', 'eggplant', 'mushroom', 'mushrooms',
+    'radish', 'beet', 'beets', 'corn', 'green beans', 'beans',
+    'vegetable', 'vegetables', 'herbs', 'basil', 'parsley', 'chives',
+    'mint', 'ginger', 'potato', 'potatoes', 'sweet potato',
+    'celery', 'fennel', 'artichoke', 'asparagus', 'cabbage',
+    'spring onion', 'kale', 'brussels sprouts',
   ],
   brood: [
     'brood', 'boterham', 'pistolet', 'croissant', 'stokbrood', 'baguette',
@@ -50,6 +62,8 @@ const CATEGORY_KEYWORDS: Record<RouteCategory, string[]> = {
     'beschuit', 'cracker', 'knäckebröd', 'volkoren', 'witbrood', 'meergranen',
     'broodje', 'bol', 'bollen', 'roggebrood', 'pumpernickel', 'turks brood',
     'brioche', 'pannenkoek', 'wafel',
+    // English
+    'bread', 'sandwich', 'pancake', 'waffle', 'whole wheat', 'sourdough', 'rye bread', 'flatbread',
   ],
   vers: [
     'melk', 'kaas', 'yoghurt', 'kwark', 'boter', 'margarine', 'room', 'slagroom',
@@ -63,6 +77,11 @@ const CATEGORY_KEYWORDS: Record<RouteCategory, string[]> = {
     'vleesvervangers', 'tofu', 'tempeh', 'kipstuckjes', 'drumstick', 'varkens',
     'runder', 'lams', 'kalf', 'rosbief', 'leverworst', 'paté', 'filet',
     'shoarma', 'gyros', 'burger', 'saucijs',
+    // English
+    'milk', 'cheese', 'yogurt', 'butter', 'cream', 'whipped cream',
+    'dairy', 'egg', 'eggs', 'meat', 'chicken', 'chicken breast',
+    'ground beef', 'minced meat', 'sausage', 'fish', 'salmon',
+    'shrimp', 'prawns', 'cod', 'goat cheese', 'grated cheese', 'sliced cheese',
   ],
   houdbaar: [
     'pasta', 'spaghetti', 'penne', 'fusilli', 'macaroni', 'noodles', 'noedels',
@@ -81,6 +100,15 @@ const CATEGORY_KEYWORDS: Record<RouteCategory, string[]> = {
     'chips', 'koek', 'koekjes', 'biscuit', 'snoep', 'drop', 'popcorn',
     'crackers', 'rijstwafel', 'tomatenpuree', 'kokosmelk',
     'blikje', 'conserven', 'ingelegd', 'kappertjes', 'olijven',
+    // English
+    'rice', 'lentils', 'chickpeas', 'olive oil', 'vinegar', 'soy sauce',
+    'mustard', 'sauce', 'tomato sauce', 'soup', 'broth', 'pepper', 'salt',
+    'cumin', 'turmeric', 'cinnamon', 'sugar', 'flour', 'baking powder',
+    'yeast', 'vanilla', 'cocoa', 'chocolate', 'peanut butter', 'honey',
+    'cereal', 'oatmeal', 'oats', 'tea', 'coffee', 'juice', 'lemonade',
+    'beer', 'wine', 'soda', 'nuts', 'peanuts', 'almonds', 'walnuts',
+    'raisins', 'cookies', 'candy', 'snacks', 'tomato paste', 'coconut milk',
+    'canned', 'olives', 'capers',
   ],
   non_food: [
     'zeep', 'shampoo', 'conditioner', 'douchegel', 'deodorant', 'tandpasta',
@@ -94,6 +122,12 @@ const CATEGORY_KEYWORDS: Record<RouteCategory, string[]> = {
     'paracetamol', 'ibuprofen', 'vitamine', 'maandverband', 'tampons',
     'luiers', 'scheermesje', 'scheermes', 'wattenstaafje', 'wattenschijfje',
     'crème', 'bodylotion', 'zonnebrand', 'insectenspray',
+    // English
+    'soap', 'shower gel', 'toothpaste', 'toothbrush', 'mouthwash',
+    'toilet paper', 'paper towels', 'trash bags', 'cleaning',
+    'dish soap', 'detergent', 'laundry', 'sponge', 'hand soap',
+    'batteries', 'candle', 'candles', 'aluminum foil', 'parchment paper',
+    'cling wrap', 'band-aids', 'vitamins', 'diapers', 'sunscreen',
   ],
   diepvries: [
     'diepvries', 'bevroren', 'ijsje', 'ijs', 'ijsjes', 'vriesvers',
@@ -101,6 +135,9 @@ const CATEGORY_KEYWORDS: Record<RouteCategory, string[]> = {
     'frites', 'friet', 'patat', 'kroketten', 'bitterballen', 'frikandel',
     'loempia', 'spring roll', 'diepvries vis', 'visstick', 'kibbeling',
     'spinazie diepvries', 'roerbakgroente', 'garnalen diepvries',
+    // English
+    'frozen', 'ice cream', 'fries', 'french fries', 'fish sticks',
+    'frozen pizza', 'frozen vegetables', 'frozen fish',
   ],
 };
 
