@@ -25,7 +25,7 @@ const SharedListContent = () => {
           <div className="flex items-center gap-2">
             <img src={grosyncLogo} alt="GroSync" className="h-24 w-24" />
             <div>
-              <h1 className="font-display text-xl text-foreground">Grovera</h1>
+              <h1 className="font-display text-xl text-foreground">GroSync</h1>
               <p className="text-xs text-muted-foreground">Gedeeld lijstje 🛒</p>
             </div>
           </div>
