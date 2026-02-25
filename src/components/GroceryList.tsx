@@ -21,12 +21,12 @@ const GroceryList = () => {
   const checked = groceryItems.filter((i) => i.checked);
   const categorized = routeMode ? sortByStoreRoute(unchecked) : null;
 
-  const renderItem = (item: typeof unchecked[0]) => (
-    <div key={item.id} className="flex items-center gap-3 p-3 bg-card rounded-lg shadow-soft animate-fade-in group">
+  const renderItem = (item: typeof unchecked[0]) =>
+  <div key={item.id} className="flex items-center gap-3 p-3 bg-card rounded-lg shadow-soft animate-fade-in group">
       <button
-        onClick={() => toggleGroceryItem(item.id)}
-        className="h-5 w-5 rounded-full border-2 border-primary shrink-0 flex items-center justify-center hover:bg-primary/10 transition-colors"
-      />
+      onClick={() => toggleGroceryItem(item.id)}
+      className="h-5 w-5 rounded-full border-2 border-primary shrink-0 flex items-center justify-center hover:bg-primary/10 transition-colors" />
+
       <div className="flex-1 min-w-0">
         <span className="font-body">{item.name}</span>
         {item.fromRecipe && <span className="text-xs text-muted-foreground ml-2">from {item.fromRecipe}</span>}
@@ -34,8 +34,8 @@ const GroceryList = () => {
       <button onClick={() => removeGroceryItem(item.id)} className="opacity-0 group-hover:opacity-100 text-destructive transition-opacity">
         <X className="h-4 w-4" />
       </button>
-    </div>
-  );
+    </div>;
+
 
   return (
     <div className="space-y-6">
@@ -46,55 +46,55 @@ const GroceryList = () => {
           value={newItem}
           onChange={(e) => setNewItem(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-          className="bg-card border-border font-body"
-        />
+          className="bg-card border-border font-body" />
+
         <Button onClick={handleAdd} size="icon" className="shrink-0">
           <Plus className="h-4 w-4" />
         </Button>
       </div>
 
       {/* Actions */}
-      {groceryItems.length > 0 && (
-        <div className="flex justify-between items-center gap-3">
+      {groceryItems.length > 0 &&
+      <div className="flex justify-between items-center gap-3">
           <button
-            onClick={() => setRouteMode(!routeMode)}
-            className={`text-sm flex items-center gap-1.5 font-semibold py-1 px-2 rounded-md transition-colors ${
-              routeMode ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
-            }`}
-          >
+          onClick={() => setRouteMode(!routeMode)}
+          className={`text-sm flex items-center gap-1.5 font-semibold py-1 px-2 rounded-md transition-colors ${
+          routeMode ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`
+          }>
+
             <Route className="h-4 w-4" />
             {routeMode ? 'Looproute aan' : 'Looproute'}
           </button>
           <div className="flex gap-3">
             <button
-              onClick={mergeDuplicateItems}
-              className="text-xs text-primary hover:underline flex items-center gap-1"
-            >
+            onClick={mergeDuplicateItems}
+            className="text-primary hover:underline flex items-center gap-1 text-sm">
+
               <Merge className="h-3 w-3" /> Dubbele samenvoegen
             </button>
             <button
-              onClick={clearAllItems}
-              className="text-xs text-destructive hover:underline flex items-center gap-1"
-            >
+            onClick={clearAllItems}
+            className="text-destructive hover:underline flex items-center gap-1 text-sm">
+
               <Trash2 className="h-3 w-3" /> Clear entire cart
             </button>
           </div>
         </div>
-      )}
+      }
 
       {/* Empty state */}
-      {unchecked.length === 0 && checked.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground">
+      {unchecked.length === 0 && checked.length === 0 &&
+      <div className="text-center py-12 text-muted-foreground">
           <p className="text-lg font-display">Your list is empty</p>
           <p className="text-sm mt-1">Add items above or pick a recipe!</p>
         </div>
-      )}
+      }
 
       {/* Items - route mode (grouped by category) */}
-      {routeMode && categorized && (
-        <div className="space-y-4">
-          {categorized.map((group) => (
-            <div key={group.category}>
+      {routeMode && categorized &&
+      <div className="space-y-4">
+          {categorized.map((group) =>
+        <div key={group.category}>
               <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2">
                 {group.label}
               </p>
@@ -102,32 +102,32 @@ const GroceryList = () => {
                 {group.items.map(renderItem)}
               </div>
             </div>
-          ))}
+        )}
         </div>
-      )}
+      }
 
       {/* Items - normal mode */}
-      {!routeMode && (
-        <div className="space-y-2">
+      {!routeMode &&
+      <div className="space-y-2">
           {unchecked.map(renderItem)}
         </div>
-      )}
+      }
 
       {/* Checked items */}
-      {checked.length > 0 && (
-        <div className="space-y-2">
+      {checked.length > 0 &&
+      <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground font-medium">Checked ({checked.length})</span>
             <button onClick={clearCheckedItems} className="text-xs text-destructive hover:underline flex items-center gap-1">
               <Trash2 className="h-3 w-3" /> Clear
             </button>
           </div>
-          {checked.map((item) => (
-            <div key={item.id} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg group">
+          {checked.map((item) =>
+        <div key={item.id} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg group">
               <button
-                onClick={() => toggleGroceryItem(item.id)}
-                className="h-5 w-5 rounded-full bg-primary shrink-0 flex items-center justify-center animate-check-bounce"
-              >
+            onClick={() => toggleGroceryItem(item.id)}
+            className="h-5 w-5 rounded-full bg-primary shrink-0 flex items-center justify-center animate-check-bounce">
+
                 <Check className="h-3 w-3 text-primary-foreground" />
               </button>
               <span className="font-body line-through text-muted-foreground flex-1">{item.name}</span>
@@ -135,11 +135,11 @@ const GroceryList = () => {
                 <X className="h-4 w-4" />
               </button>
             </div>
-          ))}
+        )}
         </div>
-      )}
-    </div>
-  );
+      }
+    </div>);
+
 };
 
 export default GroceryList;
