@@ -68,15 +68,15 @@ const GroceryList = () => {
           <div className="flex gap-3">
             <button
             onClick={mergeDuplicateItems}
-            className="text-primary hover:underline flex items-center gap-1 text-sm">
+            className="text-primary hover:underline flex items-center gap-2 text-base font-semibold py-1.5 px-3 rounded-md hover:bg-primary/10 transition-colors">
 
-              <Merge className="h-3 w-3" /> Dubbele samenvoegen
+              <Merge className="h-5 w-5" /> Dubbele samenvoegen
             </button>
             <button
             onClick={clearAllItems}
-            className="text-destructive hover:underline flex items-center gap-1 text-sm">
+            className="text-destructive hover:underline flex items-center gap-2 text-base font-semibold py-1.5 px-3 rounded-md hover:bg-destructive/10 transition-colors">
 
-              <Trash2 className="h-3 w-3" /> Clear entire cart
+              <Trash2 className="h-5 w-5" /> Clear entire cart
             </button>
           </div>
         </div>
