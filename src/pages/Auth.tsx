@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { lovable } from '@/integrations/lovable/index';
 import { Mail, Eye, EyeOff } from 'lucide-react';
 import grosyncLogo from '@/assets/grosync-logo.png';
 import { Button } from '@/components/ui/button';
@@ -31,34 +30,24 @@ const Auth = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const handleGoogleLogin = async () => {
-    const isCustomDomain =
-      !window.location.hostname.includes('lovable.app') &&
-      !window.location.hostname.includes('lovableproject.com') &&
-      !window.location.hostname.includes('localhost');
+const handleGoogleLogin = async () => {
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: window.location.origin,
+    },
+  });
 
-    if (isCustomDomain) {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin,
-          skipBrowserRedirect: true,
-        },
-      });
-      if (error) {
-        console.error('Login error:', error);
-        return;
-      }
-      if (data?.url) {
-        window.location.href = data.url;
-      }
-    } else {
-      const { error } = await lovable.auth.signInWithOAuth('google', {
-        redirect_uri: window.location.origin,
-      });
-      if (error) console.error('Login error:', error);
-    }
-  };
+  if (error) {
+    console.error("Login error:", error);
+    toast.error(error.message || "Google login mislukt");
+    return;
+  }
+
+  if (data?.url) {
+    window.location.href = data.url;
+  }
+};
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
