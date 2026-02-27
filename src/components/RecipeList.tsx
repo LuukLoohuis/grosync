@@ -197,6 +197,9 @@ const RecipeList = () => {
               </div>
               <div className="flex gap-2">
                 <button onClick={() => { resetForm(); }} className="text-xs text-muted-foreground hover:underline">← Terug</button>
+                <Button type="button" variant="outline" onClick={translateRecipe} disabled={translating || (!name.trim() && !ingredientText.trim())} className="gap-2">
+                  {translating ? <><Loader2 className="h-4 w-4 animate-spin" /> Vertalen...</> : <><Languages className="h-4 w-4" /> Vertaal naar NL</>}
+                </Button>
                 <Button onClick={handleAdd} className="flex-1">Recept opslaan</Button>
               </div>
             </div>
