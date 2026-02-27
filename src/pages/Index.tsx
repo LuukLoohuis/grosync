@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ShoppingCart, ChefHat, LogOut, Star } from 'lucide-react';
+import { ShoppingCart, ChefHat, LogOut, Star, Coffee } from 'lucide-react';
 import GroceryList from '@/components/GroceryList';
 import RecipeList from '@/components/RecipeList';
 import UsualsList from '@/components/UsualsList';
