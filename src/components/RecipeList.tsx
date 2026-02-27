@@ -52,6 +52,35 @@ const RecipeList = () => {
     }
   };
 
+  const translateRecipe = async () => {
+    if (!name.trim() && !ingredientText.trim()) {
+      toast.error('Vul eerst een recept in om te vertalen');
+      return;
+    }
+    try {
+      setTranslating(true);
+      const { data, error } = await supabase.functions.invoke('translate-recipe', {
+        body: {
+          name: name.trim(),
+          description: description.trim(),
+          ingredients: ingredientText.split('\n').map((l) => l.trim()).filter(Boolean),
+          instructions: instructions.trim(),
+        },
+      });
+      if (error) throw error;
+      if (data?.name) setName(data.name);
+      if (data?.description) setDescription(data.description);
+      if (data?.ingredients?.length) setIngredientText(data.ingredients.join('\n'));
+      if (data?.instructions) setInstructions(data.instructions);
+      toast.success('Recept vertaald naar Nederlands!');
+    } catch (e) {
+      console.error('Translation failed:', e);
+      toast.error('Kon recept niet vertalen');
+    } finally {
+      setTranslating(false);
+    }
+  };
+
   const handleAdd = async () => {
     if (!name.trim() || !ingredientText.trim()) return;
     const trimmedUrl = sourceUrl.trim() || undefined;
