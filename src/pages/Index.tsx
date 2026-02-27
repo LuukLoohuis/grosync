@@ -7,7 +7,7 @@ import ShareButton from '@/components/ShareButton';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppContext } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
-import grosyncLogo from '@/assets/grosync-logo.png';
+import couplecartLogo from '@/assets/couplecart-logo.png';
 
 const Index = () => {
   const [tab, setTab] = useState<'list' | 'usuals' | 'recipes'>('list');
@@ -20,8 +20,8 @@ const Index = () => {
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex flex-col items-center">
-            <img src={grosyncLogo} alt="GroSync" className="h-64 w-auto" width={256} height={256} fetchPriority="high" />
-            <p className="text-base font-bold text-muted-foreground -mt-16">Your shared grocery list 🛒</p>
+            <img src={couplecartLogo} alt="CoupleCart" className="h-24 w-auto" width={256} height={256} fetchPriority="high" />
+            <p className="text-base font-bold text-muted-foreground mt-1">Your shared grocery list 🛒</p>
           </div>
           <div className="flex items-center gap-2">
             <ShareButton />
