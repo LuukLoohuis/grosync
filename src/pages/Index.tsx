@@ -34,7 +34,7 @@ const Index = () => {
             >
               <a href="https://buymeacoffee.com/placeholder" target="_blank" rel="noopener noreferrer">
                 <Coffee className="h-4 w-4" />
-                <span className="text-xs font-semibold hidden sm:inline">Doneer</span>
+                <span className="text-xs font-semibold hidden sm:inline">Support me</span>
               </a>
             </Button>
             <Button variant="ghost" size="icon" onClick={signOut} title="Sign out">
