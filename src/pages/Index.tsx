@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ShoppingCart, ChefHat, LogOut, Star, Coffee } from 'lucide-react';
+import { ShoppingCart, ChefHat, LogOut, Star } from 'lucide-react';
 import GroceryList from '@/components/GroceryList';
 import RecipeList from '@/components/RecipeList';
 import UsualsList from '@/components/UsualsList';
@@ -25,18 +25,13 @@ const Index = () => {
           </div>
           <div className="flex items-center gap-1">
             <ShareButton />
-            <Button
-              variant="ghost"
-              size="sm"
-              asChild
-              className="gap-1.5 text-amber-700 hover:text-amber-800 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950"
-              title="Trakteer me op een koffie"
-            >
-              <a href="https://buymeacoffee.com/placeholder" target="_blank" rel="noopener noreferrer">
-                <Coffee className="h-4 w-4" />
-                <span className="text-xs font-semibold hidden sm:inline">Support me</span>
-              </a>
-            </Button>
+            <a href="https://www.buymeacoffee.com/luukloohuis" target="_blank" rel="noopener noreferrer" title="Support me">
+              <img
+                src="https://img.buymeacoffee.com/button-api/?text=Support me&emoji=☕&slug=luukloohuis&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff"
+                alt="Support me on Buy Me a Coffee"
+                className="h-8"
+              />
+            </a>
             <Button variant="ghost" size="icon" onClick={signOut} title="Sign out">
               <LogOut className="h-4 w-4" />
             </Button>
