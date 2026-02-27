@@ -25,9 +25,16 @@ const Index = () => {
           </div>
           <div className="flex items-center gap-1">
             <ShareButton />
-            <Button variant="ghost" size="icon" asChild title="Trakteer me op een koffie">
+            <Button
+              variant="ghost"
+              size="sm"
+              asChild
+              className="gap-1.5 text-amber-700 hover:text-amber-800 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950"
+              title="Trakteer me op een koffie"
+            >
               <a href="https://buymeacoffee.com/placeholder" target="_blank" rel="noopener noreferrer">
                 <Coffee className="h-4 w-4" />
+                <span className="text-xs font-semibold hidden sm:inline">Doneer</span>
               </a>
             </Button>
             <Button variant="ghost" size="icon" onClick={signOut} title="Sign out">
