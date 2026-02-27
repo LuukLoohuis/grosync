@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChefHat, ChevronDown, Plus, ShoppingCart, Link, X, Loader2, PenLine, Globe } from 'lucide-react';
+import { ChefHat, ChevronDown, Plus, ShoppingCart, Link, X, Loader2, PenLine, Globe, Languages } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useAppContext } from '@/contexts/AppContext';
 import { Input } from '@/components/ui/input';
@@ -24,9 +24,10 @@ const RecipeList = () => {
   const [servings, setServings] = useState<number>(4);
   const [fetchingMeta, setFetchingMeta] = useState(false);
   const [fetchedMacros, setFetchedMacros] = useState<any>(null);
+  const [translating, setTranslating] = useState(false);
 
   const resetForm = () => {
-    setName(''); setDescription(''); setIngredientText(''); setInstructions(''); setSourceUrl(''); setMode('choose'); setFetchedMacros(null); setServings(4);
+    setName(''); setDescription(''); setIngredientText(''); setInstructions(''); setSourceUrl(''); setMode('choose'); setFetchedMacros(null); setServings(4); setTranslating(false);
   };
 
   const fetchFromUrl = async () => {
@@ -48,6 +49,35 @@ const RecipeList = () => {
       toast.error('Kon recept niet ophalen van URL');
     } finally {
       setFetchingMeta(false);
+    }
+  };
+
+  const translateRecipe = async () => {
+    if (!name.trim() && !ingredientText.trim()) {
+      toast.error('Vul eerst een recept in om te vertalen');
+      return;
+    }
+    try {
+      setTranslating(true);
+      const { data, error } = await supabase.functions.invoke('translate-recipe', {
+        body: {
+          name: name.trim(),
+          description: description.trim(),
+          ingredients: ingredientText.split('\n').map((l) => l.trim()).filter(Boolean),
+          instructions: instructions.trim(),
+        },
+      });
+      if (error) throw error;
+      if (data?.name) setName(data.name);
+      if (data?.description) setDescription(data.description);
+      if (data?.ingredients?.length) setIngredientText(data.ingredients.join('\n'));
+      if (data?.instructions) setInstructions(data.instructions);
+      toast.success('Recept vertaald naar Nederlands!');
+    } catch (e) {
+      console.error('Translation failed:', e);
+      toast.error('Kon recept niet vertalen');
+    } finally {
+      setTranslating(false);
     }
   };
 
@@ -167,6 +197,9 @@ const RecipeList = () => {
               </div>
               <div className="flex gap-2">
                 <button onClick={() => { resetForm(); }} className="text-xs text-muted-foreground hover:underline">← Terug</button>
+                <Button type="button" variant="outline" onClick={translateRecipe} disabled={translating || (!name.trim() && !ingredientText.trim())} className="gap-2">
+                  {translating ? <><Loader2 className="h-4 w-4 animate-spin" /> Vertalen...</> : <><Languages className="h-4 w-4" /> Vertaal naar NL</>}
+                </Button>
                 <Button onClick={handleAdd} className="flex-1">Recept opslaan</Button>
               </div>
             </div>
