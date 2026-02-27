@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ShoppingCart, ChefHat, LogOut, Star } from 'lucide-react';
+import { ShoppingCart, ChefHat, LogOut, Star, Coffee } from 'lucide-react';
 import GroceryList from '@/components/GroceryList';
 import RecipeList from '@/components/RecipeList';
 import UsualsList from '@/components/UsualsList';
@@ -23,8 +23,13 @@ const Index = () => {
             <img src={couplecartLogo} alt="CoupleCart" className="h-64 w-auto" width={256} height={256} fetchPriority="high" />
             <p className="text-base font-bold text-muted-foreground -mt-16">Your shared grocery list 🛒</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <ShareButton />
+            <Button variant="ghost" size="icon" asChild title="Trakteer me op een koffie">
+              <a href="https://buymeacoffee.com/placeholder" target="_blank" rel="noopener noreferrer">
+                <Coffee className="h-4 w-4" />
+              </a>
+            </Button>
             <Button variant="ghost" size="icon" onClick={signOut} title="Sign out">
               <LogOut className="h-4 w-4" />
             </Button>
