@@ -27,7 +27,7 @@ const Index = () => {
             <ShareButton />
             <a href="https://www.buymeacoffee.com/luukloohuis" target="_blank" rel="noopener noreferrer" title="Support me">
               <img
-                src="https://img.buymeacoffee.com/button-api/?text=Donate&emoji=🛒&slug=luukloohuis&button_colour=f9e9cd&font_colour=000000&font_family=Bree&outline_colour=000000&coffee_colour=FFDD00"
+                src="https://img.buymeacoffee.com/button-api/?text=Donate&emoji=🛒&slug=luukloohuis&button_colour=fff7eb&font_colour=000000&font_family=Bree&outline_colour=000000&coffee_colour=FFDD00"
                 alt="Support me on Buy Me a Coffee"
                 className="h-8"
               />
