@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ChefHat, ChevronDown, Plus, ShoppingCart, Link, X, Loader2, PenLine, Globe } from 'lucide-react';
+import { ChefHat, ChevronDown, Plus, ShoppingCart, Link, X, Loader2, PenLine, Globe, Languages } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useAppContext } from '@/contexts/AppContext';
 import { Input } from '@/components/ui/input';
