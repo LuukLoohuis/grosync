@@ -24,6 +24,7 @@ const RecipeList = () => {
   const [servings, setServings] = useState<number>(4);
   const [fetchingMeta, setFetchingMeta] = useState(false);
   const [fetchedMacros, setFetchedMacros] = useState<any>(null);
+  const [translating, setTranslating] = useState(false);
 
   const resetForm = () => {
     setName(''); setDescription(''); setIngredientText(''); setInstructions(''); setSourceUrl(''); setMode('choose'); setFetchedMacros(null); setServings(4);
