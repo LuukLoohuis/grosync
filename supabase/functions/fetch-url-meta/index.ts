@@ -25,7 +25,6 @@ Deno.serve(async (req) => {
     if (isInstagram) {
       try {
         console.log('Using Instagram oEmbed for:', url);
-        // Try multiple oEmbed endpoints
         const endpoints = [
           `https://api.instagram.com/oembed?url=${encodeURIComponent(url)}&maxwidth=640`,
           `https://graph.facebook.com/v18.0/instagram_oembed?url=${encodeURIComponent(url)}&maxwidth=640`,
@@ -43,15 +42,12 @@ Deno.serve(async (req) => {
               imageUrl = oembedData.thumbnail_url || null;
               console.log('Instagram oEmbed success, caption length:', pageContent.length);
               break;
-            } else {
-              console.log('oEmbed endpoint returned:', oembedResp.status, contentType);
             }
           } catch (e) {
             console.log('oEmbed endpoint failed:', e);
           }
         }
 
-        // If oEmbed didn't work, try fetching the page directly and extracting from meta tags
         if (!pageContent) {
           console.log('oEmbed failed, trying direct meta tag extraction');
           const resp = await fetch(url, {
@@ -60,7 +56,6 @@ Deno.serve(async (req) => {
           });
           const html = await resp.text();
           
-          // Extract description from og:description or meta description (contains caption)
           const descMatch = html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["']/i)
             || html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:description["']/i)
             || html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i);
@@ -69,15 +64,9 @@ Deno.serve(async (req) => {
             || html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i);
           
           if (descMatch?.[1]) {
-            // Decode HTML entities
             pageContent = descMatch[1]
-              .replace(/&amp;/g, '&')
-              .replace(/&lt;/g, '<')
-              .replace(/&gt;/g, '>')
-              .replace(/&quot;/g, '"')
-              .replace(/&#039;/g, "'")
-              .replace(/&#x27;/g, "'");
-            console.log('Extracted caption from meta tags, length:', pageContent.length);
+              .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+              .replace(/&quot;/g, '"').replace(/&#039;/g, "'").replace(/&#x27;/g, "'");
           }
           if (ogImageMatch?.[1] && !imageUrl) {
             imageUrl = ogImageMatch[1].replace(/&amp;/g, '&');
@@ -88,7 +77,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // For non-Instagram URLs, try Firecrawl first for JS-rendered pages
+    // For non-Instagram URLs, try Firecrawl first
     if (!pageContent && !isInstagram) {
       const firecrawlKey = Deno.env.get('FIRECRAWL_API_KEY');
       if (firecrawlKey) {
@@ -100,24 +89,18 @@ Deno.serve(async (req) => {
               'Authorization': `Bearer ${firecrawlKey}`,
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              url,
-              formats: ['markdown', 'html'],
-              waitFor: 5000,
-            }),
+            body: JSON.stringify({ url, formats: ['markdown', 'html'], waitFor: 5000 }),
           });
 
           if (fcResponse.ok) {
             const fcData = await fcResponse.json();
             pageContent = fcData.data?.markdown || fcData.data?.html || '';
-
             const html = fcData.data?.html || '';
             const ogMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i)
               || html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i);
             imageUrl = ogMatch?.[1] || fcData.data?.metadata?.ogImage || null;
           } else {
-            const errBody = await fcResponse.text();
-            console.error('Firecrawl error:', fcResponse.status, errBody);
+            console.error('Firecrawl error:', fcResponse.status, await fcResponse.text());
           }
         } catch (e) {
           console.error('Firecrawl failed:', e);
@@ -125,18 +108,16 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Fallback to simple fetch if nothing worked yet
+    // Fallback to simple fetch
     if (!pageContent) {
       console.log('Falling back to simple fetch');
       const response = await fetch(url, {
         headers: { 'User-Agent': 'Mozilla/5.0 (compatible; CoupleCart/1.0)' },
       });
       const html = await response.text();
-
       const ogImageMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i)
         || html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i);
       if (!imageUrl) imageUrl = ogImageMatch?.[1] || null;
-
       pageContent = html
         .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
         .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
@@ -147,9 +128,7 @@ Deno.serve(async (req) => {
     // Make image URL absolute
     if (imageUrl && !imageUrl.startsWith('http')) {
       const urlObj = new URL(url);
-      imageUrl = imageUrl.startsWith('/')
-        ? `${urlObj.origin}${imageUrl}`
-        : `${urlObj.origin}/${imageUrl}`;
+      imageUrl = imageUrl.startsWith('/') ? `${urlObj.origin}${imageUrl}` : `${urlObj.origin}/${imageUrl}`;
     }
 
     // Use AI to extract recipe data
@@ -160,19 +139,25 @@ Deno.serve(async (req) => {
     let macros: { calories: number; protein: number; carbs: number; fat: number; fiber: number } | null = null;
     let servings: number | null = null;
 
-    const apiKey = Deno.env.get('LOVABLE_API_KEY');
+    const apiKey = Deno.env.get('OPENAI_API_KEY') || Deno.env.get('LOVABLE_API_KEY');
+    const isOpenAI = !!Deno.env.get('OPENAI_API_KEY');
+
     if (apiKey && pageContent) {
       try {
         const truncated = pageContent.substring(0, 20000);
+        const endpoint = isOpenAI
+          ? 'https://api.openai.com/v1/chat/completions'
+          : 'https://ai.gateway.lovable.dev/v1/chat/completions';
+        const model = isOpenAI ? 'gpt-4o-mini' : 'google/gemini-2.5-flash';
 
-        const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+        const aiResponse = await fetch(endpoint, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${apiKey}`,
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'google/gemini-2.5-flash',
+            model,
             messages: [
               {
                 role: 'system',
