@@ -7,10 +7,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { supabase } from '@/integrations/supabase/client';
 import RecipeEditDialog from '@/components/RecipeEditDialog';
 import RecipeViewDialog from '@/components/RecipeViewDialog';
 import MacrosDialog from '@/components/MacrosDialog';
+import { fetchRecipeFromUrl, translateRecipe, calculateMacros } from '@/services/recipeApi';
 
 const RecipeList = () => {
   const { recipes, addRecipe, removeRecipe, addRecipeToGroceryList, updateRecipeImage, updateRecipe } = useAppContext();
@@ -35,49 +35,89 @@ const RecipeList = () => {
     if (!url) return;
     try {
       setFetchingMeta(true);
-      const { data, error } = await supabase.functions.invoke('fetch-url-meta', { body: { url } });
-      if (error) throw error;
-      if (data?.title) setName(data.title);
+      const data = await fetchRecipeFromUrl(url);
+      if (data?.name) setName(data.name);
       if (data?.description) setDescription(data.description);
-      if (data?.ingredients?.length) setIngredientText(data.ingredients.join('\n'));
+      if (data?.ingredients?.length) {
+        setIngredientText(
+          data.ingredients
+            .map((ing: any) => {
+              if (typeof ing === 'string') return ing;
+              return `${ing.name}${ing.quantity ? ` (${ing.quantity}${ing.unit || ''})` : ''}`;
+            })
+            .join('\n')
+        );
+      }
       if (data?.instructions) setInstructions(data.instructions);
-      if (data?.macros) setFetchedMacros(data.macros);
       if (data?.servings) setServings(data.servings);
+      // Extract macros from response
+      const macros = {
+        calories: data?.calories,
+        protein: data?.protein,
+        carbs: data?.carbs,
+        fat: data?.fat,
+        fiber: data?.fiber,
+      };
+      if (Object.values(macros).some(v => v !== undefined)) {
+        setFetchedMacros(macros);
+      }
       toast.success('Recept opgehaald! Je kunt alles nog aanpassen.');
     } catch (e) {
       console.error('Failed to fetch from URL:', e);
-      toast.error('Kon recept niet ophalen van URL');
+      toast.error(`Kon recept niet ophalen: ${(e as Error).message}`);
     } finally {
       setFetchingMeta(false);
     }
   };
 
-  const translateRecipe = async () => {
+  const translateRecipeHandler = async () => {
     if (!name.trim() && !ingredientText.trim()) {
       toast.error('Vul eerst een recept in om te vertalen');
       return;
     }
     try {
       setTranslating(true);
-      const { data, error } = await supabase.functions.invoke('translate-recipe', {
-        body: {
-          name: name.trim(),
-          description: description.trim(),
-          ingredients: ingredientText.split('\n').map((l) => l.trim()).filter(Boolean),
-          instructions: instructions.trim(),
-        },
+      const data = await translateRecipe({
+        name: name.trim(),
+        description: description.trim(),
+        ingredients: ingredientText.split('\n').map((l) => l.trim()).filter(Boolean),
+        instructions: instructions.trim(),
       });
-      if (error) throw error;
       if (data?.name) setName(data.name);
       if (data?.description) setDescription(data.description);
-      if (data?.ingredients?.length) setIngredientText(data.ingredients.join('\n'));
+      if (data?.ingredients?.length) {
+        setIngredientText(
+          data.ingredients
+            .map((ing: any) => {
+              if (typeof ing === 'string') return ing;
+              return `${ing.name}${ing.quantity ? ` (${ing.quantity}${ing.unit || ''})` : ''}`;
+            })
+            .join('\n')
+        );
+      }
       if (data?.instructions) setInstructions(data.instructions);
       toast.success('Recept vertaald naar Nederlands!');
     } catch (e) {
       console.error('Translation failed:', e);
-      toast.error('Kon recept niet vertalen');
+      toast.error(`Kon recept niet vertalen: ${(e as Error).message}`);
     } finally {
       setTranslating(false);
+    }
+  };
+
+  const calculateMacrosHandler = async () => {
+    const ingredients = ingredientText.split('\n').map((l) => l.trim()).filter(Boolean);
+    if (!ingredients.length) {
+      toast.error('Voeg eerst ingrediënten toe');
+      return;
+    }
+    try {
+      const macros = await calculateMacros(ingredients);
+      setFetchedMacros(macros);
+      toast.success('Macronutriënten berekend!');
+    } catch (e) {
+      console.error('Macro calculation failed:', e);
+      toast.error(`Kon macronutriënten niet berekenen: ${(e as Error).message}`);
     }
   };
 
@@ -94,17 +134,6 @@ const RecipeList = () => {
       macros: fetchedMacros || undefined,
       servings: servings,
     });
-
-    // Fetch image and macros from URL if provided
-    if (trimmedUrl && recipeId) {
-      (async () => {
-        try {
-          const { data } = await supabase.functions.invoke('fetch-url-meta', { body: { url: trimmedUrl } });
-          if (data?.imageUrl) updateRecipeImage(recipeId, data.imageUrl);
-          if (data?.macros) updateRecipe(recipeId, { macros: data.macros });
-        } catch (e) { console.error(e); }
-      })();
-    }
 
     resetForm();
     setOpen(false);
@@ -195,12 +224,17 @@ const RecipeList = () => {
                 <label className="text-sm text-muted-foreground mb-1 block">Instructies</label>
                 <Textarea placeholder={"1. Verwarm de oven voor op 180°C\n2. Kruid de kip...\n3. Bak 25 minuten..."} value={instructions} onChange={(e) => setInstructions(e.target.value)} rows={10} className="min-h-[200px]" />
               </div>
-              <div className="flex gap-2">
-                <button onClick={() => { resetForm(); }} className="text-xs text-muted-foreground hover:underline">← Terug</button>
-                <Button type="button" variant="outline" onClick={translateRecipe} disabled={translating || (!name.trim() && !ingredientText.trim())} className="gap-2">
-                  {translating ? <><Loader2 className="h-4 w-4 animate-spin" /> Vertalen...</> : <><Languages className="h-4 w-4" /> Vertaal naar NL</>}
-                </Button>
-                <Button onClick={handleAdd} className="flex-1">Recept opslaan</Button>
+              <div className="flex flex-col gap-2">
+                <div className="flex gap-2">
+                  <button onClick={() => { resetForm(); }} className="text-xs text-muted-foreground hover:underline">← Terug</button>
+                  <Button type="button" variant="outline" onClick={translateRecipeHandler} disabled={translating || (!name.trim() && !ingredientText.trim())} className="gap-2">
+                    {translating ? <><Loader2 className="h-4 w-4 animate-spin" /> Vertalen...</> : <><Languages className="h-4 w-4" /> Vertaal naar NL</>}
+                  </Button>
+                  <Button type="button" variant="outline" onClick={calculateMacrosHandler} className="gap-2">
+                    🍎 Macros
+                  </Button>
+                  <Button onClick={handleAdd} className="flex-1">Recept opslaan</Button>
+                </div>
               </div>
             </div>
           )}
