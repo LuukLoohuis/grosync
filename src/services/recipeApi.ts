@@ -88,3 +88,35 @@ export async function calculateMacros(ingredients: string[]) {
     throw error;
   }
 }
+
+export interface RecipeSuggestion {
+  name: string;
+  description: string;
+  ingredients: string[];
+  instructions: string;
+  servings: number;
+  extra_needed: string[];
+}
+
+export async function suggestRecipes(ingredients: string[]): Promise<{ recipes: RecipeSuggestion[] }> {
+  try {
+    const response = await fetch(`${FUNCTIONS_URL}/suggest-recipes`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ ingredients }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to suggest recipes');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('suggestRecipes error:', error);
+    throw error;
+  }
+}
