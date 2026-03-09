@@ -1,5 +1,5 @@
 // Recipe API service
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+const API_BASE_URL = process.env.REACT_APP_API_URL || '';
 
 export interface RecipeData {
   url?: string;
@@ -19,7 +19,7 @@ export interface MacrosData {
 }
 
 export async function fetchRecipeFromUrl(url: string) {
-  const response = await fetch(`${API_BASE_URL}/api/recipes/add-from-url`, {
+  const response = await fetch(`${API_BASE_URL}/api/recipes?action=fetch-from-url`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ url }),
@@ -34,7 +34,7 @@ export async function fetchRecipeFromUrl(url: string) {
 }
 
 export async function translateRecipe(recipe: RecipeData) {
-  const response = await fetch(`${API_BASE_URL}/api/recipes/translate`, {
+  const response = await fetch(`${API_BASE_URL}/api/recipes?action=translate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(recipe),
@@ -49,7 +49,7 @@ export async function translateRecipe(recipe: RecipeData) {
 }
 
 export async function calculateMacros(ingredients: string[]) {
-  const response = await fetch(`${API_BASE_URL}/api/recipes/calculate-macros`, {
+  const response = await fetch(`${API_BASE_URL}/api/recipes?action=calculate-macros`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ingredients }),
