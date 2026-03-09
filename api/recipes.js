@@ -18,123 +18,122 @@ export default async (req, res) => {
     return;
   }
 
-  if (req.method === 'GET' && req.url === '/health') {
-    res.status(200).json({ status: 'healthy' });
-    return;
-  }
+  try {
+    // GET /api/recipes - health check
+    if (req.method === 'GET') {
+      res.status(200).json({ status: 'healthy' });
+      return;
+    }
 
-  if (req.method === 'POST' && req.url === '/api/recipes/add-from-url') {
-    try {
-      const { url } = req.body;
-      if (!url) {
-        res.status(400).json({ error: 'URL required' });
+    // POST /api/recipes with action query param
+    if (req.method === 'POST') {
+      const action = req.query.action || 'fetch-from-url';
+
+      if (action === 'fetch-from-url') {
+        const { url } = req.body;
+        if (!url) {
+          res.status(400).json({ error: 'URL required' });
+          return;
+        }
+
+        const fetchResponse = await fetch(`${FUNCTIONS_URL}/fetch-url-meta`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${supabaseKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ url }),
+        });
+
+        if (!fetchResponse.ok) {
+          throw new Error(`Failed to fetch recipe: ${fetchResponse.statusText}`);
+        }
+
+        const recipe = await fetchResponse.json();
+
+        const translateResponse = await fetch(`${FUNCTIONS_URL}/translate-recipe`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${supabaseKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(recipe),
+        });
+
+        const translatedRecipe = translateResponse.ok ? await translateResponse.json() : recipe;
+
+        const macrosResponse = await fetch(`${FUNCTIONS_URL}/calculate-macros`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${supabaseKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ ingredients: translatedRecipe.ingredients }),
+        });
+
+        const macros = macrosResponse.ok ? await macrosResponse.json() : {};
+
+        const finalRecipe = {
+          ...translatedRecipe,
+          ...macros,
+          sourceUrl: url,
+        };
+
+        res.status(200).json(finalRecipe);
         return;
       }
 
-      const fetchResponse = await fetch(`${FUNCTIONS_URL}/fetch-url-meta`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ url }),
-      });
+      if (action === 'translate') {
+        const recipe = req.body;
 
-      if (!fetchResponse.ok) {
-        throw new Error(`Failed to fetch recipe: ${fetchResponse.statusText}`);
-      }
+        const translateResponse = await fetch(`${FUNCTIONS_URL}/translate-recipe`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${supabaseKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(recipe),
+        });
 
-      const recipe = await fetchResponse.json();
+        if (!translateResponse.ok) {
+          throw new Error(`Failed to translate: ${translateResponse.statusText}`);
+        }
 
-      const translateResponse = await fetch(`${FUNCTIONS_URL}/translate-recipe`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(recipe),
-      });
-
-      const translatedRecipe = translateResponse.ok ? await translateResponse.json() : recipe;
-
-      const macrosResponse = await fetch(`${FUNCTIONS_URL}/calculate-macros`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ ingredients: translatedRecipe.ingredients }),
-      });
-
-      const macros = macrosResponse.ok ? await macrosResponse.json() : {};
-
-      const finalRecipe = {
-        ...translatedRecipe,
-        ...macros,
-        sourceUrl: url,
-      };
-
-      res.status(200).json(finalRecipe);
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-    return;
-  }
-
-  if (req.method === 'POST' && req.url === '/api/recipes/translate') {
-    try {
-      const recipe = req.body;
-
-      const translateResponse = await fetch(`${FUNCTIONS_URL}/translate-recipe`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(recipe),
-      });
-
-      if (!translateResponse.ok) {
-        throw new Error(`Failed to translate: ${translateResponse.statusText}`);
-      }
-
-      const translated = await translateResponse.json();
-      res.status(200).json(translated);
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-    return;
-  }
-
-  if (req.method === 'POST' && req.url === '/api/recipes/calculate-macros') {
-    try {
-      const { ingredients } = req.body;
-
-      if (!ingredients || !Array.isArray(ingredients)) {
-        res.status(400).json({ error: 'Ingredients array required' });
+        const translated = await translateResponse.json();
+        res.status(200).json(translated);
         return;
       }
 
-      const macrosResponse = await fetch(`${FUNCTIONS_URL}/calculate-macros`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ ingredients }),
-      });
+      if (action === 'calculate-macros') {
+        const { ingredients } = req.body;
 
-      if (!macrosResponse.ok) {
-        throw new Error(`Failed to calculate macros: ${macrosResponse.statusText}`);
+        if (!ingredients || !Array.isArray(ingredients)) {
+          res.status(400).json({ error: 'Ingredients array required' });
+          return;
+        }
+
+        const macrosResponse = await fetch(`${FUNCTIONS_URL}/calculate-macros`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${supabaseKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ ingredients }),
+        });
+
+        if (!macrosResponse.ok) {
+          throw new Error(`Failed to calculate macros: ${macrosResponse.statusText}`);
+        }
+
+        const macros = await macrosResponse.json();
+        res.status(200).json(macros);
+        return;
       }
 
-      const macros = await macrosResponse.json();
-      res.status(200).json(macros);
-    } catch (error) {
-      res.status(500).json({ error: error.message });
+      res.status(400).json({ error: 'Invalid action' });
     }
-    return;
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).json({ error: error.message });
   }
-
-  res.status(404).json({ error: 'Not found' });
 };
