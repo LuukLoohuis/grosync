@@ -11,6 +11,7 @@ import RecipeEditDialog from '@/components/RecipeEditDialog';
 import RecipeViewDialog from '@/components/RecipeViewDialog';
 import MacrosDialog from '@/components/MacrosDialog';
 import { fetchRecipeFromUrl, translateRecipe, calculateMacros } from '@/services/recipeApi';
+import RecipeSuggestDialog from '@/components/RecipeSuggestDialog';
 
 const RecipeList = () => {
   const { recipes, addRecipe, removeRecipe, addRecipeToGroceryList, updateRecipeImage, updateRecipe } = useAppContext();
