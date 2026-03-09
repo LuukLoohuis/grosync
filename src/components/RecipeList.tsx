@@ -243,6 +243,8 @@ const RecipeList = () => {
       </Dialog>
 
       <RecipeSuggestDialog />
+
+      {recipes.length === 0 && (
         <div className="text-center py-12 text-muted-foreground">
           <ChefHat className="h-10 w-10 mx-auto mb-2 opacity-40" />
           <p className="font-display text-lg">No recipes yet</p>
