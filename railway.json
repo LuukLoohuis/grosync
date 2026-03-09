@@ -1,9 +1,0 @@
-{
-  "build": {
-    "builder": "nixpacks",
-    "buildpacks": ["node"]
-  },
-  "deploy": {
-    "startCommand": "node index.js"
-  }
-}
