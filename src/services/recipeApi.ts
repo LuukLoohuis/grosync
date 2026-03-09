@@ -1,5 +1,7 @@
-// Recipe API service
-const API_BASE_URL = process.env.REACT_APP_API_URL || '';
+// Recipe API service - Direct calls to Supabase Edge Functions
+const SUPABASE_PROJECT_ID = 'wguzdygvwtacfbzqwnxa';
+const FUNCTIONS_URL = `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1`;
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicmVmIjoiYWJjZTEyMzQ1Njc4OTBhYmNkZWYiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTY5NTI2NTE1MCwiZXhwIjoyNDYxODQxMTUwfQ.Yy-TT0SLbDjXYl-fFNQIrBzFG0xd9yJvVKRnz4s4fKk';
 
 export interface RecipeData {
   url?: string;
@@ -19,46 +21,70 @@ export interface MacrosData {
 }
 
 export async function fetchRecipeFromUrl(url: string) {
-  const response = await fetch(`${API_BASE_URL}/api/recipes?action=fetch-from-url`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ url }),
-  });
+  try {
+    const response = await fetch(`${FUNCTIONS_URL}/fetch-url-meta`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ url }),
+    });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to fetch recipe');
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to fetch recipe');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('fetchRecipeFromUrl error:', error);
+    throw error;
   }
-
-  return await response.json();
 }
 
 export async function translateRecipe(recipe: RecipeData) {
-  const response = await fetch(`${API_BASE_URL}/api/recipes?action=translate`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(recipe),
-  });
+  try {
+    const response = await fetch(`${FUNCTIONS_URL}/translate-recipe`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(recipe),
+    });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to translate recipe');
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to translate recipe');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('translateRecipe error:', error);
+    throw error;
   }
-
-  return await response.json();
 }
 
 export async function calculateMacros(ingredients: string[]) {
-  const response = await fetch(`${API_BASE_URL}/api/recipes?action=calculate-macros`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ingredients }),
-  });
+  try {
+    const response = await fetch(`${FUNCTIONS_URL}/calculate-macros`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ ingredients }),
+    });
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to calculate macros');
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Failed to calculate macros');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('calculateMacros error:', error);
+    throw error;
   }
-
-  return await response.json();
 }
