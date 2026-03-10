@@ -75,7 +75,7 @@ export const useRecipes = ({ userId }: UseRecipesOptions = {}) => {
 
   const addRecipe = useCallback(async (recipe: Omit<Recipe, 'id'>) => {
     if (!userId) return null;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('recipes')
       .insert([{
         user_id: userId,
@@ -90,6 +90,22 @@ export const useRecipes = ({ userId }: UseRecipesOptions = {}) => {
       }])
       .select()
       .single();
+    if (error) {
+      console.error('Failed to add recipe:', error);
+      throw error;
+    }
+    if (data) {
+      // Optimistic update: add to local state immediately
+      setRecipes((prev) => {
+        if (prev.find((r) => r.id === data.id)) return prev;
+        return [...prev, {
+          id: data.id, name: data.name, description: data.description,
+          ingredients: data.ingredients || [], instructions: data.instructions || undefined,
+          imageUrl: data.image_url || undefined, sourceUrl: data.source_url || undefined,
+          macros: data.macros as any || undefined, servings: data.servings || 4,
+        }];
+      });
+    }
     return data?.id || null;
   }, [userId]);
 
