@@ -206,6 +206,11 @@ const RecipeList = () => {
                   ✅ Recept opgehaald van URL — je kunt alles hieronder aanpassen.
                 </div>
               )}
+              {fetchedImageUrl && (
+                <div className="aspect-video w-full overflow-hidden rounded-lg bg-muted">
+                  <img src={fetchedImageUrl} alt="Recipe preview" className="w-full h-full object-cover" />
+                </div>
+              )}
               <Input placeholder="Recept naam" value={name} onChange={(e) => setName(e.target.value)} />
               <Input placeholder="Korte beschrijving" value={description} onChange={(e) => setDescription(e.target.value)} />
               {mode === 'manual' && (
