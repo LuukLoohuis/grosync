@@ -41,6 +41,33 @@ export type Database = {
         }
         Relationships: []
       }
+      purchase_history: {
+        Row: {
+          created_at: string
+          id: string
+          item_name: string
+          last_purchased_at: string
+          purchase_count: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_name: string
+          last_purchased_at?: string
+          purchase_count?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_name?: string
+          last_purchased_at?: string
+          purchase_count?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       recipes: {
         Row: {
           created_at: string

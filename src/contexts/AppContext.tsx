@@ -2,7 +2,13 @@ import React, { createContext, useContext } from 'react';
 import { useGroceryItems } from '@/hooks/useGroceryItems';
 import { useRecipes } from '@/hooks/useRecipes';
 import { useUsuals } from '@/hooks/useUsuals';
+import { usePurchaseHistory } from '@/hooks/usePurchaseHistory';
 import { GroceryItem, Recipe, UsualItem } from '@/types';
+
+interface FrequentItem {
+  name: string;
+  count: number;
+}
 
 interface AppContextType {
   userId: string | null;
@@ -10,6 +16,8 @@ interface AppContextType {
   recipes: Recipe[];
   usuals: UsualItem[];
   loading: boolean;
+  frequentItems: FrequentItem[];
+  trackPurchase: (itemName: string) => Promise<void>;
   addGroceryItem: (name: string, fromRecipe?: string) => Promise<void>;
   toggleGroceryItem: (id: string) => Promise<void>;
   removeGroceryItem: (id: string) => Promise<void>;
@@ -37,6 +45,7 @@ export const AppProvider = ({ children, userId }: { children: React.ReactNode; u
   const grocery = useGroceryItems({ userId });
   const recipeHook = useRecipes({ userId });
   const usualsHook = useUsuals({ userId });
+  const purchaseHook = usePurchaseHistory(userId);
 
   const value: AppContextType = {
     userId,
@@ -44,6 +53,8 @@ export const AppProvider = ({ children, userId }: { children: React.ReactNode; u
     recipes: recipeHook.recipes,
     usuals: usualsHook.usuals,
     loading: grocery.loading || recipeHook.loading || usualsHook.loading,
+    frequentItems: purchaseHook.frequentItems,
+    trackPurchase: purchaseHook.trackPurchase,
     addGroceryItem: grocery.addGroceryItem,
     toggleGroceryItem: grocery.toggleGroceryItem,
     removeGroceryItem: grocery.removeGroceryItem,
