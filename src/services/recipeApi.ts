@@ -1,7 +1,6 @@
 // Recipe API service - Direct calls to Supabase Edge Functions
-const SUPABASE_PROJECT_ID = 'wguzdygvwtacfbzqwnxa';
-const FUNCTIONS_URL = `https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1`;
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndndXpkeWd2d3RhY2ZienF3bnhhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIxMDE4NzQsImV4cCI6MjA4NzY3Nzg3NH0.RA5Y83I3m-R1tqhtQtTJp2y4f2rCK1OAle0uCqe-EW0';
+const FUNCTIONS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 export interface RecipeData {
   url?: string;
