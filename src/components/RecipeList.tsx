@@ -25,10 +25,11 @@ const RecipeList = () => {
   const [servings, setServings] = useState<number>(4);
   const [fetchingMeta, setFetchingMeta] = useState(false);
   const [fetchedMacros, setFetchedMacros] = useState<any>(null);
+  const [fetchedImageUrl, setFetchedImageUrl] = useState<string | undefined>();
   const [translating, setTranslating] = useState(false);
 
   const resetForm = () => {
-    setName(''); setDescription(''); setIngredientText(''); setInstructions(''); setSourceUrl(''); setMode('choose'); setFetchedMacros(null); setServings(4); setTranslating(false);
+    setName(''); setDescription(''); setIngredientText(''); setInstructions(''); setSourceUrl(''); setMode('choose'); setFetchedMacros(null); setFetchedImageUrl(undefined); setServings(4); setTranslating(false);
   };
 
   const fetchFromUrl = async () => {
@@ -51,6 +52,7 @@ const RecipeList = () => {
       }
       if (data?.instructions) setInstructions(data.instructions);
       if (data?.servings) setServings(data.servings);
+      if (data?.imageUrl) setFetchedImageUrl(data.imageUrl);
       // Extract macros from response
       const macros = {
         calories: data?.calories,
@@ -132,6 +134,7 @@ const RecipeList = () => {
       ingredients: ingredientText.split('\n').map((l) => l.trim()).filter(Boolean),
       instructions: instructions.trim() || undefined,
       sourceUrl: trimmedUrl,
+      imageUrl: fetchedImageUrl,
       macros: fetchedMacros || undefined,
       servings: servings,
     });
@@ -201,6 +204,11 @@ const RecipeList = () => {
               {mode === 'url' && (
                 <div className="text-xs text-muted-foreground bg-muted/50 rounded-md p-2">
                   ✅ Recept opgehaald van URL — je kunt alles hieronder aanpassen.
+                </div>
+              )}
+              {fetchedImageUrl && (
+                <div className="aspect-video w-full overflow-hidden rounded-lg bg-muted">
+                  <img src={fetchedImageUrl} alt="Recipe preview" className="w-full h-full object-cover" />
                 </div>
               )}
               <Input placeholder="Recept naam" value={name} onChange={(e) => setName(e.target.value)} />
