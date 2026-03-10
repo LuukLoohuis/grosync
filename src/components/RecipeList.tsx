@@ -52,6 +52,7 @@ const RecipeList = () => {
       }
       if (data?.instructions) setInstructions(data.instructions);
       if (data?.servings) setServings(data.servings);
+      if (data?.imageUrl) setFetchedImageUrl(data.imageUrl);
       // Extract macros from response
       const macros = {
         calories: data?.calories,
