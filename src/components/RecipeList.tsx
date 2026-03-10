@@ -134,6 +134,7 @@ const RecipeList = () => {
       ingredients: ingredientText.split('\n').map((l) => l.trim()).filter(Boolean),
       instructions: instructions.trim() || undefined,
       sourceUrl: trimmedUrl,
+      imageUrl: fetchedImageUrl,
       macros: fetchedMacros || undefined,
       servings: servings,
     });
