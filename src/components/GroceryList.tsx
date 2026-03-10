@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, Plus, Trash2, X, Merge, Route } from 'lucide-react';
+import { Check, Plus, Trash2, X, Merge, Route, TrendingUp } from 'lucide-react';
 import { useAppContext } from '@/contexts/AppContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -8,23 +8,37 @@ import { sortByStoreRoute } from '@/lib/storeRouteSort';
 const GroceryList = () => {
   const [newItem, setNewItem] = useState('');
   const [routeMode, setRouteMode] = useState(false);
-  const { groceryItems, addGroceryItem, toggleGroceryItem, removeGroceryItem, clearCheckedItems, clearAllItems, mergeDuplicateItems } = useAppContext();
+  const { groceryItems, addGroceryItem, toggleGroceryItem, removeGroceryItem, clearCheckedItems, clearAllItems, mergeDuplicateItems, frequentItems, trackPurchase } = useAppContext();
 
-  const handleAdd = () => {
-    if (newItem.trim()) {
-      addGroceryItem(newItem.trim());
+  const handleAdd = (name?: string) => {
+    const item = (name || newItem).trim();
+    if (item) {
+      addGroceryItem(item);
       setNewItem('');
     }
+  };
+
+  const handleToggle = async (id: string) => {
+    const item = groceryItems.find((i) => i.id === id);
+    if (item && !item.checked) {
+      // Track when checking off (= purchased)
+      trackPurchase(item.name);
+    }
+    toggleGroceryItem(id);
   };
 
   const unchecked = groceryItems.filter((i) => !i.checked);
   const checked = groceryItems.filter((i) => i.checked);
   const categorized = routeMode ? sortByStoreRoute(unchecked) : null;
 
+  // Filter suggestions: exclude items already in the list
+  const currentNames = groceryItems.map((i) => i.name.toLowerCase());
+  const suggestions = frequentItems.filter((f) => !currentNames.includes(f.name));
+
   const renderItem = (item: typeof unchecked[0]) =>
   <div key={item.id} className="flex items-center gap-3 p-3 bg-card rounded-lg shadow-soft animate-fade-in group">
       <button
-      onClick={() => toggleGroceryItem(item.id)}
+      onClick={() => handleToggle(item.id)}
       className="h-5 w-5 rounded-full border-2 border-primary shrink-0 flex items-center justify-center hover:bg-primary/10 transition-colors" />
 
       <div className="flex-1 min-w-0">
@@ -48,10 +62,26 @@ const GroceryList = () => {
           onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
           className="bg-card border-border font-body" />
 
-        <Button onClick={handleAdd} size="icon" className="shrink-0">
+        <Button onClick={() => handleAdd()} size="icon" className="shrink-0">
           <Plus className="h-4 w-4" />
         </Button>
       </div>
+
+      {/* Frequent item suggestions */}
+      {suggestions.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          <TrendingUp className="h-4 w-4 text-muted-foreground mt-1" />
+          {suggestions.map((item) => (
+            <button
+              key={item.name}
+              onClick={() => handleAdd(item.name)}
+              className="text-xs px-3 py-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors font-medium capitalize"
+            >
+              + {item.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Actions */}
       {groceryItems.length > 0 &&
