@@ -29,7 +29,7 @@ const RecipeList = () => {
   const [translating, setTranslating] = useState(false);
 
   const resetForm = () => {
-    setName(''); setDescription(''); setIngredientText(''); setInstructions(''); setSourceUrl(''); setMode('choose'); setFetchedMacros(null); setServings(4); setTranslating(false);
+    setName(''); setDescription(''); setIngredientText(''); setInstructions(''); setSourceUrl(''); setMode('choose'); setFetchedMacros(null); setFetchedImageUrl(undefined); setServings(4); setTranslating(false);
   };
 
   const fetchFromUrl = async () => {
