@@ -41,7 +41,7 @@ const ShareButton = () => {
     } else {
       const { data: list, error } = await supabase
         .from('shared_lists')
-        .insert({ name: 'GroSync', user_id: userId })
+        .insert({ name: 'CoupleCart', user_id: userId })
         .select()
         .single();
 
@@ -53,7 +53,7 @@ const ShareButton = () => {
       shareCode = list.share_code;
     }
 
-    const url = `${window.location.origin}/shared/${shareCode}`;
+    const url = `${window.location.origin}/#/shared/${shareCode}`;
     await navigator.clipboard.writeText(url);
     toast.dismiss();
     toast.success('Link gekopieerd naar klembord!');
