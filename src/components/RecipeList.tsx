@@ -269,7 +269,10 @@ const RecipeList = () => {
               </div>
             )}
             <div className="p-4">
-              <button onClick={() => removeRecipe(recipe.id)} className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 text-destructive bg-background/80 rounded-full p-1 transition-opacity">
+              <button onClick={async () => {
+                try { await removeRecipe(recipe.id); toast.success('Recept verwijderd'); }
+                catch { toast.error('Kon recept niet verwijderen. Ben je ingelogd?'); }
+              }} className="absolute top-3 right-3 sm:opacity-0 sm:group-hover:opacity-100 text-destructive bg-background/80 rounded-full p-1 transition-opacity">
                 <X className="h-4 w-4" />
               </button>
               <h3 className="font-display text-lg text-foreground">{recipe.name}</h3>

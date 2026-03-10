@@ -107,7 +107,13 @@ export const useRecipes = ({ userId }: UseRecipesOptions = {}) => {
   }, []);
 
   const removeRecipe = useCallback(async (id: string) => {
-    await supabase.from('recipes').delete().eq('id', id);
+    const { error } = await supabase.from('recipes').delete().eq('id', id);
+    if (error) {
+      console.error('Failed to delete recipe:', error);
+      throw error;
+    }
+    // Optimistic: remove from local state in case realtime is slow
+    setRecipes((prev) => prev.filter((r) => r.id !== id));
   }, []);
 
   const updateRecipeImage = useCallback(async (id: string, imageUrl: string) => {
