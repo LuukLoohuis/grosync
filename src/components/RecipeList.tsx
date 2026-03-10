@@ -38,7 +38,7 @@ const RecipeList = () => {
     try {
       setFetchingMeta(true);
       const data = await fetchRecipeFromUrl(url);
-      if (data?.name) setName(data.name);
+      if (data?.name || data?.title) setName(data.name || data.title);
       if (data?.description) setDescription(data.description);
       if (data?.ingredients?.length) {
         setIngredientText(
