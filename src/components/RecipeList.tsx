@@ -25,6 +25,7 @@ const RecipeList = () => {
   const [servings, setServings] = useState<number>(4);
   const [fetchingMeta, setFetchingMeta] = useState(false);
   const [fetchedMacros, setFetchedMacros] = useState<any>(null);
+  const [fetchedImageUrl, setFetchedImageUrl] = useState<string | undefined>();
   const [translating, setTranslating] = useState(false);
 
   const resetForm = () => {
