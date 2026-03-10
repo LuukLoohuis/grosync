@@ -155,7 +155,7 @@ const GroceryList = () => {
           {checked.map((item) =>
         <div key={item.id} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg group">
               <button
-            onClick={() => toggleGroceryItem(item.id)}
+            onClick={() => handleToggle(item.id)}
             className="h-5 w-5 rounded-full bg-primary shrink-0 flex items-center justify-center animate-check-bounce">
 
                 <Check className="h-3 w-3 text-primary-foreground" />
