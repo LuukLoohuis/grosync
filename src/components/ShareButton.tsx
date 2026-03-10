@@ -53,7 +53,7 @@ const ShareButton = () => {
       shareCode = list.share_code;
     }
 
-    const url = `${window.location.origin}/shared/${shareCode}`;
+    const url = `${window.location.origin}/#/shared/${shareCode}`;
     await navigator.clipboard.writeText(url);
     toast.dismiss();
     toast.success('Link gekopieerd naar klembord!');
