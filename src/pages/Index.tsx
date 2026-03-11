@@ -90,6 +90,7 @@ const Index = () => {
         {tab === 'list' && <GroceryList />}
         {tab === 'usuals' && <UsualsList />}
         {tab === 'recipes' && <RecipeList />}
+        {tab === 'planner' && <MealPlanner />}
       </main>
     </div>
   );
