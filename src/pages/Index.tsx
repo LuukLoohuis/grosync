@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import couplecartLogo from '@/assets/couplecart-logo.png';
 
 const Index = () => {
-  const [tab, setTab] = useState<'list' | 'usuals' | 'recipes'>('list');
+  const [tab, setTab] = useState<'list' | 'usuals' | 'recipes' | 'planner'>('list');
   const { groceryItems } = useAppContext();
   const { signOut } = useAuth();
   const uncheckedCount = groceryItems.filter((i) => !i.checked).length;
