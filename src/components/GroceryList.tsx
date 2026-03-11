@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, Plus, Trash2, X, Merge, Route, TrendingUp, Euro } from 'lucide-react';
+import { Check, Plus, Trash2, X, Merge, Route, TrendingUp, Euro, ExternalLink } from 'lucide-react';
 import { useAppContext } from '@/contexts/AppContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -46,14 +46,29 @@ const GroceryList = () => {
   const currentNames = groceryItems.map((i) => i.name.toLowerCase());
   const suggestions = frequentItems.filter((f) => !currentNames.includes(f.name));
 
+  // Strip quantity prefix for cleaner search (e.g. "2 bananen" -> "bananen")
+  const toSearchQuery = (name: string) => {
+    const stripped = name.replace(/^\d+(?:[.,]\d+)?\s+/, '');
+    return encodeURIComponent(stripped);
+  };
+
   const renderItem = (item: typeof unchecked[0]) =>
     <div key={item.id} className="flex items-center gap-3 p-3 bg-card rounded-lg shadow-soft animate-fade-in group">
       <button
         onClick={() => handleToggle(item.id)}
         className="h-5 w-5 rounded-full border-2 border-primary shrink-0 flex items-center justify-center hover:bg-primary/10 transition-colors" />
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 flex items-center gap-1.5">
         <span className="font-body">{item.name}</span>
-        {item.fromRecipe && <span className="text-xs text-muted-foreground ml-2">from {item.fromRecipe}</span>}
+        {item.fromRecipe && <span className="text-xs text-muted-foreground">from {item.fromRecipe}</span>}
+        <a
+          href={`https://www.ah.nl/zoeken?query=${toSearchQuery(item.name)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          title="Zoek op ah.nl"
+          className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
+        >
+          <ExternalLink className="h-3.5 w-3.5 text-[#00811c] hover:text-[#006616]" />
+        </a>
       </div>
       {showPrices && (
         <div className="flex items-center gap-1 shrink-0">
