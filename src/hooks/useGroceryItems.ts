@@ -55,7 +55,7 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
           } else if (payload.eventType === 'UPDATE') {
             const d = payload.new as any;
             setGroceryItems((prev) =>
-              prev.map((i) => (i.id === d.id ? { id: d.id, name: d.name, checked: d.checked, fromRecipe: d.from_recipe || undefined } : i))
+              prev.map((i) => (i.id === d.id ? { id: d.id, name: d.name, checked: d.checked, fromRecipe: d.from_recipe || undefined, price: d.price ?? null } : i))
             );
           } else if (payload.eventType === 'DELETE') {
             setGroceryItems((prev) => prev.filter((i) => i.id !== (payload.old as any).id));
