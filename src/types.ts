@@ -4,6 +4,7 @@ export interface GroceryItem {
   checked: boolean;
   category?: string;
   fromRecipe?: string;
+  price?: number | null;
 }
 
 export interface UsualItem {

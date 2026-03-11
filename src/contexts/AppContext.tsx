@@ -13,6 +13,7 @@ interface FrequentItem {
 interface AppContextType {
   userId: string | null;
   groceryItems: GroceryItem[];
+  updateGroceryItemPrice: (id: string, price: number | null) => Promise<void>;
   recipes: Recipe[];
   usuals: UsualItem[];
   loading: boolean;
@@ -50,6 +51,7 @@ export const AppProvider = ({ children, userId }: { children: React.ReactNode; u
   const value: AppContextType = {
     userId,
     groceryItems: grocery.groceryItems,
+    updateGroceryItemPrice: grocery.updateGroceryItemPrice,
     recipes: recipeHook.recipes,
     usuals: usualsHook.usuals,
     loading: grocery.loading || recipeHook.loading || usualsHook.loading,

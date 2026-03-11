@@ -27,6 +27,7 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
           name: d.name,
           checked: d.checked,
           fromRecipe: d.from_recipe || undefined,
+          price: (d as any).price ?? null,
         }))
       );
       setLoading(false);
@@ -49,12 +50,12 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
             const d = payload.new as any;
             setGroceryItems((prev) => {
               if (prev.find((i) => i.id === d.id)) return prev;
-              return [...prev, { id: d.id, name: d.name, checked: d.checked, fromRecipe: d.from_recipe || undefined }];
+              return [...prev, { id: d.id, name: d.name, checked: d.checked, fromRecipe: d.from_recipe || undefined, price: d.price ?? null }];
             });
           } else if (payload.eventType === 'UPDATE') {
             const d = payload.new as any;
             setGroceryItems((prev) =>
-              prev.map((i) => (i.id === d.id ? { id: d.id, name: d.name, checked: d.checked, fromRecipe: d.from_recipe || undefined } : i))
+              prev.map((i) => (i.id === d.id ? { id: d.id, name: d.name, checked: d.checked, fromRecipe: d.from_recipe || undefined, price: d.price ?? null } : i))
             );
           } else if (payload.eventType === 'DELETE') {
             setGroceryItems((prev) => prev.filter((i) => i.id !== (payload.old as any).id));
@@ -169,6 +170,11 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
     }
   }, [userId, groceryItems]);
 
+  const updateGroceryItemPrice = useCallback(async (id: string, price: number | null) => {
+    setGroceryItems((prev) => prev.map((i) => (i.id === id ? { ...i, price } : i)));
+    await supabase.from('grocery_items').update({ price } as any).eq('id', id);
+  }, []);
+
   return {
     groceryItems,
     loading,
@@ -179,5 +185,6 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
     clearAllItems,
     addRecipeToGroceryList,
     mergeDuplicateItems,
+    updateGroceryItemPrice,
   };
 };
