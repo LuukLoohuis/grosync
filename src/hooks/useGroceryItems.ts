@@ -27,6 +27,7 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
           name: d.name,
           checked: d.checked,
           fromRecipe: d.from_recipe || undefined,
+          price: (d as any).price ?? null,
         }))
       );
       setLoading(false);
