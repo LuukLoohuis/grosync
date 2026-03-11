@@ -170,6 +170,11 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
     }
   }, [userId, groceryItems]);
 
+  const updateGroceryItemPrice = useCallback(async (id: string, price: number | null) => {
+    setGroceryItems((prev) => prev.map((i) => (i.id === id ? { ...i, price } : i)));
+    await supabase.from('grocery_items').update({ price } as any).eq('id', id);
+  }, []);
+
   return {
     groceryItems,
     loading,
@@ -180,5 +185,6 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
     clearAllItems,
     addRecipeToGroceryList,
     mergeDuplicateItems,
+    updateGroceryItemPrice,
   };
 };
