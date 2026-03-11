@@ -50,7 +50,7 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
             const d = payload.new as any;
             setGroceryItems((prev) => {
               if (prev.find((i) => i.id === d.id)) return prev;
-              return [...prev, { id: d.id, name: d.name, checked: d.checked, fromRecipe: d.from_recipe || undefined }];
+              return [...prev, { id: d.id, name: d.name, checked: d.checked, fromRecipe: d.from_recipe || undefined, price: d.price ?? null }];
             });
           } else if (payload.eventType === 'UPDATE') {
             const d = payload.new as any;
