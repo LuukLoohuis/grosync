@@ -63,7 +63,7 @@ const Index = () => {
             }`}
           >
             <Star className="h-4 w-4" />
-            <span className="font-bold">Usuals</span>
+            <span className="font-bold">Favoriets</span>
           </button>
           <button
             onClick={() => setTab('recipes')}
