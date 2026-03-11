@@ -1,15 +1,15 @@
 import { useState } from 'react';
-import { Check, Plus, Trash2, X, Merge, Route, TrendingUp, Euro, ExternalLink } from 'lucide-react';
+import { Check, Plus, Trash2, X, Merge, Route, TrendingUp, ExternalLink } from 'lucide-react';
 import { useAppContext } from '@/contexts/AppContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { sortByStoreRoute } from '@/lib/storeRouteSort';
+import { translateForSearch } from '@/lib/groceryTranslations';
 
 const GroceryList = () => {
   const [newItem, setNewItem] = useState('');
   const [routeMode, setRouteMode] = useState(false);
-  const [showPrices, setShowPrices] = useState(false);
-  const { groceryItems, addGroceryItem, toggleGroceryItem, removeGroceryItem, clearCheckedItems, clearAllItems, mergeDuplicateItems, frequentItems, trackPurchase, updateGroceryItemPrice } = useAppContext();
+  const { groceryItems, addGroceryItem, toggleGroceryItem, removeGroceryItem, clearCheckedItems, clearAllItems, mergeDuplicateItems, frequentItems, trackPurchase } = useAppContext();
 
   const handleAdd = (name?: string) => {
     const item = (name || newItem).trim();
@@ -27,29 +27,19 @@ const GroceryList = () => {
     toggleGroceryItem(id);
   };
 
-  const handlePriceChange = (id: string, value: string) => {
-    const parsed = value === '' ? null : parseFloat(value.replace(',', '.'));
-    if (value !== '' && (isNaN(parsed!) || parsed! < 0)) return;
-    updateGroceryItemPrice(id, parsed);
-  };
-
   const unchecked = groceryItems.filter((i) => !i.checked);
   const checked = groceryItems.filter((i) => i.checked);
   const categorized = routeMode ? sortByStoreRoute(unchecked) : null;
-
-  // Budget totals
-  const uncheckedTotal = unchecked.reduce((sum, i) => sum + (i.price || 0), 0);
-  const checkedTotal = checked.reduce((sum, i) => sum + (i.price || 0), 0);
-  const grandTotal = uncheckedTotal + checkedTotal;
 
   // Filter suggestions
   const currentNames = groceryItems.map((i) => i.name.toLowerCase());
   const suggestions = frequentItems.filter((f) => !currentNames.includes(f.name));
 
-  // Strip quantity prefix for cleaner search (e.g. "2 bananen" -> "bananen")
+  // Strip quantity prefix and translate for AH search
   const toSearchQuery = (name: string) => {
     const stripped = name.replace(/^\d+(?:[.,]\d+)?\s+/, '');
-    return encodeURIComponent(stripped);
+    const translated = translateForSearch(stripped);
+    return encodeURIComponent(translated);
   };
 
   const renderItem = (item: typeof unchecked[0]) =>
@@ -70,19 +60,6 @@ const GroceryList = () => {
           <ExternalLink className="h-3.5 w-3.5 text-[#00811c] hover:text-[#006616]" />
         </a>
       </div>
-      {showPrices && (
-        <div className="flex items-center gap-1 shrink-0">
-          <span className="text-xs text-muted-foreground">€</span>
-          <input
-            type="text"
-            inputMode="decimal"
-            value={item.price != null ? String(item.price) : ''}
-            onChange={(e) => handlePriceChange(item.id, e.target.value)}
-            placeholder="0.00"
-            className="w-16 text-right text-sm bg-muted/50 border border-border rounded px-1.5 py-0.5 font-body focus:outline-none focus:ring-1 focus:ring-primary"
-          />
-        </div>
-      )}
       <button onClick={() => removeGroceryItem(item.id)} className="opacity-0 group-hover:opacity-100 text-destructive transition-opacity">
         <X className="h-4 w-4" />
       </button>
@@ -122,24 +99,14 @@ const GroceryList = () => {
       {/* Actions */}
       {groceryItems.length > 0 &&
         <div className="flex justify-between items-center gap-3">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setRouteMode(!routeMode)}
-              className={`text-base flex items-center gap-2 font-semibold py-1.5 px-3 rounded-md transition-colors ${
-                routeMode ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
-            >
-              <Route className="h-5 w-5" />
-              {routeMode ? 'Looproute aan' : 'Looproute'}
-            </button>
-            <button
-              onClick={() => setShowPrices(!showPrices)}
-              className={`text-base flex items-center gap-2 font-semibold py-1.5 px-3 rounded-md transition-colors ${
-                showPrices ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
-            >
-              <Euro className="h-5 w-5" />
-              {showPrices ? 'Budget aan' : 'Budget'}
-            </button>
-          </div>
+          <button
+            onClick={() => setRouteMode(!routeMode)}
+            className={`text-base flex items-center gap-2 font-semibold py-1.5 px-3 rounded-md transition-colors ${
+              routeMode ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
+          >
+            <Route className="h-5 w-5" />
+            {routeMode ? 'Looproute aan' : 'Looproute'}
+          </button>
           <div className="flex gap-3">
             <button
               onClick={mergeDuplicateItems}
@@ -154,26 +121,6 @@ const GroceryList = () => {
           </div>
         </div>
       }
-
-      {/* Budget summary */}
-      {showPrices && groceryItems.length > 0 && (
-        <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 space-y-1">
-          <div className="flex justify-between text-sm font-body">
-            <span className="text-muted-foreground">Nog te kopen ({unchecked.length})</span>
-            <span className="font-semibold">€{uncheckedTotal.toFixed(2)}</span>
-          </div>
-          {checked.length > 0 && (
-            <div className="flex justify-between text-sm font-body">
-              <span className="text-muted-foreground">Afgevinkt ({checked.length})</span>
-              <span className="font-semibold">€{checkedTotal.toFixed(2)}</span>
-            </div>
-          )}
-          <div className="border-t border-primary/20 pt-1 flex justify-between text-base font-display font-bold">
-            <span>Totaal</span>
-            <span className="text-primary">€{grandTotal.toFixed(2)}</span>
-          </div>
-        </div>
-      )}
 
       {/* Empty state */}
       {unchecked.length === 0 && checked.length === 0 &&
@@ -223,9 +170,6 @@ const GroceryList = () => {
                 <Check className="h-3 w-3 text-primary-foreground" />
               </button>
               <span className="font-body line-through text-muted-foreground flex-1">{item.name}</span>
-              {showPrices && item.price != null && (
-                <span className="text-xs text-muted-foreground font-body">€{item.price.toFixed(2)}</span>
-              )}
               <button onClick={() => removeGroceryItem(item.id)} className="opacity-0 group-hover:opacity-100 text-destructive transition-opacity">
                 <X className="h-4 w-4" />
               </button>
