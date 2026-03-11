@@ -74,6 +74,15 @@ const Index = () => {
             <ChefHat className="h-4 w-4" />
             <span className="font-bold">Recipes</span>
           </button>
+          <button
+            onClick={() => setTab('planner')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-md text-sm font-medium transition-all ${
+              tab === 'planner' ? 'bg-card shadow-soft text-foreground' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <CalendarDays className="h-4 w-4" />
+            <span className="font-bold">Plan</span>
+          </button>
         </div>
       </div>
 
