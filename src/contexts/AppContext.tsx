@@ -13,7 +13,6 @@ interface FrequentItem {
 interface AppContextType {
   userId: string | null;
   groceryItems: GroceryItem[];
-  updateGroceryItemPrice: (id: string, price: number | null) => Promise<void>;
   recipes: Recipe[];
   usuals: UsualItem[];
   loading: boolean;
