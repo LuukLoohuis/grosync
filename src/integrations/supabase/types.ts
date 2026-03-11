@@ -44,6 +44,47 @@ export type Database = {
         }
         Relationships: []
       }
+      meal_plans: {
+        Row: {
+          created_at: string
+          custom_meal_name: string | null
+          day_index: number
+          id: string
+          meal_type: string
+          recipe_id: string | null
+          user_id: string
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          custom_meal_name?: string | null
+          day_index: number
+          id?: string
+          meal_type: string
+          recipe_id?: string | null
+          user_id: string
+          week_start: string
+        }
+        Update: {
+          created_at?: string
+          custom_meal_name?: string | null
+          day_index?: number
+          id?: string
+          meal_type?: string
+          recipe_id?: string | null
+          user_id?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meal_plans_recipe_id_fkey"
+            columns: ["recipe_id"]
+            isOneToOne: false
+            referencedRelation: "recipes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       purchase_history: {
         Row: {
           created_at: string

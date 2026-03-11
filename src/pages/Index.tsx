@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { ShoppingCart, ChefHat, LogOut, Star } from 'lucide-react';
+import { ShoppingCart, ChefHat, LogOut, Star, CalendarDays } from 'lucide-react';
 import GroceryList from '@/components/GroceryList';
 import RecipeList from '@/components/RecipeList';
 import UsualsList from '@/components/UsualsList';
+import MealPlanner from '@/components/MealPlanner';
 import ShareButton from '@/components/ShareButton';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppContext } from '@/contexts/AppContext';
@@ -10,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import couplecartLogo from '@/assets/couplecart-logo.png';
 
 const Index = () => {
-  const [tab, setTab] = useState<'list' | 'usuals' | 'recipes'>('list');
+  const [tab, setTab] = useState<'list' | 'usuals' | 'recipes' | 'planner'>('list');
   const { groceryItems } = useAppContext();
   const { signOut } = useAuth();
   const uncheckedCount = groceryItems.filter((i) => !i.checked).length;
@@ -73,6 +74,15 @@ const Index = () => {
             <ChefHat className="h-4 w-4" />
             <span className="font-bold">Recipes</span>
           </button>
+          <button
+            onClick={() => setTab('planner')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-md text-sm font-medium transition-all ${
+              tab === 'planner' ? 'bg-card shadow-soft text-foreground' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <CalendarDays className="h-4 w-4" />
+            <span className="font-bold">Plan</span>
+          </button>
         </div>
       </div>
 
@@ -80,6 +90,7 @@ const Index = () => {
         {tab === 'list' && <GroceryList />}
         {tab === 'usuals' && <UsualsList />}
         {tab === 'recipes' && <RecipeList />}
+        {tab === 'planner' && <MealPlanner />}
       </main>
     </div>
   );
