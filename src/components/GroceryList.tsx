@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, Plus, Trash2, X, Merge, Route, TrendingUp, Euro } from 'lucide-react';
+import { Check, Plus, Trash2, X, Merge, Route, TrendingUp, Euro, ExternalLink } from 'lucide-react';
 import { useAppContext } from '@/contexts/AppContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
