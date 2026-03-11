@@ -3,6 +3,7 @@ import { ShoppingCart, ChefHat, LogOut, Star, CalendarDays } from 'lucide-react'
 import GroceryList from '@/components/GroceryList';
 import RecipeList from '@/components/RecipeList';
 import UsualsList from '@/components/UsualsList';
+import MealPlanner from '@/components/MealPlanner';
 import ShareButton from '@/components/ShareButton';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppContext } from '@/contexts/AppContext';
