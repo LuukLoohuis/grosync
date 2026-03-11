@@ -51,7 +51,7 @@ const SharedListContent = () => {
               tab === 'usuals' ? 'bg-card shadow-soft text-foreground' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            <Star className="h-4 w-4" /> Usuals
+            <Star className="h-4 w-4" /> Favoriets
           </button>
           <button
             onClick={() => setTab('recipes')}
