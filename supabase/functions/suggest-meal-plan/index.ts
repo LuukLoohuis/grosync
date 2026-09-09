@@ -11,18 +11,15 @@ Deno.serve(async (req) => {
   try {
     const { existingRecipes, emptySlots } = await req.json();
 
-    const apiKey = Deno.env.get('OPENAI_API_KEY') || Deno.env.get('LOVABLE_API_KEY');
-    const isOpenAI = !!Deno.env.get('OPENAI_API_KEY');
+    const apiKey = Deno.env.get('OPENAI_API_KEY');
     if (!apiKey) {
       return new Response(JSON.stringify({ error: 'API key not configured' }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const endpoint = isOpenAI
-      ? 'https://api.openai.com/v1/chat/completions'
-      : 'https://ai.gateway.lovable.dev/v1/chat/completions';
-    const model = isOpenAI ? 'gpt-4o-mini' : 'google/gemini-3-flash-preview';
+    const endpoint = 'https://api.openai.com/v1/chat/completions';
+    const model = 'gpt-4o-mini';
 
     const dayNames = ['Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag', 'Zondag'];
     const mealNames: Record<string, string> = { breakfast: 'ontbijt', lunch: 'lunch', dinner: 'avondeten' };

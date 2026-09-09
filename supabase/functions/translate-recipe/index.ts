@@ -8,14 +8,11 @@ Deno.serve(async (req) => {
 
   try {
     const { name, description, ingredients, instructions } = await req.json();
-    const apiKey = Deno.env.get("OPENAI_API_KEY") || Deno.env.get("LOVABLE_API_KEY");
-    const isOpenAI = !!Deno.env.get("OPENAI_API_KEY");
+    const apiKey = Deno.env.get("OPENAI_API_KEY");
     if (!apiKey) throw new Error("API key is not configured");
 
-    const endpoint = isOpenAI
-      ? "https://api.openai.com/v1/chat/completions"
-      : "https://ai.gateway.lovable.dev/v1/chat/completions";
-    const model = isOpenAI ? "gpt-4o-mini" : "google/gemini-3-flash-preview";
+    const endpoint = "https://api.openai.com/v1/chat/completions";
+    const model = "gpt-4o-mini";
 
     const prompt = `Vertaal het volgende recept naar het Nederlands. Geef het resultaat terug als JSON met exact deze velden: name, description, ingredients (array van strings), instructions (string).
 

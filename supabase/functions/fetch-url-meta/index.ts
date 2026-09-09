@@ -139,16 +139,13 @@ Deno.serve(async (req) => {
     let macros: { calories: number; protein: number; carbs: number; fat: number; fiber: number } | null = null;
     let servings: number | null = null;
 
-    const apiKey = Deno.env.get('OPENAI_API_KEY') || Deno.env.get('LOVABLE_API_KEY');
-    const isOpenAI = !!Deno.env.get('OPENAI_API_KEY');
+    const apiKey = Deno.env.get('OPENAI_API_KEY');
 
     if (apiKey && pageContent) {
       try {
         const truncated = pageContent.substring(0, 20000);
-        const endpoint = isOpenAI
-          ? 'https://api.openai.com/v1/chat/completions'
-          : 'https://ai.gateway.lovable.dev/v1/chat/completions';
-        const model = isOpenAI ? 'gpt-4o-mini' : 'google/gemini-2.5-flash';
+        const endpoint = 'https://api.openai.com/v1/chat/completions';
+        const model = 'gpt-4o-mini';
 
         const aiResponse = await fetch(endpoint, {
           method: 'POST',

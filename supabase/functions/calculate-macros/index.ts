@@ -17,8 +17,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const apiKey = Deno.env.get('OPENAI_API_KEY') || Deno.env.get('LOVABLE_API_KEY');
-    const isOpenAI = !!Deno.env.get('OPENAI_API_KEY');
+    const apiKey = Deno.env.get('OPENAI_API_KEY');
     if (!apiKey) {
       return new Response(JSON.stringify({ error: 'API key not configured' }), {
         status: 500,
@@ -26,10 +25,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    const endpoint = isOpenAI
-      ? 'https://api.openai.com/v1/chat/completions'
-      : 'https://ai.gateway.lovable.dev/v1/chat/completions';
-    const model = isOpenAI ? 'gpt-4o-mini' : 'google/gemini-2.5-flash';
+    const endpoint = 'https://api.openai.com/v1/chat/completions';
+    const model = 'gpt-4o-mini';
 
     const aiResponse = await fetch(endpoint, {
       method: 'POST',
