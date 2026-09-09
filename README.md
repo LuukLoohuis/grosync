@@ -4,7 +4,7 @@ Gedeelde boodschappenlijst met recepten, maaltijdplanner en macro's.
 
 - **Frontend:** Vite + React + TypeScript + Tailwind + shadcn/ui
 - **Backend:** Supabase (Postgres, Auth, Edge Functions)
-- **Hosting:** Cloudflare Pages
+- **Hosting:** Cloudflare Workers (static assets)
 
 ## Lokaal draaien
 
@@ -18,8 +18,8 @@ Overige scripts: `npm run build`, `npm run lint`, `npm test`.
 
 ## Omgevingsvariabelen
 
-Zie `.env.example`. Dezelfde variabelen zet je in Cloudflare Pages onder
-Settings > Environment variables (build-time, want Vite bakt ze in de bundle).
+Zie `.env.example`. Dezelfde variabelen zet je in Cloudflare onder
+Settings > Build > Build variables (build-time, want Vite bakt ze in de bundle).
 
 ## Supabase
 
@@ -40,5 +40,10 @@ Google-login loopt via de Google-provider in Supabase Auth
 
 ## Deploy
 
-Push naar `main`; Cloudflare Pages bouwt met `npm run build` en publiceert `dist`.
-`public/_redirects` zorgt voor SPA-routing.
+Push naar `main`; Cloudflare Workers Builds draait `npm run build` en daarna
+`npx wrangler deploy`. De configuratie staat in `wrangler.jsonc`: `dist` wordt
+als statische assets geserveerd, met `not_found_handling: single-page-application`
+zodat client-side routes werken.
+
+De drie `VITE_*` variabelen moeten in Cloudflare onder Settings > Build >
+Build variables staan; Vite bakt ze tijdens de build in de bundle.
