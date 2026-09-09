@@ -69,7 +69,26 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
 
   const addGroceryItem = useCallback(async (name: string, fromRecipe?: string) => {
     if (!userId) return;
-    await supabase.from('grocery_items').insert({ user_id: userId, name, from_recipe: fromRecipe || null });
+    // Zet de nieuwe rij zelf in de lijst in plaats van te wachten op de
+    // realtime-melding; die kan uitblijven of traag zijn. De subscriptie
+    // hierboven slaat een dubbele id over.
+    const { data } = await supabase
+      .from('grocery_items')
+      .insert({ user_id: userId, name, from_recipe: fromRecipe || null })
+      .select()
+      .single();
+    if (!data) return;
+    setGroceryItems((prev) =>
+      prev.find((i) => i.id === data.id)
+        ? prev
+        : [...prev, {
+            id: data.id,
+            name: data.name,
+            checked: data.checked,
+            fromRecipe: data.from_recipe || undefined,
+            price: (data as any).price ?? null,
+          }]
+    );
   }, [userId]);
 
   const toggleGroceryItem = useCallback(async (id: string) => {

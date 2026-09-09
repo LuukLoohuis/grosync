@@ -66,7 +66,18 @@ export const useUsuals = ({ userId }: UseUsualsOptions = {}) => {
 
   const addUsual = useCallback(async (name: string) => {
     if (!userId) return;
-    await supabase.from('usuals').insert({ user_id: userId, name });
+    // Idem als bij de boodschappenlijst: niet op realtime wachten.
+    const { data } = await supabase
+      .from('usuals')
+      .insert({ user_id: userId, name })
+      .select()
+      .single();
+    if (!data) return;
+    setUsuals((prev) =>
+      prev.find((i) => i.id === data.id)
+        ? prev
+        : [...prev, { id: data.id, name: data.name }]
+    );
   }, [userId]);
 
   const removeUsual = useCallback(async (id: string) => {
