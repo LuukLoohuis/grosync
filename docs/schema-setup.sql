@@ -111,6 +111,11 @@ RETURNS BOOLEAN LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS
   SELECT EXISTS (SELECT 1 FROM public.shared_lists WHERE id = _list_id)
 $$;
 
+-- Bestaat mogelijk al met een andere returnvorm; CREATE OR REPLACE mag die
+-- niet wijzigen, dus eerst droppen. Deze functie wordt door geen enkele
+-- policy gebruikt, alleen door de app via RPC.
+DROP FUNCTION IF EXISTS public.get_shared_list_by_code(TEXT);
+
 CREATE OR REPLACE FUNCTION public.get_shared_list_by_code(_share_code TEXT)
 RETURNS TABLE(id UUID, user_id UUID, name TEXT, share_code TEXT, created_at TIMESTAMPTZ)
 LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
