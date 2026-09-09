@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { lovable } from '@/integrations/lovable/index';
 import { Mail, Eye, EyeOff } from 'lucide-react';
 import couplecartLogo from '@/assets/couplecart-logo.png';
 import { Button } from '@/components/ui/button';
@@ -32,13 +31,14 @@ const Auth = () => {
   }, [navigate]);
 
 const handleGoogleLogin = async () => {
-  const result = await lovable.auth.signInWithOAuth("google", {
-    redirect_uri: window.location.origin,
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin },
   });
 
-  if (result && 'error' in result && result.error) {
-    console.error("Login error:", result.error);
-    toast.error("Google login mislukt");
+  if (error) {
+    console.error('Login error:', error);
+    toast.error('Google login mislukt');
   }
 };
 
