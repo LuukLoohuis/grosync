@@ -83,17 +83,30 @@ const SharedList = () => {
     if (!shareCode) return;
 
     const loadList = async () => {
-      const { data: lists, error } = await supabase
-        .rpc('get_shared_list_by_code', { _share_code: shareCode });
-      const list = lists?.[0] ?? null;
+      // De deelpagina heeft een sessie nodig: de policies op de lijst kijken
+      // naar auth.uid(). Wie nog niet ingelogd is krijgt een gastaccount.
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        const { error: signInError } = await supabase.auth.signInAnonymously();
+        if (signInError) {
+          setNotFound(true);
+          setLoading(false);
+          return;
+        }
+      }
 
-      if (error || !list || !list.user_id) {
+      // Wisselt de code in voor lidmaatschap van de lijst en geeft de
+      // eigenaar terug; vanaf dan geeft RLS toegang tot diens rijen.
+      const { data: ownerId, error } = await supabase
+        .rpc('join_shared_list', { _share_code: shareCode });
+
+      if (error || !ownerId) {
         setNotFound(true);
         setLoading(false);
         return;
       }
 
-      setUserId(list.user_id);
+      setUserId(ownerId);
       setLoading(false);
     };
 
