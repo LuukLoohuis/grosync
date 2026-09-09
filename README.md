@@ -4,7 +4,7 @@ Gedeelde boodschappenlijst met recepten, maaltijdplanner en macro's.
 
 - **Frontend:** Vite + React + TypeScript + Tailwind + shadcn/ui
 - **Backend:** Supabase (Postgres, Auth, Edge Functions)
-- **Hosting:** Cloudflare Workers (static assets)
+- **Hosting:** Vercel
 
 ## Lokaal draaien
 
@@ -18,8 +18,8 @@ Overige scripts: `npm run build`, `npm run lint`, `npm test`.
 
 ## Omgevingsvariabelen
 
-Zie `.env.example`. Dezelfde variabelen zet je in Cloudflare onder
-Settings > Build > Build variables (build-time, want Vite bakt ze in de bundle).
+Zie `.env.example`. Dezelfde variabelen zet je in Vercel onder Settings > Environment Variables
+(build-time, want Vite bakt ze in de bundle).
 
 ## Supabase
 
@@ -40,10 +40,9 @@ Google-login loopt via de Google-provider in Supabase Auth
 
 ## Deploy
 
-Push naar `main`; Cloudflare Workers Builds draait `npm run build` en daarna
-`npx wrangler deploy`. De configuratie staat in `wrangler.jsonc`: `dist` wordt
-als statische assets geserveerd, met `not_found_handling: single-page-application`
-zodat client-side routes werken.
+Push naar `main`; Vercel bouwt en publiceert. `vercel.json` legt de Vite-build
+vast en stuurt paden die geen bestand zijn naar `index.html`, zodat client-side
+routes werken.
 
-De drie `VITE_*` variabelen moeten in Cloudflare onder Settings > Build >
-Build variables staan; Vite bakt ze tijdens de build in de bundle.
+De `VITE_*` variabelen zet je in Vercel onder Settings > Environment Variables,
+voor Production en Preview; Vite bakt ze tijdens de build in de bundle.
