@@ -35,6 +35,22 @@ Edge functions in `supabase/functions/`:
 `calculate-macros`. Ze gebruiken `OPENAI_API_KEY` (optioneel `FIRECRAWL_API_KEY`
 voor het uitlezen van receptpagina's).
 
+### Recept uit een link (`fetch-url-meta`)
+
+| Link | Route |
+|---|---|
+| Receptsite | pagina scrapen → OpenAI |
+| YouTube (video, Short, youtu.be) | beschrijving → gelinkte receptpagina → Gemini bekijkt de video |
+| TikTok, Instagram | caption → gelinkte receptpagina |
+
+Elke stap valt pas door naar de volgende als hij geen recept oplevert. Uit tekst
+gehaalde ingrediënten moeten grotendeels in die tekst voorkomen; anders zijn ze
+door het model verzonnen en worden ze weggegooid. Het antwoord bevat
+`extractedFrom` (`page`, `description`, `linked-page`, `video` of `none`).
+
+De videostap werkt alleen met `GEMINI_API_KEY` (optioneel `GEMINI_MODEL`,
+standaard `gemini-3.8-flash`) en alleen voor openbare YouTube-video's.
+
 Google-login loopt via de Google-provider in Supabase Auth
 (Authentication > Providers > Google).
 
