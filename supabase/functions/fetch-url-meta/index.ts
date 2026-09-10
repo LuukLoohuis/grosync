@@ -128,7 +128,7 @@ async function extractRecipeFromVideo(videoUrl: string, timeoutMs: number): Prom
       body: JSON.stringify({
         contents: [{
           parts: [
-            { text: `You extract recipe data from a cooking video. Use what is said, what is shown on screen and any text overlays. ${RECIPE_RULES}` },
+            { text: `You extract recipe data from a cooking video. Use what is said, what is shown on screen and any text overlays. ${RECIPE_RULES} Only state a quantity as exact when it is said, shown on screen or written in a text overlay. When you estimate a quantity yourself, start that ingredient with "ca. ", for example "ca. 300g bread flour". Never put "ca." before a quantity that was said or shown.` },
             { file_data: { file_uri: videoUrl } },
           ],
         }],
