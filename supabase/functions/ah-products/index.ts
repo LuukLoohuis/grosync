@@ -1,0 +1,223 @@
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+};
+
+// AH has no public API; this is the anonymous flow of its own app.
+const AH_HEADERS = { 'User-Agent': 'Appie/8.22.3', 'x-application': 'AHWEBSHOP', 'Content-Type': 'application/json' };
+const MAX_ITEMS = 40;
+const SEARCH_CONCURRENCY = 5;
+
+type Item = { id: string; name: string };
+
+type Candidate = {
+  webshopId: number;
+  title: string;
+  unitSize: string;
+  price: number;
+  isBonus: boolean;
+  bonusMechanism: string | null;
+  imageUrl: string | null;
+  category: string;
+};
+
+type Match = {
+  itemId: string;
+  productId: number;
+  title: string;
+  unitSize: string;
+  unitPrice: number;
+  quantity: number;
+  price: number;
+  isBonus: boolean;
+  bonusMechanism: string | null;
+  imageUrl: string | null;
+  productUrl: string;
+};
+
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+
+// Only signed-in users (guests included) may use this, otherwise the public key
+// turns it into a free AH proxy running on our OpenAI account.
+async function isSignedIn(req: Request): Promise<boolean> {
+  const token = req.headers.get('Authorization')?.replace(/^Bearer\s+/i, '');
+  const url = Deno.env.get('SUPABASE_URL');
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
+  if (!token || !url || !anonKey) return false;
+  const response = await fetch(`${url}/auth/v1/user`, { headers: { apikey: anonKey, Authorization: `Bearer ${token}` } });
+  return response.ok;
+}
+
+let cachedToken: { value: string; expiresAt: number } | null = null;
+
+async function ahToken(): Promise<string> {
+  if (cachedToken && cachedToken.expiresAt > Date.now() + 60_000) return cachedToken.value;
+  const response = await fetch('https://api.ah.nl/mobile-auth/v1/auth/token/anonymous', {
+    method: 'POST',
+    headers: AH_HEADERS,
+    body: JSON.stringify({ clientId: 'appie' }),
+  });
+  if (!response.ok) throw new Error(`AH token request failed: ${response.status}`);
+  const data = await response.json();
+  cachedToken = { value: data.access_token, expiresAt: Date.now() + (Number(data.expires_in) || 3600) * 1000 };
+  return cachedToken.value;
+}
+
+function toCandidates(products: any[]): Candidate[] {
+  return products
+    .filter((p) => !p.isSponsored && p.isOrderable)
+    .map((p) => ({
+      webshopId: p.webshopId,
+      title: p.title || '',
+      unitSize: p.salesUnitSize || '',
+      price: p.currentPrice ?? p.priceBeforeBonus,
+      isBonus: Boolean(p.isBonus),
+      bonusMechanism: p.bonusMechanism || null,
+      imageUrl: p.images?.[0]?.url || null,
+      category: p.mainCategory || '',
+    }))
+    .filter((c) => typeof c.webshopId === 'number' && typeof c.price === 'number')
+    .slice(0, 10);
+}
+
+async function searchAh(query: string): Promise<Candidate[]> {
+  const params = new URLSearchParams({ query, size: '15', page: '0', sortOn: 'RELEVANCE' });
+  const search = async () => fetch(`https://api.ah.nl/mobile-services/product/search/v2?${params}`, {
+    headers: { ...AH_HEADERS, Authorization: `Bearer ${await ahToken()}` },
+  });
+  try {
+    let response = await search();
+    if (response.status === 401) {
+      cachedToken = null;
+      response = await search();
+    }
+    if (!response.ok) {
+      console.error('AH search failed:', query, response.status);
+      return [];
+    }
+    return toCandidates((await response.json()).products || []);
+  } catch (e) {
+    console.error('AH search error:', query, e);
+    return [];
+  }
+}
+
+async function mapWithConcurrency<T, R>(values: T[], limit: number, fn: (value: T) => Promise<R>): Promise<R[]> {
+  const results: R[] = new Array(values.length);
+  let next = 0;
+  const worker = async () => {
+    while (next < values.length) {
+      const index = next++;
+      results[index] = await fn(values[index]);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, values.length) }, worker));
+  return results;
+}
+
+async function askJson(system: string, user: string): Promise<any> {
+  const apiKey = Deno.env.get('OPENAI_API_KEY');
+  if (!apiKey) throw new Error('OPENAI_API_KEY not set');
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      response_format: { type: 'json_object' },
+      temperature: 0,
+      messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
+    }),
+  });
+  if (!response.ok) throw new Error(`OpenAI error ${response.status}: ${await response.text()}`);
+  return JSON.parse((await response.json()).choices?.[0]?.message?.content || '{}');
+}
+
+async function searchTerms(items: Item[]): Promise<Map<string, { query: string; amount: string }>> {
+  const result = await askJson(
+    'You turn grocery list lines into Albert Heijn (Dutch supermarket) searches. For each line give "query": the Dutch word(s) a shopper types to find the plain base product, without brand, quantity or preparation (e.g. "ca. 300g bread flour" → "tarwebloem", "2 large eggs" → "scharreleieren", "parmesan" → "parmigiano reggiano", "1 clove garlic, grated" → "knoflook"), and "amount": the needed quantity as written, or "" if none. Return JSON {"items":[{"id":"...","query":"...","amount":"..."}]} with every id.',
+    JSON.stringify(items.map(({ id, name }) => ({ id, line: name }))),
+  );
+  const terms = new Map<string, { query: string; amount: string }>();
+  for (const entry of result.items || []) {
+    if (typeof entry?.id === 'string' && typeof entry?.query === 'string' && entry.query.trim()) {
+      terms.set(entry.id, { query: entry.query.trim(), amount: String(entry.amount || '') });
+    }
+  }
+  return terms;
+}
+
+async function chooseProducts(
+  lines: { id: string; name: string; amount: string; candidates: Candidate[] }[],
+): Promise<Map<string, { index: number; quantity: number }>> {
+  const result = await askJson(
+    'For each ingredient pick the one Albert Heijn product a home cook would buy for it. Prefer the plain product over snacks, ready meals, flavoured variants and multipacks; prefer the AH house brand when products are otherwise equal; pick the smallest package that covers the amount. "quantity" is the number of packages needed (1 when the amount is unknown or small). Use index -1 when no candidate is that ingredient. Return JSON {"choices":[{"id":"...","index":0,"quantity":1}]}.',
+    JSON.stringify(lines.map((line) => ({
+      id: line.id,
+      ingredient: line.name,
+      amount: line.amount,
+      candidates: line.candidates.map((c, index) => ({ index, title: c.title, size: c.unitSize, price: c.price, category: c.category })),
+    }))),
+  );
+  const choices = new Map<string, { index: number; quantity: number }>();
+  for (const choice of result.choices || []) {
+    if (typeof choice?.id !== 'string' || !Number.isInteger(choice.index)) continue;
+    const quantity = Math.min(Math.max(Math.round(Number(choice.quantity) || 1), 1), 20);
+    choices.set(choice.id, { index: choice.index, quantity });
+  }
+  return choices;
+}
+
+function toMatch(itemId: string, candidate: Candidate, quantity: number): Match {
+  return {
+    itemId,
+    productId: candidate.webshopId,
+    title: candidate.title,
+    unitSize: candidate.unitSize,
+    unitPrice: candidate.price,
+    quantity,
+    price: Math.round(candidate.price * quantity * 100) / 100,
+    isBonus: candidate.isBonus,
+    bonusMechanism: candidate.bonusMechanism,
+    imageUrl: candidate.imageUrl,
+    productUrl: `https://www.ah.nl/producten/product/wi${candidate.webshopId}`,
+  };
+}
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
+
+  try {
+    if (!(await isSignedIn(req))) return json({ error: 'Sign in required' }, 401);
+
+    const { items } = await req.json();
+    const list: Item[] = (Array.isArray(items) ? items : [])
+      .filter((item: any) => typeof item?.id === 'string' && typeof item?.name === 'string' && item.name.trim())
+      .slice(0, MAX_ITEMS);
+    if (list.length === 0) return json({ error: 'items is required' }, 400);
+
+    const terms = await searchTerms(list);
+    const lines = await mapWithConcurrency(list, SEARCH_CONCURRENCY, async (item) => {
+      const term = terms.get(item.id);
+      const candidates = term ? await searchAh(term.query) : [];
+      return { id: item.id, name: item.name, amount: term?.amount || '', query: term?.query || '', candidates };
+    });
+
+    const searchable = lines.filter((line) => line.candidates.length > 0);
+    const choices = searchable.length ? await chooseProducts(searchable) : new Map();
+
+    const matches: Match[] = [];
+    for (const line of searchable) {
+      const choice = choices.get(line.id);
+      const candidate = choice && choice.index >= 0 ? line.candidates[choice.index] : undefined;
+      if (candidate) matches.push(toMatch(line.id, candidate, choice.quantity));
+    }
+
+    const matched = new Set(matches.map((m) => m.itemId));
+    console.log('AH matches:', matches.length, 'of', list.length);
+    return json({ matches, unmatched: list.filter((item) => !matched.has(item.id)).map((item) => item.id) });
+  } catch (error) {
+    console.error('ah-products failed:', error);
+    return json({ error: 'Failed to match AH products' }, 500);
+  }
+});
