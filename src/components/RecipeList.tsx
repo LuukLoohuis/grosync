@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import RecipeEditDialog from '@/components/RecipeEditDialog';
 import RecipeViewDialog from '@/components/RecipeViewDialog';
 import MacrosDialog from '@/components/MacrosDialog';
-import { fetchRecipeFromUrl, translateRecipe, calculateMacros } from '@/services/recipeApi';
+import { fetchRecipeFromUrl, fetchRecipeFromText, translateRecipe, calculateMacros } from '@/services/recipeApi';
 import RecipeSuggestDialog from '@/components/RecipeSuggestDialog';
 
 const RecipeList = () => {
@@ -27,9 +27,50 @@ const RecipeList = () => {
   const [fetchedMacros, setFetchedMacros] = useState<any>(null);
   const [fetchedImageUrl, setFetchedImageUrl] = useState<string | undefined>();
   const [translating, setTranslating] = useState(false);
+  const [pasteMode, setPasteMode] = useState(false);
+  const [pastedText, setPastedText] = useState('');
 
   const resetForm = () => {
-    setName(''); setDescription(''); setIngredientText(''); setInstructions(''); setSourceUrl(''); setMode('choose'); setFetchedMacros(null); setFetchedImageUrl(undefined); setServings(4); setTranslating(false);
+    setName(''); setDescription(''); setIngredientText(''); setInstructions(''); setSourceUrl(''); setMode('choose'); setFetchedMacros(null); setFetchedImageUrl(undefined); setServings(4); setTranslating(false); setPasteMode(false); setPastedText('');
+  };
+
+  // Fills the form from a fetch-url-meta response. Returns false when nothing usable came back.
+  const applyFetchedRecipe = (data: any) => {
+    if (data?.imageUrl) setFetchedImageUrl(data.imageUrl);
+    const hasIngredients = Boolean(data?.ingredients?.length);
+    if (!hasIngredients && !data?.name && !data?.title) return false;
+
+    if (data?.name || data?.title) setName(data.name || data.title);
+    if (data?.description) setDescription(data.description);
+    if (hasIngredients) {
+      setIngredientText(
+        data.ingredients
+          .map((ing: any) => {
+            if (typeof ing === 'string') return ing;
+            return `${ing.name}${ing.quantity ? ` (${ing.quantity}${ing.unit || ''})` : ''}`;
+          })
+          .join('\n')
+      );
+    }
+    if (data?.instructions) setInstructions(data.instructions);
+    if (data?.servings) setServings(data.servings);
+    // Extract macros from response
+    const macros = {
+      calories: data?.calories,
+      protein: data?.protein,
+      carbs: data?.carbs,
+      fat: data?.fat,
+      fiber: data?.fiber,
+    };
+    if (Object.values(macros).some(v => v !== undefined)) {
+      setFetchedMacros(macros);
+    }
+    if (hasIngredients) {
+      toast.success('Recept opgehaald! Je kunt alles nog aanpassen.');
+    } else {
+      toast.warning('Alleen de titel gevonden, geen ingrediënten. Vul die zelf aan.');
+    }
+    return true;
   };
 
   const fetchFromUrl = async () => {
@@ -38,36 +79,36 @@ const RecipeList = () => {
     try {
       setFetchingMeta(true);
       const data = await fetchRecipeFromUrl(url);
-      if (data?.name || data?.title) setName(data.name || data.title);
-      if (data?.description) setDescription(data.description);
-      if (data?.ingredients?.length) {
-        setIngredientText(
-          data.ingredients
-            .map((ing: any) => {
-              if (typeof ing === 'string') return ing;
-              return `${ing.name}${ing.quantity ? ` (${ing.quantity}${ing.unit || ''})` : ''}`;
-            })
-            .join('\n')
-        );
+      if (applyFetchedRecipe(data)) return;
+      if (/instagram\.com\//i.test(url)) {
+        // Instagram sends our server to its login page, so the post text has to come from the user.
+        setPasteMode(true);
+        toast.error('Instagram laat ons deze post niet uitlezen. Plak de tekst van de post hieronder.');
+      } else {
+        setMode('manual');
+        toast.error('Geen recept gevonden in deze link. Vul het hieronder zelf in.');
       }
-      if (data?.instructions) setInstructions(data.instructions);
-      if (data?.servings) setServings(data.servings);
-      if (data?.imageUrl) setFetchedImageUrl(data.imageUrl);
-      // Extract macros from response
-      const macros = {
-        calories: data?.calories,
-        protein: data?.protein,
-        carbs: data?.carbs,
-        fat: data?.fat,
-        fiber: data?.fiber,
-      };
-      if (Object.values(macros).some(v => v !== undefined)) {
-        setFetchedMacros(macros);
-      }
-      toast.success('Recept opgehaald! Je kunt alles nog aanpassen.');
     } catch (e) {
       console.error('Failed to fetch from URL:', e);
       toast.error(`Kon recept niet ophalen: ${(e as Error).message}`);
+    } finally {
+      setFetchingMeta(false);
+    }
+  };
+
+  const fetchFromText = async () => {
+    const text = pastedText.trim();
+    if (!text) return;
+    try {
+      setFetchingMeta(true);
+      const data = await fetchRecipeFromText(text);
+      if (!applyFetchedRecipe(data)) {
+        setMode('manual');
+        toast.error('Geen recept gevonden in deze tekst. Vul het hieronder zelf in.');
+      }
+    } catch (e) {
+      console.error('Failed to read recipe text:', e);
+      toast.error(`Kon recept niet uitlezen: ${(e as Error).message}`);
     } finally {
       setFetchingMeta(false);
     }
@@ -195,6 +236,17 @@ const RecipeList = () => {
                   </Button>
                 </div>
               </div>
+              {pasteMode ? (
+                <div className="space-y-2">
+                  <label className="text-sm text-muted-foreground mb-1 block">Tekst van de post</label>
+                  <Textarea placeholder="Kopieer de beschrijving van de post en plak hem hier" value={pastedText} onChange={(e) => setPastedText(e.target.value)} rows={6} />
+                  <Button type="button" onClick={fetchFromText} disabled={!pastedText.trim() || fetchingMeta} className="w-full gap-2">
+                    {fetchingMeta ? <><Loader2 className="h-4 w-4 animate-spin" /> Uitlezen...</> : 'Recept uit tekst halen'}
+                  </Button>
+                </div>
+              ) : (
+                <button onClick={() => setPasteMode(true)} className="text-xs text-primary hover:underline block">Of plak de tekst van een post</button>
+              )}
               <button onClick={() => setMode('choose')} className="text-xs text-muted-foreground hover:underline">← Terug</button>
             </div>
           )}

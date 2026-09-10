@@ -42,6 +42,24 @@ export async function fetchRecipeFromUrl(url: string) {
   }
 }
 
+export async function fetchRecipeFromText(text: string) {
+  const response = await fetch(`${FUNCTIONS_URL}/fetch-url-meta`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ text }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.error || 'Failed to read recipe text');
+  }
+
+  return await response.json();
+}
+
 export async function translateRecipe(recipe: RecipeData) {
   try {
     const response = await fetch(`${FUNCTIONS_URL}/translate-recipe`, {

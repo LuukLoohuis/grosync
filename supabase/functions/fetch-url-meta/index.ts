@@ -253,6 +253,23 @@ function youTubeVideoId(url: string): string | null {
   return null;
 }
 
+async function firecrawlRawHtml(url: string): Promise<string> {
+  const firecrawlKey = Deno.env.get('FIRECRAWL_API_KEY');
+  if (!firecrawlKey) return '';
+  try {
+    const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${firecrawlKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, formats: ['rawHtml'] }),
+    });
+    if (response.ok) return (await response.json()).data?.rawHtml || '';
+    console.error('Firecrawl error:', response.status, await response.text());
+  } catch (e) {
+    console.error('Firecrawl failed:', e);
+  }
+  return '';
+}
+
 function videoDetailsFrom(html: string): { title: string; description: string } | null {
   const player = html.match(/ytInitialPlayerResponse\s*=\s*(\{.+?\});(?:var|<\/script>)/s);
   if (!player) return null;
@@ -279,25 +296,9 @@ async function youTubeDetails(videoId: string): Promise<{ title: string; descrip
   }
 
   // YouTube serves datacenter IPs a page without video data; Firecrawl gets through.
-  const firecrawlKey = Deno.env.get('FIRECRAWL_API_KEY');
-  if (firecrawlKey) {
-    try {
-      const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${firecrawlKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: watchUrl, formats: ['rawHtml'] }),
-      });
-      if (response.ok) {
-        const details = videoDetailsFrom((await response.json()).data?.rawHtml || '');
-        if (details?.description) return details;
-        console.log('No description in Firecrawl YouTube page');
-      } else {
-        console.error('Firecrawl error:', response.status, await response.text());
-      }
-    } catch (e) {
-      console.error('Firecrawl YouTube failed:', e);
-    }
-  }
+  const details = videoDetailsFrom(await firecrawlRawHtml(watchUrl));
+  if (details?.description) return details;
+  console.log('No description in Firecrawl YouTube page');
 
   try {
     const response = await fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(watchUrl)}&format=json`);
@@ -346,38 +347,51 @@ async function recipeFromTikTok(url: string, deadline: number): Promise<Extracti
   return recipeFromCaption(caption, imageUrl, deadline);
 }
 
+function decodeEntities(text: string): string {
+  return text
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(parseInt(dec, 10)))
+    .replace(/&quot;/g, '"').replace(/&apos;/g, "'")
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+}
+
+function metaContent(html: string, property: string): string {
+  const content = html.match(new RegExp(`<meta[^>]*property="${property}"[^>]*content="([^"]*)"`, 'i'))
+    || html.match(new RegExp(`<meta[^>]*content="([^"]*)"[^>]*property="${property}"`, 'i'));
+  return decodeEntities(content?.[1] || '');
+}
+
+// Instagram puts the caption in og:title as `Name on Instagram: "caption"` and in
+// og:description as `12K likes, … on date: "caption".`
+function instagramPostFromHtml(html: string): { caption: string; imageUrl: string | null } | null {
+  const captions = [metaContent(html, 'og:title'), metaContent(html, 'og:description')]
+    .map((text) => text.match(/:\s*"([\s\S]*)"\.?\s*$/)?.[1]?.trim() || '')
+    .sort((a, b) => b.length - a.length);
+  if (!captions[0]) return null;
+  return { caption: captions[0], imageUrl: metaContent(html, 'og:image') || null };
+}
+
 async function instagramCaption(url: string): Promise<{ caption: string; imageUrl: string | null }> {
-  const endpoints = [
-    `https://api.instagram.com/oembed?url=${encodeURIComponent(url)}&maxwidth=640`,
-    `https://graph.facebook.com/v18.0/instagram_oembed?url=${encodeURIComponent(url)}&maxwidth=640`,
-  ];
-  for (const endpoint of endpoints) {
-    try {
-      const response = await fetch(endpoint, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; bot/1.0)' } });
-      if (response.ok && (response.headers.get('content-type') || '').includes('application/json')) {
-        const data = await response.json();
-        if (data.title) return { caption: data.title, imageUrl: data.thumbnail_url || null };
-      }
-    } catch (e) {
-      console.log('oEmbed endpoint failed:', e);
-    }
+  const id = url.match(/instagram\.com\/(?:[\w.]+\/)?(?:p|reels?)\/([\w-]+)/i)?.[1];
+  const postUrl = id ? `https://www.instagram.com/p/${id}/` : url;
+
+  // Instagram only renders the caption into meta tags for link-preview crawlers,
+  // and sends datacenter IPs to its login page, so from Supabase this usually fails.
+  try {
+    const response = await fetch(postUrl, {
+      headers: { 'User-Agent': 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)' },
+      redirect: 'follow',
+    });
+    const post = instagramPostFromHtml(await response.text());
+    if (post) return post;
+    console.log('No Instagram caption in direct fetch');
+  } catch (e) {
+    console.error('Instagram page failed:', e);
   }
 
-  try {
-    console.log('oEmbed failed, trying direct meta tag extraction');
-    const response = await fetch(url, { headers: { 'User-Agent': BROWSER_UA }, redirect: 'follow' });
-    const html = await response.text();
-    const description = html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["']/i)
-      || html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:description["']/i)
-      || html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i);
-    const caption = (description?.[1] || '')
-      .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"').replace(/&#039;/g, "'").replace(/&#x27;/g, "'");
-    return { caption, imageUrl: ogImage(html) };
-  } catch (e) {
-    console.error('Instagram extraction error:', e);
-    return { caption: '', imageUrl: null };
-  }
+  // Firecrawl refuses Instagram ("we do not support this site"), so there is no
+  // server-side fallback; the app asks for the caption text instead.
+  return { caption: '', imageUrl: null };
 }
 
 Deno.serve(async (req) => {
@@ -386,23 +400,26 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { url } = await req.json();
-    if (!url) {
-      return new Response(JSON.stringify({ error: 'URL is required' }), {
+    const { url, text } = await req.json();
+    if (!url && !text) {
+      return new Response(JSON.stringify({ error: 'URL or text is required' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     const deadline = Date.now() + REQUEST_BUDGET_MS;
-    const videoId = youTubeVideoId(url);
+    const videoId = url ? youTubeVideoId(url) : null;
     let result: Extraction;
 
-    if (videoId) {
+    if (text) {
+      // Pasted post text, for platforms that block server-side fetching.
+      result = await recipeFromCaption(String(text).slice(0, 20000), null, deadline);
+    } else if (videoId) {
       result = await recipeFromYouTube(videoId, deadline);
     } else if (/tiktok\.com\//i.test(url)) {
       result = await recipeFromTikTok(url, deadline);
-    } else if (/instagram\.com\/(p|reel|reels)\//i.test(url)) {
+    } else if (/instagram\.com\/(?:[\w.]+\/)?(?:p|reels?)\//i.test(url)) {
       const { caption, imageUrl } = await instagramCaption(url);
       result = await recipeFromCaption(caption, imageUrl, deadline);
     } else {
