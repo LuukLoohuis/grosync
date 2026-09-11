@@ -266,7 +266,10 @@ Deno.serve(async (req) => {
     const terms = await searchTerms(list);
     const lines = await mapWithConcurrency(list, SEARCH_CONCURRENCY, async (item) => {
       const term = terms.get(item.id);
-      const candidates = await searchWithFallback(term);
+      const found = await searchWithFallback(term);
+      // The model kept picking "3-pack" boxes of eggs; offer single packages whenever AH has them.
+      const singles = found.filter((c) => !isMultipack(c));
+      const candidates = singles.length > 0 ? singles : found;
       return { id: item.id, name: item.name, amount: term?.amount || '', query: term?.query || '', candidates };
     });
 

@@ -220,7 +220,10 @@ export function sortByStoreRoute<T extends { name: string; ahProduct?: { categor
   const grouped = new Map<Department, T[]>(DEPARTMENT_ORDER.map((department) => [department, []]));
 
   for (const item of items) {
-    const department = fromAhCategory(item.ahProduct?.category) ?? fromKeywords(item.name);
+    // AH files frozen spinach under "Groente, aardappelen"; the name you typed wins.
+    const department = FROZEN.test(item.name)
+      ? 'diepvries'
+      : fromAhCategory(item.ahProduct?.category) ?? fromKeywords(item.name);
     grouped.get(department)!.push(item);
   }
 
