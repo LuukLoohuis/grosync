@@ -294,7 +294,7 @@ const RecipeList = ({ initialImport, onImportConsumed }: RecipeListProps) => {
                   <img src={fetchedImageUrl} alt="Recipe preview" className="w-full h-full object-cover" />
                 </div>
               )}
-              <Input placeholder="Recept naam" value={name} onChange={(e) => setName(e.target.value)} />
+              <Input placeholder="Naam van het recept" value={name} onChange={(e) => setName(e.target.value)} />
               <Input placeholder="Korte beschrijving" value={description} onChange={(e) => setDescription(e.target.value)} />
               <div>
                 <label className="text-sm text-muted-foreground mb-1 flex items-center gap-1">
@@ -308,7 +308,7 @@ const RecipeList = ({ initialImport, onImportConsumed }: RecipeListProps) => {
                 {estimatedLines.length > 0 && (
                   <p className="mt-1 text-xs text-muted-foreground">
                     <EstimateBadge />{' '}
-                    {estimatedLines.length === 1 ? 'Deze hoeveelheid is geschat uit de video' : `${estimatedLines.length} hoeveelheden zijn geschat uit de video`}. Kijk even na: {estimatedLines.map(withoutEstimate).join(', ')}
+                    {estimatedLines.length === 1 ? 'Kijk deze hoeveelheid even na' : 'Kijk deze hoeveelheden even na'}: {estimatedLines.map(withoutEstimate).join(', ')}
                   </p>
                 )}
               </div>
@@ -322,7 +322,7 @@ const RecipeList = ({ initialImport, onImportConsumed }: RecipeListProps) => {
               </div>
               <div className="flex flex-col gap-2">
                 <div className="flex gap-2">
-                  <button onClick={() => { resetForm(); }} className="text-xs text-muted-foreground hover:underline">← Terug</button>
+                  <button type="button" onClick={resetForm} className="min-h-11 px-1 text-sm text-muted-foreground hover:underline">← Terug</button>
                   <Button type="button" variant="outline" onClick={translateRecipeHandler} disabled={translating || (!name.trim() && !ingredientText.trim())} className="gap-2">
                     {translating ? <><Loader2 className="h-4 w-4 animate-spin" /> Vertalen...</> : <><Languages className="h-4 w-4" /> Vertaal naar NL</>}
                   </Button>
