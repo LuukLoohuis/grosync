@@ -33,6 +33,7 @@ type Match = {
   bonusMechanism: string | null;
   imageUrl: string | null;
   productUrl: string;
+  category: string;
 };
 
 const json = (body: unknown, status = 200) =>
@@ -181,6 +182,20 @@ function toMatch(itemId: string, candidate: Candidate, quantity: number): Match 
     bonusMechanism: candidate.bonusMechanism,
     imageUrl: candidate.imageUrl,
     productUrl: `https://www.ah.nl/producten/product/wi${candidate.webshopId}`,
+    category: candidate.category,
+  };
+}
+
+function toAlternative(candidate: Candidate) {
+  return {
+    productId: candidate.webshopId,
+    title: candidate.title,
+    unitSize: candidate.unitSize,
+    price: candidate.price,
+    isBonus: candidate.isBonus,
+    bonusMechanism: candidate.bonusMechanism,
+    imageUrl: candidate.imageUrl,
+    category: candidate.category,
   };
 }
 
@@ -190,7 +205,23 @@ Deno.serve(async (req) => {
   try {
     if (!(await isSignedIn(req))) return json({ error: 'Sign in required' }, 401);
 
-    const { items } = await req.json();
+    const body = await req.json();
+
+    // Other products from the same AH search, for "Kies een ander product".
+    if (body?.alternativesFor) {
+      const item = body.alternativesFor;
+      if (typeof item?.id !== 'string' || typeof item?.name !== 'string' || !item.name.trim()) {
+        return json({ error: 'alternativesFor needs id and name' }, 400);
+      }
+      const exclude = Number(body.exclude) || null;
+      const terms = await searchTerms([{ id: item.id, name: item.name }]);
+      const query = terms.get(item.id)?.query || '';
+      const candidates = query ? await searchAh(query) : [];
+      const alternatives = candidates.filter((c) => c.webshopId !== exclude).slice(0, 5).map(toAlternative);
+      return json({ query, alternatives });
+    }
+
+    const { items } = body;
     const list: Item[] = (Array.isArray(items) ? items : [])
       .filter((item: any) => typeof item?.id === 'string' && typeof item?.name === 'string' && item.name.trim())
       .slice(0, MAX_ITEMS);

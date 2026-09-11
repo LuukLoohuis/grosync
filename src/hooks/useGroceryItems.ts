@@ -22,6 +22,7 @@ const toGroceryItem = (row: GroceryRow): GroceryItem => ({
         quantity: row.ah_quantity || 1,
         imageUrl: row.ah_image_url,
         isBonus: Boolean(row.ah_is_bonus),
+        category: row.ah_category,
       }
     : null,
 });
@@ -35,6 +36,7 @@ const CLEARED_AH_MATCH = {
   ah_quantity: null,
   ah_image_url: null,
   ah_is_bonus: null,
+  ah_category: null,
   price_checked_at: null,
 };
 
@@ -259,6 +261,7 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
           quantity: match.quantity,
           imageUrl: match.imageUrl,
           isBonus: match.isBonus,
+          category: match.category || null,
         },
       };
     }));
@@ -271,6 +274,7 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
       ah_quantity: m.quantity,
       ah_image_url: m.imageUrl,
       ah_is_bonus: m.isBonus,
+      ah_category: m.category || null,
       price_checked_at: checkedAt,
       }).eq('id', m.itemId)),
       ...(unmatchedIds.length > 0

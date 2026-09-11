@@ -322,3 +322,7 @@ DROP POLICY IF EXISTS "Shared list access" ON public.user_settings;
 CREATE POLICY "Shared list access" ON public.user_settings FOR ALL TO public
   USING (public.has_shared_access(user_id))
   WITH CHECK (public.has_shared_access(user_id));
+
+-- Afdeling die AH zelf opgeeft voor het gekozen product, zodat de lijst per
+-- afdeling kan sorteren zoals in de winkel.
+ALTER TABLE public.grocery_items ADD COLUMN IF NOT EXISTS ah_category TEXT;

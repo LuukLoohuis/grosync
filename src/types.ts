@@ -17,6 +17,8 @@ export interface AhProduct {
   quantity: number;
   imageUrl: string | null;
   isBonus: boolean;
+  /** AH's own department, e.g. "Zuivel, eieren". */
+  category: string | null;
 }
 
 export interface UsualItem {

@@ -1,8 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Check, ChevronDown, Plus, Trash2, X, Merge, Route, TrendingUp, ExternalLink, Loader2, ShoppingBasket, Tag, MoreVertical, RefreshCw } from 'lucide-react';
+import { Check, ChevronDown, ChevronRight, Plus, Trash2, X, Merge, TrendingUp, ExternalLink, Loader2, ShoppingBasket, Tag, MoreVertical, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppContext } from '@/contexts/AppContext';
-import { AH_MAX_ITEMS, ahBasketUrl, ahProductUrl, matchAhProducts } from '@/services/ahApi';
+import { AH_MAX_ITEMS, ahBasketUrl, matchAhProducts } from '@/services/ahApi';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import SwipeToCheck from '@/components/SwipeToCheck';
+import AhProductSheet from '@/components/AhProductSheet';
 import { sortByStoreRoute } from '@/lib/storeRouteSort';
 import { translateForSearch } from '@/lib/groceryTranslations';
 import type { GroceryItem } from '@/types';
@@ -28,9 +29,22 @@ const toSearchQuery = (name: string) => {
 
 const ahSearchUrl = (name: string) => `https://www.ah.nl/zoeken?query=${toSearchQuery(name)}`;
 
+type ListOrder = 'department' | 'added';
+const ORDER_KEY = 'couplecart-list-order';
+
+// Remembered per device: departments in the store, maybe the typed order at home.
+const readListOrder = (): ListOrder => {
+  try {
+    return localStorage.getItem(ORDER_KEY) === 'added' ? 'added' : 'department';
+  } catch {
+    return 'department';
+  }
+};
+
 const GroceryList = ({ onNavigate }: { onNavigate?: (tab: 'recipes') => void }) => {
   const [newItem, setNewItem] = useState('');
-  const [routeMode, setRouteMode] = useState(false);
+  const [order, setOrder] = useState<ListOrder>(readListOrder);
+  const [productItemId, setProductItemId] = useState<string | null>(null);
   const [pricing, setPricing] = useState(false);
   const [showChecked, setShowChecked] = useState(false);
   const barRef = useRef<HTMLDivElement>(null);
@@ -100,7 +114,17 @@ const GroceryList = ({ onNavigate }: { onNavigate?: (tab: 'recipes') => void }) 
     return () => { root.style.removeProperty('--toast-offset'); };
   }, [barHeight]);
 
-  const categorized = routeMode ? sortByStoreRoute(unchecked) : null;
+  const categorized = order === 'department' ? sortByStoreRoute(unchecked) : null;
+  const productItem = groceryItems.find((i) => i.id === productItemId) ?? null;
+
+  const changeOrder = (next: ListOrder) => {
+    setOrder(next);
+    try {
+      localStorage.setItem(ORDER_KEY, next);
+    } catch {
+      // Storage blocked; the choice lasts until the page reloads.
+    }
+  };
 
   // Filter suggestions
   const currentNames = groceryItems.map((i) => i.name.toLowerCase());
@@ -122,11 +146,11 @@ const GroceryList = ({ onNavigate }: { onNavigate?: (tab: 'recipes') => void }) 
             {item.fromRecipe && <span className="text-xs text-muted-foreground">voor {item.fromRecipe}</span>}
           </div>
           {item.ahProduct && (
-            <a
-              href={ahProductUrl(item.ahProduct.id)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+            <button
+              type="button"
+              onClick={() => setProductItemId(item.id)}
+              title="Kies een ander product"
+              className="relative -my-2 flex max-w-full items-center gap-1.5 py-2 text-left text-xs text-muted-foreground hover:text-foreground"
             >
               <span className="truncate">
                 {item.ahProduct.quantity}× {item.ahProduct.title}{item.ahProduct.unitSize ? ` · ${item.ahProduct.unitSize}` : ''}
@@ -134,11 +158,19 @@ const GroceryList = ({ onNavigate }: { onNavigate?: (tab: 'recipes') => void }) 
               {item.ahProduct.isBonus && (
                 <span className="shrink-0 rounded bg-[#ff7900]/15 px-1 font-semibold text-[#c25e00]">Bonus</span>
               )}
-            </a>
+              <ChevronRight className="h-3 w-3 shrink-0" aria-hidden="true" />
+            </button>
           )}
           {!item.ahProduct && item.priceCheckedAt && (
             <p className="mt-0.5 text-xs text-muted-foreground">
-              Kies zelf ·{' '}
+              <button
+                type="button"
+                onClick={() => setProductItemId(item.id)}
+                className="relative -my-3 inline-block py-3 font-medium text-primary hover:underline"
+              >
+                Kies zelf
+              </button>
+              {' · '}
               <a
                 href={ahSearchUrl(item.name)}
                 target="_blank"
@@ -217,18 +249,24 @@ const GroceryList = ({ onNavigate }: { onNavigate?: (tab: 'recipes') => void }) 
         </div>
       )}
 
-      {/* Actions */}
+      {/* Order and list actions */}
       {groceryItems.length > 0 &&
-        <div className="flex justify-between items-center gap-3">
-          <button
-            onClick={() => setRouteMode(!routeMode)}
-            className={`text-base flex items-center gap-2 font-semibold min-h-11 px-3 rounded-md transition-colors ${
-              routeMode ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
-          >
-            <Route className="h-5 w-5" />
-            {routeMode ? 'Looproute aan' : 'Looproute'}
-          </button>
-          <div className="flex gap-3">
+        <div className="space-y-2">
+          <div role="group" aria-label="Volgorde van je lijst" className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1">
+            {([['department', 'Op afdeling'], ['added', 'Op volgorde van toevoegen']] as const).map(([value, label]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => changeOrder(value)}
+                aria-pressed={order === value}
+                className={`min-h-11 rounded-md px-2 text-sm font-semibold leading-tight transition-colors ${
+                  order === value ? 'bg-card text-foreground shadow-soft' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="flex justify-end gap-4">
             <button
               onClick={mergeDuplicateItems}
               className="text-primary hover:underline flex items-center gap-1 text-sm min-h-11">
@@ -284,8 +322,8 @@ const GroceryList = ({ onNavigate }: { onNavigate?: (tab: 'recipes') => void }) 
         </div>
       }
 
-      {/* Items - route mode */}
-      {routeMode && categorized &&
+      {/* Items - per department */}
+      {categorized &&
         <div className="space-y-4">
           {categorized.map((group) =>
             <div key={group.category}>
@@ -300,8 +338,8 @@ const GroceryList = ({ onNavigate }: { onNavigate?: (tab: 'recipes') => void }) 
         </div>
       }
 
-      {/* Items - normal mode */}
-      {!routeMode &&
+      {/* Items - in the order they were added */}
+      {!categorized &&
         <div className="space-y-2">
           {unchecked.map(renderItem)}
         </div>
@@ -347,6 +385,8 @@ const GroceryList = ({ onNavigate }: { onNavigate?: (tab: 'recipes') => void }) 
           )}
         </div>
       }
+
+      <AhProductSheet item={productItem} onClose={() => setProductItemId(null)} />
 
       {/* Room for the fixed price bar */}
       {showBar && <div aria-hidden="true" style={{ height: barHeight }} />}

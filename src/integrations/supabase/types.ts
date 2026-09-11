@@ -41,6 +41,7 @@ export type Database = {
     Tables: {
       grocery_items: {
         Row: {
+          ah_category: string | null
           ah_image_url: string | null
           ah_is_bonus: boolean | null
           ah_product_id: number | null
@@ -57,6 +58,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          ah_category?: string | null
           ah_image_url?: string | null
           ah_is_bonus?: boolean | null
           ah_product_id?: number | null
@@ -73,6 +75,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          ah_category?: string | null
           ah_image_url?: string | null
           ah_is_bonus?: boolean | null
           ah_product_id?: number | null

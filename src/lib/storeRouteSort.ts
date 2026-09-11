@@ -1,36 +1,64 @@
 /**
- * Sorteer boodschappen op supermarkt-looproute.
- * Volgorde: Groente & fruit → Brood → Vers → Houdbaar → Non-food → Diepvries
+ * Sorteer boodschappen per afdeling, in de volgorde waarin je door een AH loopt.
+ * Heeft een boodschap een AH-product, dan telt de afdeling die AH zelf opgeeft;
+ * anders zoeken we op trefwoorden in de naam.
  */
 
-type RouteCategory =
+type Department =
   | 'groente_fruit'
   | 'brood'
-  | 'vers'
+  | 'vlees_vis'
+  | 'zuivel'
+  | 'maaltijden'
+  | 'pasta_rijst'
   | 'houdbaar'
-  | 'non_food'
+  | 'drinken'
+  | 'huishouden'
   | 'diepvries';
 
-const ROUTE_ORDER: RouteCategory[] = [
+const DEPARTMENT_ORDER: Department[] = [
   'groente_fruit',
   'brood',
-  'vers',
+  'vlees_vis',
+  'zuivel',
+  'maaltijden',
+  'pasta_rijst',
   'houdbaar',
-  'non_food',
+  'drinken',
+  'huishouden',
   'diepvries',
 ];
 
-export const ROUTE_LABELS: Record<RouteCategory, string> = {
-  groente_fruit: '🥬 Groente & Fruit',
-  brood: '🍞 Brood',
-  vers: '🥩 Vers',
-  houdbaar: '🥫 Houdbaar',
-  non_food: '🧴 Non-food',
-  diepvries: '🧊 Diepvries',
+export const DEPARTMENT_LABELS: Record<Department, string> = {
+  groente_fruit: 'Groente & fruit',
+  brood: 'Brood & bakkerij',
+  vlees_vis: 'Vlees & vis',
+  zuivel: 'Zuivel & eieren',
+  maaltijden: 'Maaltijden & salades',
+  pasta_rijst: 'Pasta, rijst & wereld',
+  houdbaar: 'Houdbaar',
+  drinken: 'Drinken',
+  huishouden: 'Huishouden',
+  diepvries: 'Diepvries',
 };
 
-// Keywords per categorie (lowercase)
-const CATEGORY_KEYWORDS: Record<RouteCategory, string[]> = {
+// AH's own main categories, such as "Zuivel, eieren" or "Soepen, sauzen, kruiden".
+// The first rule that matches wins, so "Fruit, verse sappen" stays with fruit.
+const AH_CATEGORY_RULES: [RegExp, Department][] = [
+  [/diepvries/i, 'diepvries'],
+  [/groente|fruit|aardappel/i, 'groente_fruit'],
+  [/bakkerij|brood/i, 'brood'],
+  [/vlees|\bvis\b|vegetarisch|vegan|plantaardig/i, 'vlees_vis'],
+  [/zuivel|eieren|kaas/i, 'zuivel'],
+  [/maaltijd|salade|pizza/i, 'maaltijden'],
+  [/pasta|rijst|wereld/i, 'pasta_rijst'],
+  [/frisdrank|sappen|water|koffie|thee|bier|wijn|aperitie/i, 'drinken'],
+  [/drogisterij|huishoud|baby|huisdier|tafelen/i, 'huishouden'],
+  [/soep|saus|kruiden|ontbijt|beleg|snoep|chocolade|koek|chips|snack|borrel|tussendoor|conserven|bakken/i, 'houdbaar'],
+];
+
+// Keywords per afdeling (lowercase), for items without an AH product.
+const DEPARTMENT_KEYWORDS: Record<Department, string[]> = {
   groente_fruit: [
     'appel', 'peer', 'banaan', 'banan', 'druif', 'druiven', 'aardbei', 'framboz',
     'blauwe bes', 'bosbes', 'citroen', 'limoen', 'sinaasappel', 'mandarijn', 'mango',
@@ -39,7 +67,7 @@ const CATEGORY_KEYWORDS: Record<RouteCategory, string[]> = {
     'wortel', 'peen', 'broccoli', 'bloemkool', 'spinazie', 'sla', 'ijsbergsla', 'rucola',
     'andijvie', 'witlof', 'prei', 'courgette', 'aubergine', 'champignon', 'paddenstoel',
     'radijs', 'biet', 'bieten', 'mais', 'sperziebonen', 'snijbonen', 'boontjes',
-    'groente', 'fruit', 'salade', 'kruiden', 'basilicum', 'peterselie', 'bieslook',
+    'groente', 'fruit', 'basilicum', 'peterselie', 'bieslook',
     'munt', 'gember', 'aardappel', 'aardappelen', 'zoete aardappel', 'krieltjes',
     'rode kool', 'witte kool', 'selderij', 'venkel', 'artisjok', 'asperge',
     'lente-ui', 'bosui', 'veldsla', 'spruiten', 'spruitjes', 'boerenkool',
@@ -50,7 +78,7 @@ const CATEGORY_KEYWORDS: Record<RouteCategory, string[]> = {
     'tomato', 'tomatoes', 'cucumber', 'bell pepper', 'onion', 'onions', 'garlic',
     'carrot', 'carrots', 'cauliflower', 'spinach', 'lettuce', 'arugula',
     'leek', 'zucchini', 'eggplant', 'mushroom', 'mushrooms',
-    'radish', 'beet', 'beets', 'corn', 'green beans', 'beans',
+    'radish', 'beet', 'beets', 'corn', 'green beans',
     'vegetable', 'vegetables', 'herbs', 'basil', 'parsley', 'chives',
     'mint', 'ginger', 'potato', 'potatoes', 'sweet potato',
     'celery', 'fennel', 'artichoke', 'asparagus', 'cabbage',
@@ -59,58 +87,73 @@ const CATEGORY_KEYWORDS: Record<RouteCategory, string[]> = {
   brood: [
     'brood', 'boterham', 'pistolet', 'croissant', 'stokbrood', 'baguette',
     'tortilla', 'wrap', 'pitabrood', 'pita', 'naan', 'focaccia', 'bagel',
-    'beschuit', 'cracker', 'knäckebröd', 'volkoren', 'witbrood', 'meergranen',
+    'beschuit', 'knäckebröd', 'volkoren', 'witbrood', 'meergranen',
     'broodje', 'bol', 'bollen', 'roggebrood', 'pumpernickel', 'turks brood',
     'brioche', 'pannenkoek', 'wafel',
     // English
     'bread', 'sandwich', 'pancake', 'waffle', 'whole wheat', 'sourdough', 'rye bread', 'flatbread',
   ],
-  vers: [
-    'melk', 'kaas', 'yoghurt', 'kwark', 'boter', 'margarine', 'room', 'slagroom',
-    'crème fraîche', 'creme fraiche', 'zuivel', 'ei', 'eieren', 'vlees', 'kip',
-    'kipfilet', 'kippenfilet', 'gehakt', 'biefstuk', 'steak', 'worst', 'rookworst',
+  vlees_vis: [
+    'vlees', 'kip', 'kipfilet', 'kippenfilet', 'gehakt', 'biefstuk', 'steak', 'worst', 'rookworst',
     'spek', 'bacon', 'ham', 'salami', 'chorizo', 'filet americain', 'carpaccio',
-    'vis', 'zalm', 'garnaal', 'garnalen', 'tonijn vers', 'haring', 'makreel',
-    'kabeljauw', 'tilapia', 'pangasius', 'mozzarella', 'brie', 'camembert',
-    'geitenkaas', 'oude kaas', 'jong belegen', 'plakken kaas', 'geraspte kaas',
-    'cottage cheese', 'hummus', 'tzatziki', 'pesto vers', 'pasta vers',
-    'vleesvervangers', 'tofu', 'tempeh', 'kipstuckjes', 'drumstick', 'varkens',
-    'runder', 'lams', 'kalf', 'rosbief', 'leverworst', 'paté', 'filet',
+    'vis', 'zalm', 'garnaal', 'garnalen', 'tonijn', 'haring', 'makreel',
+    'kabeljauw', 'tilapia', 'pangasius', 'vleesvervanger', 'tofu', 'tempeh', 'kipstukjes',
+    'drumstick', 'varkens', 'runder', 'lams', 'kalf', 'rosbief', 'leverworst', 'paté',
     'shoarma', 'gyros', 'burger', 'saucijs',
     // English
+    'meat', 'chicken', 'chicken breast', 'ground beef', 'minced meat', 'sausage',
+    'fish', 'salmon', 'shrimp', 'prawns', 'cod',
+  ],
+  zuivel: [
+    'melk', 'kaas', 'yoghurt', 'kwark', 'boter', 'margarine', 'room', 'slagroom',
+    'crème fraîche', 'creme fraiche', 'zuivel', 'ei', 'eieren', 'mozzarella', 'brie', 'camembert',
+    'geitenkaas', 'oude kaas', 'jong belegen', 'plakken kaas', 'geraspte kaas',
+    'cottage cheese', 'hummus', 'tzatziki',
+    // English
     'milk', 'cheese', 'yogurt', 'butter', 'cream', 'whipped cream',
-    'dairy', 'egg', 'eggs', 'meat', 'chicken', 'chicken breast',
-    'ground beef', 'minced meat', 'sausage', 'fish', 'salmon',
-    'shrimp', 'prawns', 'cod', 'goat cheese', 'grated cheese', 'sliced cheese',
+    'dairy', 'egg', 'eggs', 'goat cheese', 'grated cheese', 'sliced cheese',
+  ],
+  maaltijden: [
+    'maaltijdsalade', 'salade', 'pizza', 'lasagne', 'kant-en-klaar', 'verse soep', 'wraps salade',
+    // English
+    'ready meal', 'salad',
+  ],
+  pasta_rijst: [
+    'pasta', 'spaghetti', 'penne', 'fusilli', 'macaroni', 'tagliatelle', 'lasagnebladen',
+    'noodles', 'noedels', 'mie', 'rijst', 'basmati', 'couscous', 'bulgur', 'quinoa',
+    'sojasaus', 'ketjap', 'sambal', 'sriracha', 'kokosmelk', 'currypasta', 'curry', 'taco', 'nasi', 'bami',
+    // English
+    'rice', 'soy sauce', 'coconut milk', 'curry paste',
   ],
   houdbaar: [
-    'pasta', 'spaghetti', 'penne', 'fusilli', 'macaroni', 'noodles', 'noedels',
-    'rijst', 'basmati', 'couscous', 'bulgur', 'quinoa', 'linzen', 'bonen',
-    'kikkererwten', 'olie', 'olijfolie', 'zonnebloemolie', 'azijn', 'sojasaus',
-    'ketjap', 'sambal', 'sriracha', 'mosterd', 'ketchup', 'mayonaise', 'mayo',
+    'linzen', 'bonen', 'kikkererwten', 'olie', 'olijfolie', 'zonnebloemolie', 'azijn',
+    'mosterd', 'ketchup', 'mayonaise', 'mayo',
     'saus', 'tomatensaus', 'passata', 'tomatenblokjes', 'blik tomaten',
     'soep', 'bouillon', 'kruiden', 'peper', 'zout', 'paprikapoeder', 'komijn',
     'kurkuma', 'kaneel', 'oregano', 'tijm', 'laurier', 'nootmuskaat',
     'suiker', 'meel', 'bloem', 'bakpoeder', 'gist', 'vanille', 'cacao',
     'chocolade', 'hagelslag', 'pindakaas', 'jam', 'honing', 'stroop',
     'cornflakes', 'muesli', 'granola', 'havermout', 'ontbijtgranen',
-    'thee', 'koffie', 'espresso', 'sap', 'jus', 'limonade', 'water',
-    'bier', 'wijn', 'fris', 'cola', 'cola zero', 'ice tea', 'energy drink',
     'noten', 'pinda', 'cashew', 'amandel', 'walnoot', 'rozijnen', 'dadel',
     'chips', 'koek', 'koekjes', 'biscuit', 'snoep', 'drop', 'popcorn',
-    'crackers', 'rijstwafel', 'tomatenpuree', 'kokosmelk',
+    'crackers', 'cracker', 'rijstwafel', 'tomatenpuree',
     'blikje', 'conserven', 'ingelegd', 'kappertjes', 'olijven',
     // English
-    'rice', 'lentils', 'chickpeas', 'olive oil', 'vinegar', 'soy sauce',
+    'lentils', 'beans', 'chickpeas', 'olive oil', 'vinegar',
     'mustard', 'sauce', 'tomato sauce', 'soup', 'broth', 'pepper', 'salt',
     'cumin', 'turmeric', 'cinnamon', 'sugar', 'flour', 'baking powder',
     'yeast', 'vanilla', 'cocoa', 'chocolate', 'peanut butter', 'honey',
-    'cereal', 'oatmeal', 'oats', 'tea', 'coffee', 'juice', 'lemonade',
-    'beer', 'wine', 'soda', 'nuts', 'peanuts', 'almonds', 'walnuts',
-    'raisins', 'cookies', 'candy', 'snacks', 'tomato paste', 'coconut milk',
+    'cereal', 'oatmeal', 'oats', 'nuts', 'peanuts', 'almonds', 'walnuts',
+    'raisins', 'cookies', 'candy', 'snacks', 'tomato paste',
     'canned', 'olives', 'capers',
   ],
-  non_food: [
+  drinken: [
+    'thee', 'koffie', 'espresso', 'sap', 'jus', 'limonade', 'water',
+    'bier', 'wijn', 'fris', 'cola', 'ice tea', 'energy drink',
+    // English
+    'tea', 'coffee', 'juice', 'lemonade', 'beer', 'wine', 'soda',
+  ],
+  huishouden: [
     'zeep', 'shampoo', 'conditioner', 'douchegel', 'deodorant', 'tandpasta',
     'tandenborstel', 'floss', 'mondwater', 'tissues', 'toiletpapier', 'wc papier',
     'keukenpapier', 'keukenrol', 'vuilniszak', 'afvalzak', 'schoonmaak',
@@ -121,7 +164,7 @@ const CATEGORY_KEYWORDS: Record<RouteCategory, string[]> = {
     'plastic zakjes', 'diepvrieszakjes', 'vershoudfolie', 'pleisters',
     'paracetamol', 'ibuprofen', 'vitamine', 'maandverband', 'tampons',
     'luiers', 'scheermesje', 'scheermes', 'wattenstaafje', 'wattenschijfje',
-    'crème', 'bodylotion', 'zonnebrand', 'insectenspray',
+    'bodylotion', 'zonnebrand', 'insectenspray',
     // English
     'soap', 'shower gel', 'toothpaste', 'toothbrush', 'mouthwash',
     'toilet paper', 'paper towels', 'trash bags', 'cleaning',
@@ -130,27 +173,33 @@ const CATEGORY_KEYWORDS: Record<RouteCategory, string[]> = {
     'cling wrap', 'band-aids', 'vitamins', 'diapers', 'sunscreen',
   ],
   diepvries: [
-    'diepvries', 'bevroren', 'ijsje', 'ijs', 'ijsjes', 'vriesvers',
-    'diepvriespizza', 'pizza diepvries', 'diepvriesgroente', 'doperwten diepvries',
+    'diepvries', 'bevroren', 'ijsje', 'ijsjes', 'vriesvers',
     'frites', 'friet', 'patat', 'kroketten', 'bitterballen', 'frikandel',
-    'loempia', 'spring roll', 'diepvries vis', 'visstick', 'kibbeling',
-    'spinazie diepvries', 'roerbakgroente', 'garnalen diepvries',
+    'loempia', 'visstick', 'kibbeling', 'roerbakgroente',
     // English
     'frozen', 'ice cream', 'fries', 'french fries', 'fish sticks',
-    'frozen pizza', 'frozen vegetables', 'frozen fish',
   ],
 };
 
-function categorize(itemName: string): RouteCategory {
+// Words that put an item in the freezer whatever else its name says ("diepvries spinazie").
+const FROZEN = /\b(diepvries|bevroren|frozen)\b/i;
+
+function fromAhCategory(category: string | null | undefined): Department | null {
+  if (!category) return null;
+  return AH_CATEGORY_RULES.find(([pattern]) => pattern.test(category))?.[1] ?? null;
+}
+
+function fromKeywords(itemName: string): Department {
   const lower = itemName.toLowerCase().trim();
+  if (FROZEN.test(lower)) return 'diepvries';
 
   // Remove leading quantity (e.g. "2 bananen" → "bananen")
   const withoutQty = lower.replace(/^\d+(?:[.,]\d+)?\s+/, '');
 
-  for (const category of ROUTE_ORDER) {
-    for (const keyword of CATEGORY_KEYWORDS[category]) {
+  for (const department of DEPARTMENT_ORDER) {
+    for (const keyword of DEPARTMENT_KEYWORDS[department]) {
       if (withoutQty.includes(keyword) || keyword.includes(withoutQty)) {
-        return category;
+        return department;
       }
     }
   }
@@ -160,28 +209,26 @@ function categorize(itemName: string): RouteCategory {
 }
 
 export interface CategorizedItem<T> {
-  category: RouteCategory;
+  category: Department;
   label: string;
   items: T[];
 }
 
-export function sortByStoreRoute<T extends { name: string }>(items: T[]): CategorizedItem<T>[] {
-  const grouped = new Map<RouteCategory, T[]>();
-
-  for (const cat of ROUTE_ORDER) {
-    grouped.set(cat, []);
-  }
+export function sortByStoreRoute<T extends { name: string; ahProduct?: { category?: string | null } | null }>(
+  items: T[],
+): CategorizedItem<T>[] {
+  const grouped = new Map<Department, T[]>(DEPARTMENT_ORDER.map((department) => [department, []]));
 
   for (const item of items) {
-    const cat = categorize(item.name);
-    grouped.get(cat)!.push(item);
+    const department = fromAhCategory(item.ahProduct?.category) ?? fromKeywords(item.name);
+    grouped.get(department)!.push(item);
   }
 
-  return ROUTE_ORDER
-    .filter((cat) => grouped.get(cat)!.length > 0)
-    .map((cat) => ({
-      category: cat,
-      label: ROUTE_LABELS[cat],
-      items: grouped.get(cat)!,
+  return DEPARTMENT_ORDER
+    .filter((department) => grouped.get(department)!.length > 0)
+    .map((department) => ({
+      category: department,
+      label: DEPARTMENT_LABELS[department],
+      items: grouped.get(department)!,
     }));
 }
