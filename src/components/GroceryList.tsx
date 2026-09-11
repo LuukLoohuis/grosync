@@ -41,7 +41,13 @@ const readListOrder = (): ListOrder => {
   }
 };
 
-const GroceryList = ({ onNavigate }: { onNavigate?: (tab: 'recipes') => void }) => {
+interface GroceryListProps {
+  onNavigate?: (tab: 'recipes') => void;
+  /** False on the shared page, which has no bottom tab bar for the price bar to sit on. */
+  aboveTabBar?: boolean;
+}
+
+const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
   const [newItem, setNewItem] = useState('');
   const [order, setOrder] = useState<ListOrder>(readListOrder);
   const [productItemId, setProductItemId] = useState<string | null>(null);
@@ -110,9 +116,10 @@ const GroceryList = ({ onNavigate }: { onNavigate?: (tab: 'recipes') => void }) 
   useEffect(() => {
     if (!barHeight) return;
     const root = document.documentElement;
-    root.style.setProperty('--toast-offset', `calc(5.5rem + env(safe-area-inset-bottom) + ${barHeight}px)`);
+    const gap = aboveTabBar ? '5.5rem' : '1.5rem';
+    root.style.setProperty('--toast-offset', `calc(${gap} + env(safe-area-inset-bottom) + ${barHeight}px)`);
     return () => { root.style.removeProperty('--toast-offset'); };
-  }, [barHeight]);
+  }, [barHeight, aboveTabBar]);
 
   const categorized = order === 'department' ? sortByStoreRoute(unchecked) : null;
   const productItem = groceryItems.find((i) => i.id === productItemId) ?? null;
@@ -395,7 +402,10 @@ const GroceryList = ({ onNavigate }: { onNavigate?: (tab: 'recipes') => void }) 
       {showBar &&
         <div
           ref={barRef}
-          className="fixed inset-x-0 bottom-[calc(4rem+1px+env(safe-area-inset-bottom))] z-10 border-t border-border bg-background/95 backdrop-blur-md sm:bottom-0 sm:pb-[env(safe-area-inset-bottom)]"
+          className={`fixed inset-x-0 z-10 border-t border-border bg-background/95 backdrop-blur-md ${
+            aboveTabBar
+              ? 'bottom-[calc(4rem+1px+env(safe-area-inset-bottom))] sm:bottom-0 sm:pb-[env(safe-area-inset-bottom)]'
+              : 'bottom-0 pb-[env(safe-area-inset-bottom)]'}`}
         >
           <div className="mx-auto max-w-lg px-4 py-2">
             {hasPrices ? (

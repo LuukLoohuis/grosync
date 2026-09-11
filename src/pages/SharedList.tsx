@@ -65,7 +65,7 @@ const SharedListContent = () => {
       </div>
 
       <main className="max-w-lg mx-auto px-4 py-6">
-        {tab === 'list' && <GroceryList />}
+        {tab === 'list' && <GroceryList aboveTabBar={false} />}
         {tab === 'usuals' && <UsualsList />}
         {tab === 'recipes' && <RecipeList />}
       </main>
