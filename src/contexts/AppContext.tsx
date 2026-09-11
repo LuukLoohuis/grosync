@@ -3,6 +3,7 @@ import { useGroceryItems } from '@/hooks/useGroceryItems';
 import { useRecipes } from '@/hooks/useRecipes';
 import { useUsuals } from '@/hooks/useUsuals';
 import { usePurchaseHistory } from '@/hooks/usePurchaseHistory';
+import type { AhMatch } from '@/services/ahApi';
 import { GroceryItem, Recipe, UsualItem } from '@/types';
 
 interface FrequentItem {
@@ -25,6 +26,7 @@ interface AppContextType {
   clearAllItems: () => Promise<void>;
   addRecipeToGroceryList: (ingredients: string[], recipeName: string) => Promise<void>;
   mergeDuplicateItems: () => Promise<void>;
+  applyAhMatches: (matches: AhMatch[]) => Promise<void>;
   addRecipe: (recipe: Omit<Recipe, 'id'>) => Promise<string | null>;
   updateRecipe: (id: string, updates: Partial<Omit<Recipe, 'id'>>) => Promise<void>;
   removeRecipe: (id: string) => Promise<void>;
@@ -62,6 +64,7 @@ export const AppProvider = ({ children, userId }: { children: React.ReactNode; u
     clearAllItems: grocery.clearAllItems,
     addRecipeToGroceryList: grocery.addRecipeToGroceryList,
     mergeDuplicateItems: grocery.mergeDuplicateItems,
+    applyAhMatches: grocery.applyAhMatches,
     addRecipe: recipeHook.addRecipe,
     updateRecipe: recipeHook.updateRecipe,
     removeRecipe: recipeHook.removeRecipe,

@@ -19,6 +19,23 @@ export interface MacrosData {
   fiber: number;
 }
 
+// Response of the fetch-url-meta edge function.
+export interface FetchedRecipe {
+  imageUrl?: string | null;
+  name?: string;
+  title?: string;
+  description?: string;
+  ingredients?: Array<string | { name: string; quantity?: string | number; unit?: string }>;
+  instructions?: string;
+  servings?: number | null;
+  calories?: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
+  fiber?: number;
+  extractedFrom?: 'page' | 'description' | 'linked-page' | 'video' | 'none';
+}
+
 export async function fetchRecipeFromUrl(url: string) {
   try {
     const response = await fetch(`${FUNCTIONS_URL}/fetch-url-meta`, {

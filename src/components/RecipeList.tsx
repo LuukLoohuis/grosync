@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import RecipeEditDialog from '@/components/RecipeEditDialog';
 import RecipeViewDialog from '@/components/RecipeViewDialog';
 import MacrosDialog from '@/components/MacrosDialog';
-import { fetchRecipeFromUrl, fetchRecipeFromText, translateRecipe, calculateMacros } from '@/services/recipeApi';
+import { fetchRecipeFromUrl, fetchRecipeFromText, translateRecipe, calculateMacros, type FetchedRecipe } from '@/services/recipeApi';
 import RecipeSuggestDialog from '@/components/RecipeSuggestDialog';
 
 const RecipeList = () => {
@@ -35,7 +35,7 @@ const RecipeList = () => {
   };
 
   // Fills the form from a fetch-url-meta response. Returns false when nothing usable came back.
-  const applyFetchedRecipe = (data: any) => {
+  const applyFetchedRecipe = (data: FetchedRecipe | null | undefined) => {
     if (data?.imageUrl) setFetchedImageUrl(data.imageUrl);
     const hasIngredients = Boolean(data?.ingredients?.length);
     if (!hasIngredients && !data?.name && !data?.title) return false;
@@ -44,8 +44,8 @@ const RecipeList = () => {
     if (data?.description) setDescription(data.description);
     if (hasIngredients) {
       setIngredientText(
-        data.ingredients
-          .map((ing: any) => {
+        (data?.ingredients ?? [])
+          .map((ing) => {
             if (typeof ing === 'string') return ing;
             return `${ing.name}${ing.quantity ? ` (${ing.quantity}${ing.unit || ''})` : ''}`;
           })
@@ -255,7 +255,7 @@ const RecipeList = () => {
             <div className="space-y-4">
               {mode === 'url' && (
                 <div className="text-xs text-muted-foreground bg-muted/50 rounded-md p-2">
-                  ✅ Recept opgehaald van URL — je kunt alles hieronder aanpassen.
+                  ✅ {pasteMode ? 'Recept uit geplakte tekst gehaald' : 'Recept opgehaald van URL'} — je kunt alles hieronder aanpassen.
                 </div>
               )}
               {fetchedImageUrl && (

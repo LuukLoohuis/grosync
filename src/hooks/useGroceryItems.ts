@@ -1,6 +1,40 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
+import type { AhMatch } from '@/services/ahApi';
 import { GroceryItem } from '@/types';
+
+type GroceryRow = Database['public']['Tables']['grocery_items']['Row'];
+
+const toGroceryItem = (row: GroceryRow): GroceryItem => ({
+  id: row.id,
+  name: row.name,
+  checked: row.checked,
+  fromRecipe: row.from_recipe || undefined,
+  price: row.price ?? null,
+  ahProduct: row.ah_product_id
+    ? {
+        id: row.ah_product_id,
+        title: row.ah_product_title || '',
+        unitSize: row.ah_unit_size,
+        quantity: row.ah_quantity || 1,
+        imageUrl: row.ah_image_url,
+        isBonus: Boolean(row.ah_is_bonus),
+      }
+    : null,
+});
+
+// A renamed item (e.g. after merging duplicates) no longer matches its AH product.
+const CLEARED_AH_MATCH = {
+  price: null,
+  ah_product_id: null,
+  ah_product_title: null,
+  ah_unit_size: null,
+  ah_quantity: null,
+  ah_image_url: null,
+  ah_is_bonus: null,
+  price_checked_at: null,
+};
 
 interface UseGroceryItemsOptions {
   userId?: string | null;
@@ -21,15 +55,7 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
         .eq('user_id', userId)
         .order('created_at', { ascending: true });
 
-      setGroceryItems(
-        (data || []).map((d) => ({
-          id: d.id,
-          name: d.name,
-          checked: d.checked,
-          fromRecipe: d.from_recipe || undefined,
-          price: (d as any).price ?? null,
-        }))
-      );
+      setGroceryItems((data || []).map(toGroceryItem));
       setLoading(false);
     };
 
@@ -47,16 +73,11 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
         { event: '*', schema: 'public', table: 'grocery_items', filter: `user_id=eq.${userId}` },
         (payload) => {
           if (payload.eventType === 'INSERT') {
-            const d = payload.new as any;
-            setGroceryItems((prev) => {
-              if (prev.find((i) => i.id === d.id)) return prev;
-              return [...prev, { id: d.id, name: d.name, checked: d.checked, fromRecipe: d.from_recipe || undefined, price: d.price ?? null }];
-            });
+            const item = toGroceryItem(payload.new as GroceryRow);
+            setGroceryItems((prev) => (prev.find((i) => i.id === item.id) ? prev : [...prev, item]));
           } else if (payload.eventType === 'UPDATE') {
-            const d = payload.new as any;
-            setGroceryItems((prev) =>
-              prev.map((i) => (i.id === d.id ? { id: d.id, name: d.name, checked: d.checked, fromRecipe: d.from_recipe || undefined, price: d.price ?? null } : i))
-            );
+            const item = toGroceryItem(payload.new as GroceryRow);
+            setGroceryItems((prev) => prev.map((i) => (i.id === item.id ? item : i)));
           } else if (payload.eventType === 'DELETE') {
             setGroceryItems((prev) => prev.filter((i) => i.id !== (payload.old as any).id));
           }
@@ -78,17 +99,8 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
       .select()
       .single();
     if (!data) return;
-    setGroceryItems((prev) =>
-      prev.find((i) => i.id === data.id)
-        ? prev
-        : [...prev, {
-            id: data.id,
-            name: data.name,
-            checked: data.checked,
-            fromRecipe: data.from_recipe || undefined,
-            price: (data as any).price ?? null,
-          }]
-    );
+    const item = toGroceryItem(data);
+    setGroceryItems((prev) => (prev.find((i) => i.id === item.id) ? prev : [...prev, item]));
   }, [userId]);
 
   const toggleGroceryItem = useCallback(async (id: string) => {
@@ -177,7 +189,7 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
     setGroceryItems((prev) => {
       let updated = prev.filter((i) => !idsToDelete.includes(i.id));
       for (const upd of updates) {
-        updated = updated.map((i) => (i.id === upd.id ? { ...i, name: upd.name } : i));
+        updated = updated.map((i) => (i.id === upd.id ? { ...i, name: upd.name, price: null, ahProduct: null } : i));
       }
       return updated;
     });
@@ -185,13 +197,45 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
     // Persist
     await supabase.from('grocery_items').delete().in('id', idsToDelete);
     for (const upd of updates) {
-      await supabase.from('grocery_items').update({ name: upd.name }).eq('id', upd.id);
+      await supabase.from('grocery_items').update({ name: upd.name, ...CLEARED_AH_MATCH }).eq('id', upd.id);
     }
   }, [userId, groceryItems]);
 
   const updateGroceryItemPrice = useCallback(async (id: string, price: number | null) => {
     setGroceryItems((prev) => prev.map((i) => (i.id === id ? { ...i, price } : i)));
-    await supabase.from('grocery_items').update({ price } as any).eq('id', id);
+    await supabase.from('grocery_items').update({ price }).eq('id', id);
+  }, []);
+
+  const applyAhMatches = useCallback(async (matches: AhMatch[]) => {
+    if (matches.length === 0) return;
+    const byItem = new Map(matches.map((m) => [m.itemId, m]));
+    setGroceryItems((prev) => prev.map((i) => {
+      const match = byItem.get(i.id);
+      if (!match) return i;
+      return {
+        ...i,
+        price: match.price,
+        ahProduct: {
+          id: match.productId,
+          title: match.title,
+          unitSize: match.unitSize,
+          quantity: match.quantity,
+          imageUrl: match.imageUrl,
+          isBonus: match.isBonus,
+        },
+      };
+    }));
+    const checkedAt = new Date().toISOString();
+    await Promise.all(matches.map((m) => supabase.from('grocery_items').update({
+      price: m.price,
+      ah_product_id: m.productId,
+      ah_product_title: m.title,
+      ah_unit_size: m.unitSize,
+      ah_quantity: m.quantity,
+      ah_image_url: m.imageUrl,
+      ah_is_bonus: m.isBonus,
+      price_checked_at: checkedAt,
+    }).eq('id', m.itemId)));
   }, []);
 
   return {
@@ -205,5 +249,6 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
     addRecipeToGroceryList,
     mergeDuplicateItems,
     updateGroceryItemPrice,
+    applyAhMatches,
   };
 };

@@ -1,15 +1,23 @@
 import { useState } from 'react';
-import { Check, Plus, Trash2, X, Merge, Route, TrendingUp, ExternalLink } from 'lucide-react';
+import { Check, Plus, Trash2, X, Merge, Route, TrendingUp, ExternalLink, Loader2, ShoppingBasket, Tag } from 'lucide-react';
+import { toast } from 'sonner';
 import { useAppContext } from '@/contexts/AppContext';
+import { AH_MAX_ITEMS, ahBasketUrl, ahProductUrl, matchAhProducts } from '@/services/ahApi';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { sortByStoreRoute } from '@/lib/storeRouteSort';
 import { translateForSearch } from '@/lib/groceryTranslations';
 
+const euro = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' });
+
+// Search links show on touch screens; on desktop they appear on hover.
+const storeLinkClass = 'sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0 flex items-center gap-0.5 text-xs font-semibold';
+
 const GroceryList = () => {
   const [newItem, setNewItem] = useState('');
   const [routeMode, setRouteMode] = useState(false);
-  const { groceryItems, addGroceryItem, toggleGroceryItem, removeGroceryItem, clearCheckedItems, clearAllItems, mergeDuplicateItems, frequentItems, trackPurchase } = useAppContext();
+  const [pricing, setPricing] = useState(false);
+  const { groceryItems, addGroceryItem, toggleGroceryItem, removeGroceryItem, clearCheckedItems, clearAllItems, mergeDuplicateItems, applyAhMatches, frequentItems, trackPurchase } = useAppContext();
 
   const handleAdd = (name?: string) => {
     const item = (name || newItem).trim();
@@ -29,6 +37,26 @@ const GroceryList = () => {
 
   const unchecked = groceryItems.filter((i) => !i.checked);
   const checked = groceryItems.filter((i) => i.checked);
+  const pricedItems = unchecked.filter((i) => i.ahProduct);
+  const ahTotal = pricedItems.reduce((sum, i) => sum + (i.price ?? 0), 0);
+
+  const fetchAhPrices = async () => {
+    const batch = unchecked.slice(0, AH_MAX_ITEMS);
+    if (batch.length === 0) return;
+    setPricing(true);
+    try {
+      const { matches } = await matchAhProducts(batch.map(({ id, name }) => ({ id, name })));
+      await applyAhMatches(matches);
+      toast.success(matches.length === batch.length
+        ? `Alle ${matches.length} boodschappen gevonden bij AH`
+        : `${matches.length} van ${batch.length} boodschappen gevonden bij AH`);
+    } catch (e) {
+      console.error('AH prices failed:', e);
+      toast.error('Kon geen AH-prijzen ophalen');
+    } finally {
+      setPricing(false);
+    }
+  };
   const categorized = routeMode ? sortByStoreRoute(unchecked) : null;
 
   // Filter suggestions
@@ -47,19 +75,48 @@ const GroceryList = () => {
       <button
         onClick={() => handleToggle(item.id)}
         className="h-5 w-5 rounded-full border-2 border-primary shrink-0 flex items-center justify-center hover:bg-primary/10 transition-colors" />
-      <div className="flex-1 min-w-0 flex items-center gap-1.5">
-        <span className="font-body">{item.name}</span>
-        {item.fromRecipe && <span className="text-xs text-muted-foreground">from {item.fromRecipe}</span>}
-        <a
-          href={`https://www.ah.nl/zoeken?query=${toSearchQuery(item.name)}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          title="Zoek op ah.nl"
-          className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0"
-        >
-          <ExternalLink className="h-3.5 w-3.5 text-[#00811c] hover:text-[#006616]" />
-        </a>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="font-body">{item.name}</span>
+          {item.fromRecipe && <span className="text-xs text-muted-foreground">from {item.fromRecipe}</span>}
+          <a
+            href={`https://www.ah.nl/zoeken?query=${toSearchQuery(item.name)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Zoek op ah.nl"
+            className={`${storeLinkClass} text-[#00811c] hover:text-[#006616]`}
+          >
+            AH <ExternalLink className="h-3 w-3" />
+          </a>
+          <a
+            href={`https://www.jumbo.com/producten/?searchTerms=${toSearchQuery(item.name)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Zoek op jumbo.com"
+            className={`${storeLinkClass} text-[#b58900] hover:text-[#8a6800]`}
+          >
+            Jumbo <ExternalLink className="h-3 w-3" />
+          </a>
+        </div>
+        {item.ahProduct && (
+          <a
+            href={ahProductUrl(item.ahProduct.id)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <span className="truncate">
+              {item.ahProduct.quantity}× {item.ahProduct.title}{item.ahProduct.unitSize ? ` · ${item.ahProduct.unitSize}` : ''}
+            </span>
+            {item.ahProduct.isBonus && (
+              <span className="shrink-0 rounded bg-[#ff7900]/15 px-1 font-semibold text-[#c25e00]">Bonus</span>
+            )}
+          </a>
+        )}
       </div>
+      {item.price != null && (
+        <span className="text-sm font-medium tabular-nums shrink-0">{euro.format(item.price)}</span>
+      )}
       <button onClick={() => removeGroceryItem(item.id)} className="opacity-0 group-hover:opacity-100 text-destructive transition-opacity">
         <X className="h-4 w-4" />
       </button>
@@ -119,6 +176,36 @@ const GroceryList = () => {
               <Trash2 className="h-3 w-3" /> Clear entire cart
             </button>
           </div>
+        </div>
+      }
+
+      {/* AH prices and basket */}
+      {unchecked.length > 0 &&
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card p-3">
+          <Button type="button" variant="outline" size="sm" onClick={fetchAhPrices} disabled={pricing} className="gap-2">
+            {pricing
+              ? <><Loader2 className="h-4 w-4 animate-spin" /> Prijzen zoeken...</>
+              : <><Tag className="h-4 w-4" /> {pricedItems.length ? 'AH-prijzen verversen' : 'AH-prijzen ophalen'}</>}
+          </Button>
+          {pricedItems.length > 0 &&
+            <>
+              <span className="text-sm">
+                Totaal bij AH: <span className="font-semibold tabular-nums">{euro.format(ahTotal)}</span>
+                {pricedItems.length < unchecked.length &&
+                  <span className="text-muted-foreground"> ({pricedItems.length} van {unchecked.length})</span>}
+              </span>
+              <Button size="sm" asChild className="ml-auto gap-2 bg-[#00a0e2] text-white hover:bg-[#008cc6]">
+                <a
+                  href={ahBasketUrl(pricedItems.flatMap((i) => (i.ahProduct ? [{ id: i.ahProduct.id, quantity: i.ahProduct.quantity }] : [])))}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Opent ah.nl; na inloggen staan de producten in je mandje"
+                >
+                  <ShoppingBasket className="h-4 w-4" /> Alles in AH-mandje
+                </a>
+              </Button>
+            </>
+          }
         </div>
       }
 

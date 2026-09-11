@@ -41,30 +41,51 @@ export type Database = {
     Tables: {
       grocery_items: {
         Row: {
+          ah_image_url: string | null
+          ah_is_bonus: boolean | null
+          ah_product_id: number | null
+          ah_product_title: string | null
+          ah_quantity: number | null
+          ah_unit_size: string | null
           checked: boolean
           created_at: string
           from_recipe: string | null
           id: string
           name: string
           price: number | null
+          price_checked_at: string | null
           user_id: string
         }
         Insert: {
+          ah_image_url?: string | null
+          ah_is_bonus?: boolean | null
+          ah_product_id?: number | null
+          ah_product_title?: string | null
+          ah_quantity?: number | null
+          ah_unit_size?: string | null
           checked?: boolean
           created_at?: string
           from_recipe?: string | null
           id?: string
           name: string
           price?: number | null
+          price_checked_at?: string | null
           user_id: string
         }
         Update: {
+          ah_image_url?: string | null
+          ah_is_bonus?: boolean | null
+          ah_product_id?: number | null
+          ah_product_title?: string | null
+          ah_quantity?: number | null
+          ah_unit_size?: string | null
           checked?: boolean
           created_at?: string
           from_recipe?: string | null
           id?: string
           name?: string
           price?: number | null
+          price_checked_at?: string | null
           user_id?: string
         }
         Relationships: []

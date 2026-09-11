@@ -5,6 +5,16 @@ export interface GroceryItem {
   category?: string;
   fromRecipe?: string;
   price?: number | null;
+  ahProduct?: AhProduct | null;
+}
+
+export interface AhProduct {
+  id: number;
+  title: string;
+  unitSize: string | null;
+  quantity: number;
+  imageUrl: string | null;
+  isBonus: boolean;
 }
 
 export interface UsualItem {

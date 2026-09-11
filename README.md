@@ -54,6 +54,18 @@ standaard `gemini-3.8-flash`) en alleen voor openbare YouTube-video's.
 Google-login loopt via de Google-provider in Supabase Auth
 (Authentication > Providers > Google).
 
+### AH-prijzen en -mandje (`ah-products`)
+
+"AH-prijzen ophalen" op de boodschappenlijst stuurt de openstaande items naar
+`ah-products`. Die kiest per item een AH-product met aantal en prijs; de app
+bewaart dat op het item (`ah_*`-kolommen, `price` is het regelbedrag). "Alles in
+AH-mandje" opent `ah.nl/mijnlijst/add-multiple?p=<id>:<aantal>&…`; na inloggen op
+ah.nl staan de producten in je mandje.
+
+AH heeft geen publieke API: de functie gebruikt de anonieme flow van de AH-app en
+kan dus zonder waarschuwing breken. Jumbo krijgt alleen een zoeklink per item;
+de voorwaarden van jumbo.com verbieden het automatisch uitlezen van site en app.
+
 ## Deploy
 
 Push naar `main`; Vercel bouwt en publiceert. `vercel.json` legt de Vite-build
