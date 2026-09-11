@@ -266,10 +266,11 @@ Deno.serve(async (req) => {
     const terms = await searchTerms(list);
     const lines = await mapWithConcurrency(list, SEARCH_CONCURRENCY, async (item) => {
       const term = terms.get(item.id);
-      const found = await searchWithFallback(term);
+      // Search wide: for "eieren" AH lists egg salads and multipacks before the plain boxes.
+      const found = await searchWithFallback(term, 30, 30);
       // The model kept picking "3-pack" boxes of eggs; offer single packages whenever AH has them.
       const singles = found.filter((c) => !isMultipack(c));
-      const candidates = singles.length > 0 ? singles : found;
+      const candidates = (singles.length > 0 ? singles : found).slice(0, 12);
       return { id: item.id, name: item.name, amount: term?.amount || '', query: term?.query || '', candidates };
     });
 

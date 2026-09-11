@@ -44,7 +44,9 @@ export const DEPARTMENT_LABELS: Record<Department, string> = {
 
 // AH's own main categories, such as "Zuivel, eieren" or "Soepen, sauzen, kruiden".
 // The first rule that matches wins, so "Fruit, verse sappen" stays with fruit.
-const AH_CATEGORY_RULES: [RegExp, Department][] = [
+// A mixed category such as "Kaas, vleeswaren, tapas" says nothing on its own; the name decides.
+const AH_CATEGORY_RULES: [RegExp, Department | 'by-name'][] = [
+  [/kaas.*vleeswaren|vleeswaren.*kaas/i, 'by-name'],
   [/diepvries/i, 'diepvries'],
   [/groente|fruit|aardappel/i, 'groente_fruit'],
   [/bakkerij|brood/i, 'brood'],
@@ -155,7 +157,7 @@ const DEPARTMENT_KEYWORDS: Record<Department, string[]> = {
   ],
   huishouden: [
     'zeep', 'shampoo', 'conditioner', 'douchegel', 'deodorant', 'tandpasta',
-    'tandenborstel', 'floss', 'mondwater', 'tissues', 'toiletpapier', 'wc papier',
+    'tandenborstel', 'floss', 'mondwater', 'tissues', 'toiletpapier', 'wc papier', 'wc-papier',
     'keukenpapier', 'keukenrol', 'vuilniszak', 'afvalzak', 'schoonmaak',
     'allesreiniger', 'afwasmiddel', 'vaatwasmiddel', 'wasmiddel', 'wasverzachter',
     'sponzen', 'spons', 'doekjes', 'handzeep', 'desinfecterend', 'bleek',
@@ -186,7 +188,8 @@ const FROZEN = /\b(diepvries|bevroren|frozen)\b/i;
 
 function fromAhCategory(category: string | null | undefined): Department | null {
   if (!category) return null;
-  return AH_CATEGORY_RULES.find(([pattern]) => pattern.test(category))?.[1] ?? null;
+  const department = AH_CATEGORY_RULES.find(([pattern]) => pattern.test(category))?.[1];
+  return department && department !== 'by-name' ? department : null;
 }
 
 function fromKeywords(itemName: string): Department {
@@ -198,7 +201,9 @@ function fromKeywords(itemName: string): Department {
 
   for (const department of DEPARTMENT_ORDER) {
     for (const keyword of DEPARTMENT_KEYWORDS[department]) {
-      if (withoutQty.includes(keyword) || keyword.includes(withoutQty)) {
+      // The reverse check lets "banaan" find "bananen", but only for longer names:
+      // otherwise "cola" would land wherever a keyword happens to contain it.
+      if (withoutQty.includes(keyword) || (withoutQty.length >= 5 && keyword.startsWith(withoutQty))) {
         return department;
       }
     }
