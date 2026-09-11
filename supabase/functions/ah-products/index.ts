@@ -106,12 +106,23 @@ async function searchAh(query: string, size = 15, keep = 10): Promise<Candidate[
   }
 }
 
-// AH's search finds nothing for some everyday words ("keukenrol"), so the second wording gets a turn.
+// Asked only when AH found nothing and the batch gave no second wording.
+async function ahWording(query: string): Promise<string> {
+  const result = await askJson(
+    'Albert Heijn\'s product search found nothing for this Dutch search. Give the word(s) AH itself uses on such products, different from the search (e.g. "keukenrol" → "keukenpapier", "wc-papier" → "toiletpapier"). Return JSON {"query":"..."}, with "" if you know no other wording.',
+    JSON.stringify({ search: query }),
+  );
+  return typeof result.query === 'string' ? result.query.trim() : '';
+}
+
+// AH's search finds nothing for some everyday words ("keukenrol"), so a second wording gets a turn.
 async function searchWithFallback(term: SearchTerm | undefined, size?: number, keep?: number): Promise<Candidate[]> {
   if (!term) return [];
   const first = await searchAh(term.query, size, keep);
-  if (first.length > 0 || !term.fallback || term.fallback === term.query) return first;
-  return searchAh(term.fallback, size, keep);
+  if (first.length > 0) return first;
+  const fallback = term.fallback || await ahWording(term.query).catch(() => '');
+  if (!fallback || fallback.toLowerCase() === term.query.toLowerCase()) return first;
+  return searchAh(fallback, size, keep);
 }
 
 async function mapWithConcurrency<T, R>(values: T[], limit: number, fn: (value: T) => Promise<R>): Promise<R[]> {
