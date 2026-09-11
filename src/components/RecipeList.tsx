@@ -306,7 +306,7 @@ const RecipeList = () => {
       <RecipeSuggestDialog />
 
       {loading && (
-        <div className="grid gap-4 sm:grid-cols-2" aria-hidden="true">
+        <div className="grid gap-4" aria-hidden="true">
           {[0, 1].map((i) => <Skeleton key={i} className="h-56 rounded-lg" />)}
         </div>
       )}
@@ -322,7 +322,7 @@ const RecipeList = () => {
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4">
         {recipes.map((recipe) => (
           <div key={recipe.id} className="bg-card rounded-lg overflow-hidden shadow-soft animate-fade-in group relative">
             {recipe.imageUrl && (

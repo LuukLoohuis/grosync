@@ -25,8 +25,13 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      {/* Above the bottom tab bar on phones, including the iPhone home indicator. */}
-      <Sonner position="bottom-center" offset="calc(5.5rem + env(safe-area-inset-bottom))" />
+      {/* Keep toasts above the bottom tab bar and the iPhone home indicator. Sonner uses
+          mobileOffset instead of offset below 600px, so both need the bottom value. */}
+      <Sonner
+        position="bottom-center"
+        offset={{ bottom: 'calc(5.5rem + env(safe-area-inset-bottom))' }}
+        mobileOffset={{ bottom: 'calc(5.5rem + env(safe-area-inset-bottom))' }}
+      />
       <HashRouter>
         <Routes>
           <Route path="/auth" element={<Auth />} />
