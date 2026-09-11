@@ -9,6 +9,7 @@ import { AppProvider } from '@/contexts/AppContext';
 import GroceryList from '@/components/GroceryList';
 import RecipeList from '@/components/RecipeList';
 import UsualsList from '@/components/UsualsList';
+import OfflineBanner from '@/components/OfflineBanner';
 
 const SharedListContent = () => {
   const [tab, setTab] = useState<'list' | 'usuals' | 'recipes'>('list');
@@ -33,6 +34,7 @@ const SharedListContent = () => {
             <Link2 className="h-4 w-4" />
           </Button>
         </div>
+        <OfflineBanner />
       </header>
 
       <div className="max-w-lg mx-auto px-4 pt-4">

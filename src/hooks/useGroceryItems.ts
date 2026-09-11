@@ -1,11 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
+import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import type { AhMatch } from '@/services/ahApi';
 import { GroceryItem } from '@/types';
 import { deleteWithUndo } from '@/lib/undoableDelete';
+import { flushGroceryChanges, pendingGroceryChanges, saveGroceryChange, type GroceryChange } from '@/lib/offlineQueue';
 
 type GroceryRow = Database['public']['Tables']['grocery_items']['Row'];
+type GroceryInsert = Database['public']['Tables']['grocery_items']['Insert'];
 
 const toGroceryItem = (row: GroceryRow): GroceryItem => ({
   id: row.id,
@@ -40,6 +43,64 @@ const CLEARED_AH_MATCH = {
   price_checked_at: null,
 };
 
+// The last list this device saw, so the list opens in the store without signal.
+const cacheKey = (userId: string) => `couplecart-list-${userId}`;
+
+const readCachedList = (userId: string): GroceryItem[] | null => {
+  try {
+    const raw = localStorage.getItem(cacheKey(userId));
+    return raw ? (JSON.parse(raw) as GroceryItem[]) : null;
+  } catch {
+    return null;
+  }
+};
+
+const writeCachedList = (userId: string, items: GroceryItem[]) => {
+  try {
+    localStorage.setItem(cacheKey(userId), JSON.stringify(items));
+  } catch {
+    // Storage full or blocked; the list still works online.
+  }
+};
+
+// A client-made id lets an item added without signal be checked off or removed before it reaches the server.
+const newRow = (userId: string, name: string, fromRecipe?: string): GroceryInsert => ({
+  id: crypto.randomUUID(),
+  user_id: userId,
+  name,
+  from_recipe: fromRecipe || null,
+  checked: false,
+  created_at: new Date().toISOString(),
+});
+
+const rowToItem = (row: GroceryInsert): GroceryItem => ({
+  id: row.id!,
+  name: row.name,
+  checked: Boolean(row.checked),
+  fromRecipe: row.from_recipe || undefined,
+  price: null,
+  priceCheckedAt: null,
+  ahProduct: null,
+});
+
+// Kept changes laid over a list from the server, so they do not flicker away before they are sent.
+const withPendingChanges = (items: GroceryItem[], changes: GroceryChange[], userId: string): GroceryItem[] =>
+  changes.reduce((list, change) => {
+    if (change.kind === 'insert') {
+      const added = change.rows.filter((row) => row.user_id === userId && !list.some((i) => i.id === row.id));
+      return [...list, ...added.map(rowToItem)];
+    }
+    if (change.kind === 'delete') return list.filter((i) => !change.ids.includes(i.id));
+    return list.map((i) => {
+      if (!change.ids.includes(i.id)) return i;
+      return {
+        ...i,
+        ...(change.patch.checked !== undefined ? { checked: change.patch.checked } : {}),
+        ...(change.patch.name !== undefined ? { name: change.patch.name } : {}),
+      };
+    });
+  }, items);
+
 interface UseGroceryItemsOptions {
   userId?: string | null;
 }
@@ -48,23 +109,43 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
   const [groceryItems, setGroceryItems] = useState<GroceryItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Load items
+  const reload = useCallback(async () => {
+    if (!userId) return;
+    // Send what was kept without signal first, so the list from the server already includes it.
+    await flushGroceryChanges();
+    const { data, error } = await supabase
+      .from('grocery_items')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: true });
+
+    // No connection: keep showing the list this device has.
+    if (!error && data) setGroceryItems(withPendingChanges(data.map(toGroceryItem), pendingGroceryChanges(), userId));
+    setLoading(false);
+  }, [userId]);
+
+  // Load items: the stored list right away, then the one from the server
   useEffect(() => {
     if (!userId) { setLoading(false); return; }
-
-    const load = async () => {
-      const { data } = await supabase
-        .from('grocery_items')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: true });
-
-      setGroceryItems((data || []).map(toGroceryItem));
+    const cached = readCachedList(userId);
+    if (cached) {
+      setGroceryItems(cached);
       setLoading(false);
-    };
+    }
+    void reload();
+  }, [userId, reload]);
 
-    load();
-  }, [userId]);
+  // Keep the stored copy current
+  useEffect(() => {
+    if (userId && !loading) writeCachedList(userId, groceryItems);
+  }, [userId, loading, groceryItems]);
+
+  // Back online: send the kept changes and catch up on what others changed meanwhile
+  useEffect(() => {
+    const catchUp = () => { void reload(); };
+    window.addEventListener('online', catchUp);
+    return () => window.removeEventListener('online', catchUp);
+  }, [reload]);
 
   // Real-time subscription
   useEffect(() => {
@@ -97,28 +178,25 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
     // Zet de nieuwe rij zelf in de lijst in plaats van te wachten op de
     // realtime-melding; die kan uitblijven of traag zijn. De subscriptie
     // hierboven slaat een dubbele id over.
-    const { data } = await supabase
-      .from('grocery_items')
-      .insert({ user_id: userId, name, from_recipe: fromRecipe || null })
-      .select()
-      .single();
-    if (!data) return;
-    const item = toGroceryItem(data);
-    setGroceryItems((prev) => (prev.find((i) => i.id === item.id) ? prev : [...prev, item]));
+    const row = newRow(userId, name, fromRecipe);
+    setGroceryItems((prev) => [...prev, rowToItem(row)]);
+    if (!(await saveGroceryChange({ kind: 'insert', rows: [row] }))) {
+      setGroceryItems((prev) => prev.filter((i) => i.id !== row.id));
+      toast.error('Toevoegen lukte niet. Probeer het opnieuw.');
+    }
   }, [userId]);
 
   const toggleGroceryItem = useCallback(async (id: string) => {
     const item = groceryItems.find((i) => i.id === id);
     if (!item) return;
     setGroceryItems((prev) => prev.map((i) => i.id === id ? { ...i, checked: !i.checked } : i));
-    await supabase.from('grocery_items').update({ checked: !item.checked }).eq('id', id);
+    await saveGroceryChange({ kind: 'update', ids: [id], patch: { checked: !item.checked } });
   }, [groceryItems]);
 
   // Sets the state explicitly, so an undo from a toast never flips it the wrong way.
   const setGroceryItemChecked = useCallback(async (id: string, checked: boolean) => {
     setGroceryItems((prev) => prev.map((i) => i.id === id ? { ...i, checked } : i));
-    const { error } = await supabase.from('grocery_items').update({ checked }).eq('id', id);
-    if (error) console.error('Updating item failed:', error);
+    await saveGroceryChange({ kind: 'update', ids: [id], patch: { checked } });
   }, []);
 
   const removeGroceryItem = useCallback((id: string) => {
@@ -132,8 +210,7 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
         prev.some((i) => i.id === id) ? prev : [...prev.slice(0, index), item, ...prev.slice(index)]
       )),
       commit: async () => {
-        const { error } = await supabase.from('grocery_items').delete().eq('id', id);
-        if (error) throw error;
+        if (!(await saveGroceryChange({ kind: 'delete', ids: [id] }))) throw new Error('Delete refused');
       },
     });
   }, [groceryItems]);
@@ -150,25 +227,27 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
       remove: () => setGroceryItems((prev) => prev.filter((i) => !checkedIds.includes(i.id))),
       restore: () => setGroceryItems((prev) => [...prev, ...checkedItems.filter((c) => !prev.some((i) => i.id === c.id))]),
       commit: async () => {
-        const { error } = await supabase.from('grocery_items').delete().in('id', checkedIds);
-        if (error) throw error;
+        if (!(await saveGroceryChange({ kind: 'delete', ids: checkedIds }))) throw new Error('Delete refused');
       },
     });
   }, [userId, groceryItems]);
 
   const clearAllItems = useCallback(async () => {
     if (!userId) return;
+    // The items on screen, by id, so clearing also works without signal.
+    const ids = groceryItems.map((i) => i.id);
     setGroceryItems([]);
-    await supabase.from('grocery_items').delete().eq('user_id', userId);
-  }, [userId]);
+    if (ids.length > 0) await saveGroceryChange({ kind: 'delete', ids });
+  }, [userId, groceryItems]);
 
   const addRecipeToGroceryList = useCallback(async (ingredients: string[], recipeName: string): Promise<boolean> => {
     if (!userId) return false;
-    const newItems = ingredients.map((ing) => ({ user_id: userId, name: ing, from_recipe: recipeName }));
-    if (newItems.length === 0) return true;
-    const { error } = await supabase.from('grocery_items').insert(newItems);
-    if (error) console.error('Adding recipe items failed:', error);
-    return !error;
+    const rows = ingredients.map((ing) => newRow(userId, ing, recipeName));
+    if (rows.length === 0) return true;
+    setGroceryItems((prev) => [...prev, ...rows.map(rowToItem)]);
+    const saved = await saveGroceryChange({ kind: 'insert', rows });
+    if (!saved) setGroceryItems((prev) => prev.filter((i) => !rows.some((row) => row.id === i.id)));
+    return saved;
   }, [userId]);
 
   const mergeDuplicateItems = useCallback(async () => {
@@ -229,9 +308,9 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
     });
 
     // Persist
-    await supabase.from('grocery_items').delete().in('id', idsToDelete);
+    await saveGroceryChange({ kind: 'delete', ids: idsToDelete });
     for (const upd of updates) {
-      await supabase.from('grocery_items').update({ name: upd.name, ...CLEARED_AH_MATCH }).eq('id', upd.id);
+      await saveGroceryChange({ kind: 'update', ids: [upd.id], patch: { name: upd.name, ...CLEARED_AH_MATCH } });
     }
   }, [userId, groceryItems]);
 

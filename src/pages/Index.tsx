@@ -6,6 +6,7 @@ import RecipeList from '@/components/RecipeList';
 import UsualsList from '@/components/UsualsList';
 import MealPlanner from '@/components/MealPlanner';
 import HeaderActions from '@/components/HeaderActions';
+import OfflineBanner from '@/components/OfflineBanner';
 import { useAppContext } from '@/contexts/AppContext';
 import { PENDING_IMPORT_KEY } from '@/lib/recipeImport';
 
@@ -45,6 +46,7 @@ const Index = () => {
           <h1 className="font-display text-xl text-foreground flex-1 truncate">CoupleCart</h1>
           <HeaderActions />
         </div>
+        <OfflineBanner />
       </header>
 
       <nav className="hidden sm:block max-w-lg mx-auto px-4 pt-4" aria-label="Onderdelen">
