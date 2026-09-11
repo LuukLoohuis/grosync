@@ -42,23 +42,24 @@ function send(change: GroceryChange) {
   return table.delete().in('id', change.ids);
 }
 
+async function sendKeptChanges() {
+  for (let next = readQueue()[0]; next; next = readQueue()[0]) {
+    const { error } = await send(next);
+    if (error && isNetworkError(error)) return;
+    if (error) console.error('The server refused a kept change; dropping it:', error, next);
+    // Re-read: new changes may have been added while this one was on its way.
+    writeQueue(readQueue().slice(1));
+  }
+}
+
 let flushing: Promise<void> | null = null;
 
 /** Sends the kept changes in order and stops at the first one that still cannot reach the server. */
 export function flushGroceryChanges(): Promise<void> {
-  flushing ??= (async () => {
-    try {
-      for (let next = readQueue()[0]; next; next = readQueue()[0]) {
-        const { error } = await send(next);
-        if (error && isNetworkError(error)) return;
-        if (error) console.error('The server refused a kept change; dropping it:', error, next);
-        // Re-read: new changes may have been added while this one was on its way.
-        writeQueue(readQueue().slice(1));
-      }
-    } finally {
-      flushing = null;
-    }
-  })();
+  // .finally runs after this assignment, also when the queue is empty and the send finishes at once.
+  flushing ??= sendKeptChanges().finally(() => {
+    flushing = null;
+  });
   return flushing;
 }
 
