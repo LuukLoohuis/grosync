@@ -438,14 +438,19 @@ function metaContent(html: string, property: string): string {
 
 // Instagram puts the caption in og:title as `Name on Instagram: "caption"` and in
 // og:description as `12K likes, … on date: "caption".`
-type InstagramPost = { caption: string; imageUrl: string | null; videoUrl: string | null };
+type InstagramPost = { caption: string; imageUrl: string | null; videoUrl: string | null; author: string };
 
 function instagramPostFromHtml(html: string): InstagramPost | null {
   const captions = [metaContent(html, 'og:title'), metaContent(html, 'og:description')]
     .map((text) => text.match(/:\s*"([\s\S]*)"\.?\s*$/)?.[1]?.trim() || '')
     .sort((a, b) => b.length - a.length);
   if (!captions[0]) return null;
-  return { caption: captions[0], imageUrl: metaContent(html, 'og:image') || null, videoUrl: metaContent(html, 'og:video') || null };
+  return {
+    caption: captions[0],
+    imageUrl: metaContent(html, 'og:image') || null,
+    videoUrl: metaContent(html, 'og:video') || null,
+    author: metaContent(html, 'og:title').match(/^(.*?) on Instagram/)?.[1]?.trim() || '',
+  };
 }
 
 // The page keeps its data as JSON inside a string, so the address arrives with escaped
@@ -470,7 +475,8 @@ function instagramPostFromEmbed(html: string): InstagramPost | null {
   const videoUrl = embeddedVideoUrl(html);
   if (!caption && !videoUrl) return null;
   const image = html.match(/<img[^>]*class="EmbeddedMediaImage"[^>]*src="([^"]+)"/i)?.[1];
-  return { caption, imageUrl: image ? decodeEntities(image) : null, videoUrl };
+  const author = decodeEntities(html.match(/class="CaptionUsername"[^>]*>([^<]+)<\/a>/i)?.[1] || '').trim();
+  return { caption, imageUrl: image ? decodeEntities(image) : null, videoUrl, author };
 }
 
 type FetchAttempt = { url: string; agent: string; status: number; finalUrl: string; length: number; caption: boolean; title: string };
@@ -513,7 +519,77 @@ async function instagramCaption(url: string): Promise<InstagramPost & { attempts
     }
   }
   console.log('No Instagram caption:', JSON.stringify(attempts));
-  return { caption: '', imageUrl: null, videoUrl: null, attempts };
+  return { caption: '', imageUrl: null, videoUrl: null, author: '', attempts };
+}
+
+// Words that say which dish it is, for comparing a search result with the post.
+const dishWords = (text: string) =>
+  new Set(
+    text.toLowerCase().normalize('NFKD').replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/).filter((word) => word.length >= 4),
+  );
+
+function sameDish(wanted: string, found: string): boolean {
+  const want = dishWords(wanted);
+  if (want.size === 0) return false;
+  const got = dishWords(found);
+  const shared = [...want].filter((word) => got.has(word)).length;
+  return shared >= Math.min(2, want.size) && shared / want.size >= 0.5;
+}
+
+// The first line of a caption usually names the dish: "💥 CRISPY BANG BANG CAULIFLOWER 💥".
+function dishFromCaption(caption: string): string {
+  const line = caption
+    .split('\n')
+    .map((text) => text.replace(/#[\p{L}\p{N}_]+|@[\w.]+/gu, ' ').replace(/[^\p{L}\p{N}\s'&-]/gu, ' ').replace(/\s+/g, ' ').trim())
+    .find((text) => text.length >= 4);
+  return (line || '').slice(0, 80);
+}
+
+// Last resort for a post without a recipe in its text or a readable video: search the web for
+// the dish and its maker, and take the recipe from a page that is about the same dish.
+async function recipeFromSearch(dish: string, maker: string, imageUrl: string | null, deadline: number): Promise<Extraction | null> {
+  const firecrawlKey = Deno.env.get('FIRECRAWL_API_KEY');
+  if (!firecrawlKey || !dish || deadline - Date.now() < 25_000) return null;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), Math.min(45_000, deadline - Date.now() - 15_000));
+  try {
+    const response = await fetch('https://api.firecrawl.dev/v1/search', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${firecrawlKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query: `${dish} ${maker} recipe`.replace(/\s+/g, ' ').trim(),
+        limit: 5,
+        scrapeOptions: { formats: ['markdown'], onlyMainContent: true },
+      }),
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      console.error('Firecrawl search failed:', response.status, await response.text());
+      return null;
+    }
+    const results: { url?: string; markdown?: string }[] = (await response.json()).data || [];
+    for (const result of results) {
+      if (!result.url || !result.markdown || deadline - Date.now() < 10_000) continue;
+      let host = '';
+      try {
+        host = new URL(result.url).hostname;
+      } catch {
+        continue;
+      }
+      if (NON_RECIPE_HOSTS.test(host)) continue;
+      const recipe = await extractRecipeFromText(result.markdown);
+      if (hasRecipe(recipe) && sameDish(dish, recipe.name)) {
+        console.log('Recipe found through search:', result.url);
+        return { recipe, imageUrl, extractedFrom: 'page' };
+      }
+    }
+    console.log('No matching recipe in search results for:', dish);
+  } catch (e) {
+    console.error('Recipe search failed:', e);
+  } finally {
+    clearTimeout(timer);
+  }
+  return null;
 }
 
 Deno.serve(async (req) => {
@@ -552,6 +628,12 @@ Deno.serve(async (req) => {
       if (!hasRecipe(result.recipe) && post.videoUrl && remaining > 30_000) {
         const fromVideo = await extractRecipeFromVideoFile(post.videoUrl, remaining - 5_000);
         if (hasRecipe(fromVideo)) result = { recipe: fromVideo, imageUrl: post.imageUrl, extractedFrom: 'video' };
+      }
+      // Still nothing: look the dish up online, often on the maker's own site.
+      if (!hasRecipe(result.recipe) && post.caption) {
+        const dish = result.recipe.name || dishFromCaption(post.caption);
+        const fromSearch = await recipeFromSearch(dish, post.author, post.imageUrl, deadline);
+        if (fromSearch) result = fromSearch;
       }
     } else {
       const page = await scrapePage(url);
