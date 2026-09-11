@@ -115,14 +115,28 @@ async function ahWording(query: string): Promise<string> {
   return typeof result.query === 'string' ? result.query.trim() : '';
 }
 
-// AH's search finds nothing for some everyday words ("keukenrol"), so a second wording gets a turn.
-async function searchWithFallback(term: SearchTerm | undefined, size?: number, keep?: number): Promise<Candidate[]> {
-  if (!term) return [];
-  const first = await searchAh(term.query, size, keep);
-  if (first.length > 0) return first;
-  const fallback = term.fallback || await ahWording(term.query).catch(() => '');
-  if (!fallback || fallback.toLowerCase() === term.query.toLowerCase()) return first;
-  return searchAh(fallback, size, keep);
+// AH's search finds nothing for some everyday words ("keukenrol"). Then the second wording
+// from the batch gets a turn, and if that is missing or empty too, a wording asked for
+// this one line. The same search never runs twice.
+async function searchWithFallback(
+  term: SearchTerm | undefined,
+  size?: number,
+  keep?: number,
+): Promise<{ candidates: Candidate[]; searchedAs: string }> {
+  if (!term) return { candidates: [], searchedAs: '' };
+  const tried = new Set<string>();
+  const attempt = async (query: string): Promise<Candidate[]> => {
+    const key = query.trim().toLowerCase();
+    if (!key || tried.has(key)) return [];
+    tried.add(key);
+    return searchAh(query.trim(), size, keep);
+  };
+  const first = await attempt(term.query);
+  if (first.length > 0) return { candidates: first, searchedAs: term.query };
+  const second = await attempt(term.fallback);
+  if (second.length > 0) return { candidates: second, searchedAs: term.fallback };
+  const wording = await ahWording(term.query).catch(() => '');
+  return { candidates: await attempt(wording), searchedAs: wording };
 }
 
 async function mapWithConcurrency<T, R>(values: T[], limit: number, fn: (value: T) => Promise<R>): Promise<R[]> {
@@ -177,14 +191,15 @@ async function searchTerms(items: Item[]): Promise<Map<string, SearchTerm>> {
 const isMultipack = (candidate: Candidate) => /\b\d+\s*-?\s*pack\b|multipack/i.test(candidate.title);
 
 async function chooseProducts(
-  lines: { id: string; name: string; amount: string; candidates: Candidate[] }[],
+  lines: { id: string; name: string; amount: string; searchedAs: string; candidates: Candidate[] }[],
 ): Promise<Map<string, { index: number; quantity: number }>> {
   const result = await askJson(
-    'For each ingredient pick the one Albert Heijn product a home cook would buy for it. Respect what the line says about the product itself: "diepvries" or "frozen" means a frozen product (and without it prefer fresh), "gerookt" means smoked. Avoid candidates marked multipack unless the amount needs that many. Prefer the plain product over snacks, ready meals, flavoured variants and multipacks; prefer the AH house brand when products are otherwise equal; pick the smallest package that covers the amount. "quantity" is the number of packages needed (1 when the amount is unknown or small). Use index -1 when no candidate is that ingredient. Return JSON {"choices":[{"id":"...","index":0,"quantity":1}]}.',
+    'For each ingredient pick the one Albert Heijn product a home cook would buy for it. Respect what the line says about the product itself: "diepvries" or "frozen" means a frozen product (and without it prefer fresh), "gerookt" means smoked. Avoid candidates marked multipack unless the amount needs that many. The candidates come from an AH search ("search") that may use AH's own name for the same thing, such as keukenpapier for keukenrol or toiletpapier for wc-papier; such a product still is that ingredient. Prefer the plain product over snacks, ready meals, flavoured variants and multipacks; prefer the AH house brand when products are otherwise equal; pick the smallest package that covers the amount. "quantity" is the number of packages needed (1 when the amount is unknown or small). Use index -1 when no candidate is that ingredient. Return JSON {"choices":[{"id":"...","index":0,"quantity":1}]}.',
     JSON.stringify(lines.map((line) => ({
       id: line.id,
       ingredient: line.name,
       amount: line.amount,
+      search: line.searchedAs,
       candidates: line.candidates.map((c, index) => ({ index, title: c.title, size: c.unitSize, price: c.price, category: c.category, multipack: isMultipack(c) })),
     }))),
   );
@@ -262,7 +277,7 @@ Deno.serve(async (req) => {
       const terms = await searchTerms([{ id: item.id, name: item.name }]);
       const term = terms.get(item.id);
       const query = term?.query || '';
-      const candidates = await searchWithFallback(term, 30, 20);
+      const { candidates } = await searchWithFallback(term, 30, 20);
       const fitting = await sameIngredient(item.name, candidates.filter((c) => c.webshopId !== exclude));
       const alternatives = fitting.slice(0, 5).map(toAlternative);
       return json({ query, alternatives });
@@ -278,11 +293,11 @@ Deno.serve(async (req) => {
     const lines = await mapWithConcurrency(list, SEARCH_CONCURRENCY, async (item) => {
       const term = terms.get(item.id);
       // Search wide: for "eieren" AH lists egg salads and multipacks before the plain boxes.
-      const found = await searchWithFallback(term, 30, 30);
+      const { candidates: found, searchedAs } = await searchWithFallback(term, 30, 30);
       // The model kept picking "3-pack" boxes of eggs; offer single packages whenever AH has them.
       const singles = found.filter((c) => !isMultipack(c));
       const candidates = (singles.length > 0 ? singles : found).slice(0, 12);
-      return { id: item.id, name: item.name, amount: term?.amount || '', query: term?.query || '', candidates };
+      return { id: item.id, name: item.name, amount: term?.amount || '', query: term?.query || '', searchedAs, candidates };
     });
 
     const searchable = lines.filter((line) => line.candidates.length > 0);
