@@ -111,7 +111,7 @@ async function extractRecipeFromText(text: string): Promise<RecipeData> {
 
 // Gemini can watch a public YouTube video, so it also finds recipes that are only
 // spoken or shown on screen.
-async function extractRecipeFromVideo(videoUrl: string, timeoutMs: number): Promise<RecipeData> {
+async function extractRecipeFromVideo(video: { fileUri: string; mimeType?: string }, timeoutMs: number): Promise<RecipeData> {
   const apiKey = Deno.env.get('GEMINI_API_KEY');
   if (!apiKey) {
     console.log('GEMINI_API_KEY not set, skipping video analysis');
@@ -129,7 +129,7 @@ async function extractRecipeFromVideo(videoUrl: string, timeoutMs: number): Prom
         contents: [{
           parts: [
             { text: `You extract recipe data from a cooking video. Use what is said, what is shown on screen and any text overlays. ${RECIPE_RULES} Only state a quantity as exact when it is said, shown on screen or written in a text overlay. When you estimate a quantity yourself, start that ingredient with "ca. ", for example "ca. 300g bread flour". Never put "ca." before a quantity that was said or shown.` },
-            { file_data: { file_uri: videoUrl } },
+            { file_data: { file_uri: video.fileUri, ...(video.mimeType ? { mime_type: video.mimeType } : {}) } },
           ],
         }],
         generationConfig: { temperature: 0.1 },
@@ -150,6 +150,81 @@ async function extractRecipeFromVideo(videoUrl: string, timeoutMs: number): Prom
     return emptyRecipe();
   } finally {
     clearTimeout(timer);
+  }
+}
+
+const GEMINI_API = 'https://generativelanguage.googleapis.com';
+// Instagram videos are short; this keeps the function's memory use well within limits.
+const MAX_VIDEO_BYTES = 60 * 1024 * 1024;
+
+// Gemini cannot open an Instagram link itself, so the video goes through its Files API:
+// download it, upload it, wait until Gemini has processed it, then read the recipe from it.
+async function extractRecipeFromVideoFile(videoUrl: string, timeoutMs: number): Promise<RecipeData> {
+  const apiKey = Deno.env.get('GEMINI_API_KEY');
+  if (!apiKey) return emptyRecipe();
+  const deadline = Date.now() + timeoutMs;
+  let fileName: string | null = null;
+  try {
+    const download = await fetch(videoUrl, { headers: { 'User-Agent': IPHONE_SAFARI } });
+    if (!download.ok) {
+      console.error('Video download failed:', download.status);
+      return emptyRecipe();
+    }
+    const bytes = new Uint8Array(await download.arrayBuffer());
+    if (bytes.length === 0 || bytes.length > MAX_VIDEO_BYTES) {
+      console.log('Video skipped, size:', bytes.length);
+      return emptyRecipe();
+    }
+    const mimeType = download.headers.get('content-type')?.split(';')[0] || 'video/mp4';
+
+    const start = await fetch(`${GEMINI_API}/upload/v1beta/files`, {
+      method: 'POST',
+      headers: {
+        'x-goog-api-key': apiKey,
+        'X-Goog-Upload-Protocol': 'resumable',
+        'X-Goog-Upload-Command': 'start',
+        'X-Goog-Upload-Header-Content-Length': String(bytes.length),
+        'X-Goog-Upload-Header-Content-Type': mimeType,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ file: { display_name: 'couplecart-instagram' } }),
+    });
+    const uploadUrl = start.headers.get('x-goog-upload-url');
+    if (!start.ok || !uploadUrl) {
+      console.error('Gemini upload start failed:', start.status, await start.text());
+      return emptyRecipe();
+    }
+
+    const upload = await fetch(uploadUrl, {
+      method: 'POST',
+      headers: { 'X-Goog-Upload-Offset': '0', 'X-Goog-Upload-Command': 'upload, finalize' },
+      body: bytes,
+    });
+    if (!upload.ok) {
+      console.error('Gemini upload failed:', upload.status, await upload.text());
+      return emptyRecipe();
+    }
+    let file = (await upload.json()).file as { name: string; uri: string; state: string };
+    fileName = file.name;
+
+    while (file.state === 'PROCESSING' && Date.now() < deadline - 20_000) {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const status = await fetch(`${GEMINI_API}/v1beta/${file.name}`, { headers: { 'x-goog-api-key': apiKey } });
+      if (!status.ok) break;
+      file = await status.json();
+    }
+    if (file.state !== 'ACTIVE') {
+      console.error('Gemini file not ready:', file.state);
+      return emptyRecipe();
+    }
+    console.log('Instagram video uploaded:', bytes.length, 'bytes');
+    return await extractRecipeFromVideo({ fileUri: file.uri, mimeType }, Math.max(deadline - Date.now(), 10_000));
+  } catch (e) {
+    console.error('Video file extraction failed:', e);
+    return emptyRecipe();
+  } finally {
+    // Uploaded files expire after two days anyway; removing them right away keeps nothing around.
+    if (fileName) await fetch(`${GEMINI_API}/v1beta/${fileName}`, { method: 'DELETE', headers: { 'x-goog-api-key': apiKey } }).catch(() => {});
   }
 }
 
@@ -319,7 +394,7 @@ async function recipeFromYouTube(videoId: string, deadline: number): Promise<Ext
 
   const remaining = deadline - Date.now();
   if (remaining > 20_000) {
-    const fromVideo = await extractRecipeFromVideo(watchUrl, remaining);
+    const fromVideo = await extractRecipeFromVideo({ fileUri: watchUrl }, remaining);
     if (hasRecipe(fromVideo)) return { recipe: fromVideo, imageUrl, extractedFrom: 'video' };
   }
 
@@ -363,27 +438,39 @@ function metaContent(html: string, property: string): string {
 
 // Instagram puts the caption in og:title as `Name on Instagram: "caption"` and in
 // og:description as `12K likes, … on date: "caption".`
-function instagramPostFromHtml(html: string): { caption: string; imageUrl: string | null } | null {
+type InstagramPost = { caption: string; imageUrl: string | null; videoUrl: string | null };
+
+function instagramPostFromHtml(html: string): InstagramPost | null {
   const captions = [metaContent(html, 'og:title'), metaContent(html, 'og:description')]
     .map((text) => text.match(/:\s*"([\s\S]*)"\.?\s*$/)?.[1]?.trim() || '')
     .sort((a, b) => b.length - a.length);
   if (!captions[0]) return null;
-  return { caption: captions[0], imageUrl: metaContent(html, 'og:image') || null };
+  return { caption: captions[0], imageUrl: metaContent(html, 'og:image') || null, videoUrl: metaContent(html, 'og:video') || null };
+}
+
+// The page keeps its data as JSON inside a string, so the address arrives with escaped
+// slashes. Instagram includes it for some videos and leaves it out for others.
+function embeddedVideoUrl(html: string): string | null {
+  const raw = html.match(/video_url\\*"\s*:\s*\\*"(https?:[^"]+)"/)?.[1];
+  if (!raw) return null;
+  return decodeEntities(raw.replace(/\\+$/, '').replace(/\\+\//g, '/').replace(/\\+u0026/g, '&'));
 }
 
 // The embed page that other sites use to show a post carries the caption as HTML.
-function instagramPostFromEmbed(html: string): { caption: string; imageUrl: string | null } | null {
+function instagramPostFromEmbed(html: string): InstagramPost | null {
   const block = html.match(/class="Caption">([\s\S]*?)<div class="CaptionComments"/i)?.[1];
-  if (!block) return null;
-  const caption = decodeEntities(
-    block
-      .replace(/<a[^>]*class="CaptionUsername"[\s\S]*?<\/a>/i, '')
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<[^>]+>/g, ''),
-  ).trim();
-  if (!caption) return null;
+  const caption = block
+    ? decodeEntities(
+        block
+          .replace(/<a[^>]*class="CaptionUsername"[\s\S]*?<\/a>/i, '')
+          .replace(/<br\s*\/?>/gi, '\n')
+          .replace(/<[^>]+>/g, ''),
+      ).trim()
+    : '';
+  const videoUrl = embeddedVideoUrl(html);
+  if (!caption && !videoUrl) return null;
   const image = html.match(/<img[^>]*class="EmbeddedMediaImage"[^>]*src="([^"]+)"/i)?.[1];
-  return { caption, imageUrl: image ? decodeEntities(image) : null };
+  return { caption, imageUrl: image ? decodeEntities(image) : null, videoUrl };
 }
 
 type FetchAttempt = { url: string; agent: string; status: number; finalUrl: string; length: number; caption: boolean; title: string };
@@ -391,7 +478,7 @@ type FetchAttempt = { url: string; agent: string; status: number; finalUrl: stri
 const IPHONE_SAFARI = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';
 const FACEBOOK_CRAWLER = 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)';
 
-async function instagramCaption(url: string): Promise<{ caption: string; imageUrl: string | null; attempts: FetchAttempt[] }> {
+async function instagramCaption(url: string): Promise<InstagramPost & { attempts: FetchAttempt[] }> {
   const id = url.match(/instagram\.com\/(?:[\w.]+\/)?(?:p|reels?)\/([\w-]+)/i)?.[1];
   const postUrl = id ? `https://www.instagram.com/p/${id}/` : url;
   const embedUrl = id ? `https://www.instagram.com/p/${id}/embed/captioned/` : null;
@@ -426,7 +513,7 @@ async function instagramCaption(url: string): Promise<{ caption: string; imageUr
     }
   }
   console.log('No Instagram caption:', JSON.stringify(attempts));
-  return { caption: '', imageUrl: null, attempts };
+  return { caption: '', imageUrl: null, videoUrl: null, attempts };
 }
 
 Deno.serve(async (req) => {
@@ -457,9 +544,15 @@ Deno.serve(async (req) => {
     } else if (/tiktok\.com\//i.test(url)) {
       result = await recipeFromTikTok(url, deadline);
     } else if (/instagram\.com\/(?:[\w.]+\/)?(?:p|reels?)\//i.test(url)) {
-      const { caption, imageUrl } = await instagramCaption(url);
-      captionFound = Boolean(caption);
-      result = await recipeFromCaption(caption, imageUrl, deadline);
+      const post = await instagramCaption(url);
+      captionFound = Boolean(post.caption || post.videoUrl);
+      result = await recipeFromCaption(post.caption, post.imageUrl, deadline);
+      // No recipe in the text: let Gemini watch the video, when Instagram gave its address.
+      const remaining = deadline - Date.now();
+      if (!hasRecipe(result.recipe) && post.videoUrl && remaining > 30_000) {
+        const fromVideo = await extractRecipeFromVideoFile(post.videoUrl, remaining - 5_000);
+        if (hasRecipe(fromVideo)) result = { recipe: fromVideo, imageUrl: post.imageUrl, extractedFrom: 'video' };
+      }
     } else {
       const page = await scrapePage(url);
       const recipe = await extractRecipeFromText(page.content);

@@ -43,7 +43,7 @@ export function progressLabel(elapsedMs: number, input: ImportInput): string {
   if (input.kind === 'text') return 'Recept zoeken…';
   if (elapsedMs < 3000) return 'Link lezen…';
   if (elapsedMs < 12000) return 'Recept zoeken…';
-  return /youtu\.?be/i.test(input.url) ? 'Nog even, we kijken de video…' : 'Nog even geduld…';
+  return /youtu\.?be|instagram\.com/i.test(input.url) ? 'Nog even, we kijken de video…' : 'Nog even geduld…';
 }
 
 const ESTIMATE_PREFIX = /^ca\.\s*/i;
