@@ -14,16 +14,18 @@ import { fetchRecipeFromUrl, fetchRecipeFromText, translateRecipe, calculateMacr
 import RecipeSuggestDialog from '@/components/RecipeSuggestDialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import EstimateBadge from '@/components/EstimateBadge';
+import AddToListSheet from '@/components/AddToListSheet';
 import { SOURCE_LABELS, detectImportInput, isEstimated, progressLabel, withoutEstimate, type SourceKey } from '@/lib/recipeImport';
 
 interface RecipeListProps {
   /** A link or text shared into the app; opens the import dialog and starts fetching. */
   initialImport?: string | null;
   onImportConsumed?: () => void;
+  onNavigate?: (tab: 'list') => void;
 }
 
-const RecipeList = ({ initialImport, onImportConsumed }: RecipeListProps) => {
-  const { loading, recipes, addRecipe, removeRecipe, addRecipeToGroceryList, updateRecipeImage, updateRecipe } = useAppContext();
+const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListProps) => {
+  const { loading, recipes, addRecipe, removeRecipe, updateRecipeImage, updateRecipe } = useAppContext();
   const [open, setOpen] = useState(false);
   const [manual, setManual] = useState(false);
   const [name, setName] = useState('');
@@ -40,6 +42,7 @@ const RecipeList = ({ initialImport, onImportConsumed }: RecipeListProps) => {
   const [importNotice, setImportNotice] = useState<'instagram' | 'notfound' | null>(null);
   const [sourceLabel, setSourceLabel] = useState<string | null>(null);
   const [progress, setProgress] = useState<string | null>(null);
+  const [listRecipeId, setListRecipeId] = useState<string | null>(null);
 
   const resetForm = () => {
     setName(''); setDescription(''); setIngredientText(''); setInstructions(''); setSourceUrl(''); setManual(false); setFetchedMacros(null); setFetchedImageUrl(undefined); setServings(4); setTranslating(false);
@@ -220,15 +223,11 @@ const RecipeList = ({ initialImport, onImportConsumed }: RecipeListProps) => {
     toast.success('Recept toegevoegd!');
   };
 
-  const handleCook = (recipeId: string, recipeName: string) => {
-    const recipe = recipes.find((r) => r.id === recipeId);
-    if (!recipe) return;
-    addRecipeToGroceryList(recipe.ingredients, recipeName);
-    toast.success(`${recipe.ingredients.length} items op je lijst gezet`);
-  };
+  const listRecipe = recipes.find((r) => r.id === listRecipeId) ?? null;
 
   return (
     <div className="space-y-4">
+      <AddToListSheet recipe={listRecipe} onClose={() => setListRecipeId(null)} onNavigate={onNavigate} />
       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
         <DialogTrigger asChild>
           <Button className="w-full gap-2">
@@ -405,11 +404,11 @@ const RecipeList = ({ initialImport, onImportConsumed }: RecipeListProps) => {
                 </Collapsible>
               )}
               <div className="mt-4 space-y-2">
-                <Button size="sm" className="w-full gap-2" onClick={() => handleCook(recipe.id, recipe.name)}>
-                  <ShoppingCart className="h-3.5 w-3.5" /> Zet op je lijst
+                <Button className="w-full min-h-11 gap-2" onClick={() => setListRecipeId(recipe.id)}>
+                  <ShoppingCart className="h-4 w-4" /> Zet op je lijst
                 </Button>
                 <div className="grid grid-cols-3 gap-2">
-                  <RecipeViewDialog recipe={recipe} />
+                  <RecipeViewDialog recipe={recipe} onAddToList={() => setListRecipeId(recipe.id)} />
                   <RecipeEditDialog recipe={recipe} />
                   <MacrosDialog recipe={recipe} onMacrosCalculated={(id, macros) => updateRecipe(id, { macros })} />
                 </div>

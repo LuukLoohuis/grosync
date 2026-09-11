@@ -8,13 +8,21 @@ import { toast } from 'sonner';
 
 const UsualsList = () => {
   const [newItem, setNewItem] = useState('');
-  const { loading, usuals, addUsual, removeUsual, addGroceryItem, groceryItems } = useAppContext();
+  const [newStaple, setNewStaple] = useState('');
+  const { loading, usuals, addUsual, removeUsual, addGroceryItem, pantryStaples, savePantryStaples } = useAppContext();
 
   const handleAdd = () => {
     if (newItem.trim()) {
       addUsual(newItem.trim());
       setNewItem('');
     }
+  };
+
+  const handleAddStaple = () => {
+    const name = newStaple.trim().toLowerCase();
+    if (!name) return;
+    setNewStaple('');
+    if (!pantryStaples.includes(name)) savePantryStaples([...pantryStaples, name]);
   };
 
   const handleAddToList = (name: string) => {
@@ -79,6 +87,41 @@ const UsualsList = () => {
           </div>
         ))}
       </div>
+
+      {/* Pantry staples */}
+      <section className="space-y-3 border-t border-border pt-6" aria-labelledby="pantry-heading">
+        <div>
+          <h2 id="pantry-heading" className="font-display text-lg text-foreground">Dit heb ik altijd in huis</h2>
+          <p className="text-sm text-muted-foreground">Die staan uitgevinkt als je een recept op je lijst zet.</p>
+        </div>
+        <div className="flex gap-2">
+          <Input
+            placeholder="Bijvoorbeeld: sojasaus"
+            aria-label="Wat heb je altijd in huis?"
+            value={newStaple}
+            onChange={(e) => setNewStaple(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleAddStaple()}
+            className="bg-card border-border font-body"
+          />
+          <Button onClick={handleAddStaple} size="icon" className="shrink-0 h-11 w-11" aria-label="Toevoegen aan altijd in huis">
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {pantryStaples.map((staple) => (
+            <span key={staple} className="flex items-center rounded-full bg-muted pl-3 text-sm text-foreground">
+              {staple}
+              <button
+                onClick={() => savePantryStaples(pantryStaples.filter((s) => s !== staple))}
+                aria-label={`Haal ${staple} weg uit altijd in huis`}
+                className="h-11 w-11 flex items-center justify-center rounded-full text-muted-foreground hover:bg-background hover:text-foreground"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </span>
+          ))}
+        </div>
+      </section>
     </div>
   );
 };

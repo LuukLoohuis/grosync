@@ -5,24 +5,23 @@ import GroceryList from '@/components/GroceryList';
 import RecipeList from '@/components/RecipeList';
 import UsualsList from '@/components/UsualsList';
 import MealPlanner from '@/components/MealPlanner';
-import AppMenu from '@/components/AppMenu';
+import HeaderActions from '@/components/HeaderActions';
 import { useAppContext } from '@/contexts/AppContext';
 import { PENDING_IMPORT_KEY } from '@/lib/recipeImport';
 
 type AppTab = 'list' | 'recipes' | 'planner' | 'usuals';
 
-const TABS: { key: AppTab; label: string; title: string; icon: LucideIcon }[] = [
-  { key: 'list', label: 'Lijst', title: 'Boodschappen', icon: ShoppingCart },
-  { key: 'recipes', label: 'Recepten', title: 'Recepten', icon: ChefHat },
-  { key: 'planner', label: 'Plan', title: 'Weekplan', icon: CalendarDays },
-  { key: 'usuals', label: 'Favorieten', title: 'Favorieten', icon: Star },
+const TABS: { key: AppTab; label: string; icon: LucideIcon }[] = [
+  { key: 'list', label: 'Lijst', icon: ShoppingCart },
+  { key: 'recipes', label: 'Recepten', icon: ChefHat },
+  { key: 'planner', label: 'Plan', icon: CalendarDays },
+  { key: 'usuals', label: 'Favorieten', icon: Star },
 ];
 
 const Index = () => {
   const [tab, setTab] = useState<AppTab>('list');
   const { groceryItems } = useAppContext();
   const uncheckedCount = groceryItems.filter((i) => !i.checked).length;
-  const current = TABS.find((t) => t.key === tab) ?? TABS[0];
   const [searchParams, setSearchParams] = useSearchParams();
   const [pendingImport, setPendingImport] = useState<string | null>(null);
 
@@ -43,8 +42,8 @@ const Index = () => {
       <header className="sticky top-0 z-20 bg-background/90 backdrop-blur-md border-b border-border">
         <div className="max-w-lg mx-auto h-14 px-4 flex items-center gap-3">
           <img src="/favicon.png" alt="CoupleCart" className="h-9 w-9 shrink-0 rounded-lg" width={36} height={36} />
-          <h1 className="font-display text-xl text-foreground flex-1 truncate">{current.title}</h1>
-          <AppMenu />
+          <h1 className="font-display text-xl text-foreground flex-1 truncate">CoupleCart</h1>
+          <HeaderActions />
         </div>
       </header>
 
@@ -73,7 +72,7 @@ const Index = () => {
 
       <main className="max-w-lg mx-auto px-4 pt-6 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:pb-6">
         {tab === 'list' && <GroceryList onNavigate={setTab} />}
-        {tab === 'recipes' && <RecipeList initialImport={pendingImport} onImportConsumed={() => setPendingImport(null)} />}
+        {tab === 'recipes' && <RecipeList initialImport={pendingImport} onImportConsumed={() => setPendingImport(null)} onNavigate={setTab} />}
         {tab === 'planner' && <MealPlanner />}
         {tab === 'usuals' && <UsualsList />}
       </main>

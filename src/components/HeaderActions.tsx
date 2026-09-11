@@ -1,14 +1,17 @@
-import { MoreVertical, MessageCircle, FileDown, Link2, Heart, LogOut } from 'lucide-react';
+import { Share2, MessageCircle, FileDown, Link2, Heart, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import { useAppContext } from '@/contexts/AppContext';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-const AppMenu = () => {
+const ICON_BUTTON =
+  'h-11 w-11 shrink-0 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
+
+const HeaderActions = () => {
   const { groceryItems, userId } = useAppContext();
   const { signOut } = useAuth();
 
@@ -82,38 +85,41 @@ const AppMenu = () => {
   };
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          aria-label="Menu"
-          className="-mr-2 h-11 w-11 shrink-0 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-        >
-          <MoreVertical className="h-5 w-5" />
-        </button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56">
-        <DropdownMenuLabel>Lijst delen</DropdownMenuLabel>
-        <DropdownMenuItem onSelect={shareWhatsApp} className="gap-2 min-h-11 cursor-pointer">
-          <MessageCircle className="h-4 w-4" /> Delen via WhatsApp
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={shareViaLink} className="gap-2 min-h-11 cursor-pointer">
-          <Link2 className="h-4 w-4" /> Deellink kopiëren
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={downloadPDF} className="gap-2 min-h-11 cursor-pointer">
-          <FileDown className="h-4 w-4" /> Download als PDF
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem asChild className="gap-2 min-h-11 cursor-pointer">
-          <a href="https://www.buymeacoffee.com/luukloohuis" target="_blank" rel="noopener noreferrer">
-            <Heart className="h-4 w-4" /> Steun CoupleCart
-          </a>
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={signOut} className="gap-2 min-h-11 cursor-pointer">
-          <LogOut className="h-4 w-4" /> Uitloggen
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <div className="-mr-2 flex items-center">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button type="button" aria-label="Lijst delen" title="Lijst delen" className={ICON_BUTTON}>
+            <Share2 className="h-5 w-5" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuLabel>Lijst delen</DropdownMenuLabel>
+          <DropdownMenuItem onSelect={shareWhatsApp} className="gap-2 min-h-11 cursor-pointer">
+            <MessageCircle className="h-4 w-4" /> Delen via WhatsApp
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={shareViaLink} className="gap-2 min-h-11 cursor-pointer">
+            <Link2 className="h-4 w-4" /> Deellink kopiëren
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={downloadPDF} className="gap-2 min-h-11 cursor-pointer">
+            <FileDown className="h-4 w-4" /> Download als PDF
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <a
+        href="https://www.buymeacoffee.com/luukloohuis"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Steun CoupleCart"
+        title="Steun CoupleCart"
+        className={ICON_BUTTON}
+      >
+        <Heart className="h-5 w-5" />
+      </a>
+      <button type="button" onClick={signOut} aria-label="Uitloggen" title="Uitloggen" className={ICON_BUTTON}>
+        <LogOut className="h-5 w-5" />
+      </button>
+    </div>
   );
 };
 
-export default AppMenu;
+export default HeaderActions;

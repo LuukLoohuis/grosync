@@ -2,6 +2,7 @@ import React, { createContext, useContext } from 'react';
 import { useGroceryItems } from '@/hooks/useGroceryItems';
 import { useRecipes } from '@/hooks/useRecipes';
 import { useUsuals } from '@/hooks/useUsuals';
+import { usePantryStaples } from '@/hooks/usePantryStaples';
 import { usePurchaseHistory } from '@/hooks/usePurchaseHistory';
 import type { AhMatch } from '@/services/ahApi';
 import { GroceryItem, Recipe, UsualItem } from '@/types';
@@ -24,7 +25,7 @@ interface AppContextType {
   removeGroceryItem: (id: string) => void;
   clearCheckedItems: () => void;
   clearAllItems: () => Promise<void>;
-  addRecipeToGroceryList: (ingredients: string[], recipeName: string) => Promise<void>;
+  addRecipeToGroceryList: (ingredients: string[], recipeName: string) => Promise<boolean>;
   mergeDuplicateItems: () => Promise<void>;
   applyAhMatches: (matches: AhMatch[]) => Promise<void>;
   addRecipe: (recipe: Omit<Recipe, 'id'>) => Promise<string | null>;
@@ -33,6 +34,8 @@ interface AppContextType {
   updateRecipeImage: (id: string, imageUrl: string) => Promise<void>;
   addUsual: (name: string) => Promise<void>;
   removeUsual: (id: string) => void;
+  pantryStaples: string[];
+  savePantryStaples: (staples: string[]) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | null>(null);
@@ -48,6 +51,7 @@ export const AppProvider = ({ children, userId }: { children: React.ReactNode; u
   const recipeHook = useRecipes({ userId });
   const usualsHook = useUsuals({ userId });
   const purchaseHook = usePurchaseHistory(userId);
+  const pantry = usePantryStaples(userId);
 
   const value: AppContextType = {
     userId,
@@ -71,6 +75,8 @@ export const AppProvider = ({ children, userId }: { children: React.ReactNode; u
     updateRecipeImage: recipeHook.updateRecipeImage,
     addUsual: usualsHook.addUsual,
     removeUsual: usualsHook.removeUsual,
+    pantryStaples: pantry.pantryStaples,
+    savePantryStaples: pantry.savePantryStaples,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

@@ -105,3 +105,13 @@
     box-shadow: var(--shadow-card);
   }
 }
+
+/* Respect the system setting for less motion: sheets, dialogs and toasts appear without sliding. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -152,12 +152,13 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
     await supabase.from('grocery_items').delete().eq('user_id', userId);
   }, [userId]);
 
-  const addRecipeToGroceryList = useCallback(async (ingredients: string[], recipeName: string) => {
-    if (!userId) return;
+  const addRecipeToGroceryList = useCallback(async (ingredients: string[], recipeName: string): Promise<boolean> => {
+    if (!userId) return false;
     const newItems = ingredients.map((ing) => ({ user_id: userId, name: ing, from_recipe: recipeName }));
-    if (newItems.length > 0) {
-      await supabase.from('grocery_items').insert(newItems);
-    }
+    if (newItems.length === 0) return true;
+    const { error } = await supabase.from('grocery_items').insert(newItems);
+    if (error) console.error('Adding recipe items failed:', error);
+    return !error;
   }, [userId]);
 
   const mergeDuplicateItems = useCallback(async () => {
