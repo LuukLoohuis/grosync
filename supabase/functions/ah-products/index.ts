@@ -65,7 +65,7 @@ async function ahToken(): Promise<string> {
   return cachedToken.value;
 }
 
-function toCandidates(products: any[]): Candidate[] {
+function toCandidates(products: any[], keep = 10): Candidate[] {
   return products
     .filter((p) => !p.isSponsored && p.isOrderable)
     .map((p) => ({
@@ -79,11 +79,11 @@ function toCandidates(products: any[]): Candidate[] {
       category: p.mainCategory || '',
     }))
     .filter((c) => typeof c.webshopId === 'number' && typeof c.price === 'number')
-    .slice(0, 10);
+    .slice(0, keep);
 }
 
-async function searchAh(query: string): Promise<Candidate[]> {
-  const params = new URLSearchParams({ query, size: '15', page: '0', sortOn: 'RELEVANCE' });
+async function searchAh(query: string, size = 15, keep = 10): Promise<Candidate[]> {
+  const params = new URLSearchParams({ query, size: String(size), page: '0', sortOn: 'RELEVANCE' });
   const search = async () => fetch(`https://api.ah.nl/mobile-services/product/search/v2?${params}`, {
     headers: { ...AH_HEADERS, Authorization: `Bearer ${await ahToken()}` },
   });
@@ -97,7 +97,7 @@ async function searchAh(query: string): Promise<Candidate[]> {
       console.error('AH search failed:', query, response.status);
       return [];
     }
-    return toCandidates((await response.json()).products || []);
+    return toCandidates((await response.json()).products || [], keep);
   } catch (e) {
     console.error('AH search error:', query, e);
     return [];
@@ -136,7 +136,7 @@ async function askJson(system: string, user: string): Promise<any> {
 
 async function searchTerms(items: Item[]): Promise<Map<string, { query: string; amount: string }>> {
   const result = await askJson(
-    'You turn grocery list lines into Albert Heijn (Dutch supermarket) searches. For each line give "query": the Dutch word(s) a shopper types to find the plain base product, without brand, quantity or preparation (e.g. "ca. 300g bread flour" → "tarwebloem", "2 large eggs" → "scharreleieren", "parmesan" → "parmigiano reggiano", "1 clove garlic, grated" → "knoflook"), and "amount": the needed quantity as written, or "" if none. Return JSON {"items":[{"id":"...","query":"...","amount":"..."}]} with every id.',
+    'You turn grocery list lines into Albert Heijn (Dutch supermarket) searches. For each line give "query": the Dutch word(s) a shopper types to find the plain base product, without brand, quantity or preparation, but keeping words that make it a different product, such as diepvries, gerookt, halfvolle or volkoren (e.g. "ca. 300g bread flour" → "tarwebloem", "2 large eggs" → "scharreleieren", "parmesan" → "parmigiano reggiano", "1 clove garlic, grated" → "knoflook", "diepvries spinazie" → "diepvries spinazie"), and "amount": the needed quantity as written, or "" if none. Return JSON {"items":[{"id":"...","query":"...","amount":"..."}]} with every id.',
     JSON.stringify(items.map(({ id, name }) => ({ id, line: name }))),
   );
   const terms = new Map<string, { query: string; amount: string }>();
@@ -167,6 +167,22 @@ async function chooseProducts(
     choices.set(choice.id, { index: choice.index, quantity });
   }
   return choices;
+}
+
+// Keeps the candidates that are the ingredient itself, best fit first, so "eieren"
+// offers egg packs instead of egg salad, eierkoeken or yoghurt.
+async function sameIngredient(line: string, candidates: Candidate[]): Promise<Candidate[]> {
+  if (candidates.length === 0) return [];
+  const result = await askJson(
+    'A shopper wants a different Albert Heijn product for one grocery list line. From the candidates keep only products that ARE that ingredient: other brands, sizes, organic or free-range variants are fine. Drop dishes, salads, snacks, baked goods, spreads, drinks and other products that merely contain it or share a word with it. Order the kept ones by how well they fit a home cook. Return JSON {"indexes":[...]}.',
+    JSON.stringify({ line, candidates: candidates.map((c, index) => ({ index, title: c.title, size: c.unitSize, category: c.category })) }),
+  );
+  const kept: Candidate[] = [];
+  for (const index of Array.isArray(result.indexes) ? result.indexes : []) {
+    const candidate = Number.isInteger(index) ? candidates[index] : undefined;
+    if (candidate && !kept.includes(candidate)) kept.push(candidate);
+  }
+  return kept;
 }
 
 function toMatch(itemId: string, candidate: Candidate, quantity: number): Match {
@@ -216,8 +232,9 @@ Deno.serve(async (req) => {
       const exclude = Number(body.exclude) || null;
       const terms = await searchTerms([{ id: item.id, name: item.name }]);
       const query = terms.get(item.id)?.query || '';
-      const candidates = query ? await searchAh(query) : [];
-      const alternatives = candidates.filter((c) => c.webshopId !== exclude).slice(0, 5).map(toAlternative);
+      const candidates = query ? await searchAh(query, 30, 20) : [];
+      const fitting = await sameIngredient(item.name, candidates.filter((c) => c.webshopId !== exclude));
+      const alternatives = fitting.slice(0, 5).map(toAlternative);
       return json({ query, alternatives });
     }
 

@@ -150,7 +150,7 @@ const GroceryList = ({ onNavigate }: { onNavigate?: (tab: 'recipes') => void }) 
               type="button"
               onClick={() => setProductItemId(item.id)}
               title="Kies een ander product"
-              className="relative -my-2 flex max-w-full items-center gap-1.5 py-2 text-left text-xs text-muted-foreground hover:text-foreground"
+              className="relative -my-3.5 flex max-w-full items-center gap-1.5 py-3.5 text-left text-xs text-muted-foreground hover:text-foreground"
             >
               <span className="truncate">
                 {item.ahProduct.quantity}× {item.ahProduct.title}{item.ahProduct.unitSize ? ` · ${item.ahProduct.unitSize}` : ''}
@@ -166,7 +166,7 @@ const GroceryList = ({ onNavigate }: { onNavigate?: (tab: 'recipes') => void }) 
               <button
                 type="button"
                 onClick={() => setProductItemId(item.id)}
-                className="relative -my-3 inline-block py-3 font-medium text-primary hover:underline"
+                className="relative -my-3.5 inline-block py-3.5 font-medium text-primary hover:underline"
               >
                 Kies zelf
               </button>
@@ -175,7 +175,7 @@ const GroceryList = ({ onNavigate }: { onNavigate?: (tab: 'recipes') => void }) 
                 href={ahSearchUrl(item.name)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="relative -my-3 inline-block py-3 font-medium text-primary hover:underline"
+                className="relative -my-3.5 inline-block py-3.5 font-medium text-primary hover:underline"
               >
                 Zoek bij AH
               </a>
