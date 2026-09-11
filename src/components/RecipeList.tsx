@@ -189,7 +189,7 @@ const RecipeList = () => {
     const recipe = recipes.find((r) => r.id === recipeId);
     if (!recipe) return;
     addRecipeToGroceryList(recipe.ingredients, recipeName);
-    toast.success(`Ingrediënten voor "${recipeName}" toegevoegd aan je lijst!`);
+    toast.success(`${recipe.ingredients.length} items op je lijst gezet`);
   };
 
   return (
@@ -307,8 +307,8 @@ const RecipeList = () => {
       {recipes.length === 0 && (
         <div className="text-center py-12 text-muted-foreground">
           <ChefHat className="h-10 w-10 mx-auto mb-2 opacity-40" />
-          <p className="font-display text-lg">No recipes yet</p>
-          <p className="text-sm mt-1">Add your favourite recipes above!</p>
+          <p className="font-display text-lg">Nog geen recepten</p>
+          <p className="text-sm mt-1">Plak een link van TikTok, Instagram, YouTube of een receptsite.</p>
         </div>
       )}
 
@@ -321,22 +321,23 @@ const RecipeList = () => {
               </div>
             )}
             <div className="p-4">
-              <button onClick={async () => {
-                try { await removeRecipe(recipe.id); toast.success('Recept verwijderd'); }
-                catch { toast.error('Kon recept niet verwijderen. Ben je ingelogd?'); }
-              }} className="absolute top-3 right-3 sm:opacity-0 sm:group-hover:opacity-100 text-destructive bg-background/80 rounded-full p-1 transition-opacity">
-                <X className="h-4 w-4" />
+              <button
+                onClick={() => removeRecipe(recipe.id)}
+                aria-label={`Verwijder ${recipe.name}`}
+                className="absolute top-1 right-1 h-11 w-11 flex items-center justify-center text-destructive transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
+              >
+                <span className="bg-background/80 rounded-full p-1.5"><X className="h-4 w-4" /></span>
               </button>
               <h3 className="font-display text-lg text-foreground">{recipe.name}</h3>
               <p className="text-sm text-muted-foreground mt-1">{recipe.description}</p>
               {recipe.sourceUrl && (
                 <a href={recipe.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline mt-1 flex items-center gap-1">
-                  <Link className="h-3 w-3" /> View original recipe
+                  <Link className="h-3 w-3" /> Origineel bekijken
                 </a>
               )}
               <Collapsible>
                 <CollapsibleTrigger className="text-sm text-primary hover:underline mt-2 flex items-center gap-1 cursor-pointer">
-                  <ChevronDown className="h-3.5 w-3.5" /> Ingredients ({recipe.ingredients.length})
+                  <ChevronDown className="h-3.5 w-3.5" /> Ingrediënten ({recipe.ingredients.length})
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <ul className="mt-2 space-y-1">
@@ -351,7 +352,7 @@ const RecipeList = () => {
               {recipe.instructions && (
                 <Collapsible>
                   <CollapsibleTrigger className="text-sm text-primary hover:underline mt-2 flex items-center gap-1 cursor-pointer">
-                    <ChevronDown className="h-3.5 w-3.5" /> Instructions
+                    <ChevronDown className="h-3.5 w-3.5" /> Bereiding
                   </CollapsibleTrigger>
                   <CollapsibleContent>
                     <p className="mt-2 text-sm text-foreground/80 whitespace-pre-line">{recipe.instructions}</p>
@@ -360,7 +361,7 @@ const RecipeList = () => {
               )}
               <div className="mt-4 space-y-2">
                 <Button size="sm" className="w-full gap-2" onClick={() => handleCook(recipe.id, recipe.name)}>
-                  <ShoppingCart className="h-3.5 w-3.5" /> Toevoegen aan boodschappenlijst
+                  <ShoppingCart className="h-3.5 w-3.5" /> Zet op je lijst
                 </Button>
                 <div className="grid grid-cols-3 gap-2">
                   <RecipeViewDialog recipe={recipe} />

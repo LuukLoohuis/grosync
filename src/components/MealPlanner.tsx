@@ -4,6 +4,10 @@ import { useMealPlanner, MealType } from '@/hooks/useMealPlanner';
 import { ChevronLeft, ChevronRight, Plus, X, Sparkles, ShoppingCart, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Recipe } from '@/types';
@@ -46,7 +50,7 @@ const MealPlanner = () => {
       }
     }
     if (emptySlots.length === 0) {
-      toast.info('Alle slots zijn al gevuld!');
+      toast.info('Deze week is al helemaal gepland');
       return;
     }
 
@@ -72,10 +76,10 @@ const MealPlanner = () => {
           await planner.setMeal(s.dayIndex, s.mealType, recipeId);
         }
       }
-      toast.success(`${suggestions.length} maaltijden ingevuld!`);
+      toast.success(`${suggestions.length} maaltijden ingepland`);
     } catch (e) {
       console.error('AI suggestion error:', e);
-      toast.error('Kon geen suggesties ophalen');
+      toast.error('Suggesties ophalen lukte niet. Probeer het opnieuw.');
     } finally {
       setAiLoading(false);
     }
@@ -84,7 +88,7 @@ const MealPlanner = () => {
   const handleAddToGroceryList = async () => {
     const planned = planner.getPlannedIngredients();
     if (planned.length === 0) {
-      toast.info('Geen recepten gepland met ingrediënten');
+      toast.info('Er staan nog geen recepten in deze week');
       return;
     }
 
@@ -99,18 +103,18 @@ const MealPlanner = () => {
     for (const [recipeName, ingredients] of byRecipe) {
       await addRecipeToGroceryList(ingredients, recipeName);
     }
-    toast.success(`${planned.length} ingrediënten toegevoegd aan boodschappenlijst!`);
+    toast.success(`${planned.length} items op je lijst gezet`);
   };
 
   return (
     <div className="space-y-4">
       {/* Week navigation */}
       <div className="flex items-center justify-between">
-        <Button variant="ghost" size="icon" onClick={() => planner.navigateWeek(-1)}>
+        <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => planner.navigateWeek(-1)} aria-label="Vorige week">
           <ChevronLeft className="h-5 w-5" />
         </Button>
         <h2 className="text-lg font-bold text-foreground">{weekLabel}</h2>
-        <Button variant="ghost" size="icon" onClick={() => planner.navigateWeek(1)}>
+        <Button variant="ghost" size="icon" className="h-11 w-11" onClick={() => planner.navigateWeek(1)} aria-label="Volgende week">
           <ChevronRight className="h-5 w-5" />
         </Button>
       </div>
@@ -122,18 +126,44 @@ const MealPlanner = () => {
           size="sm"
           onClick={handleAiSuggest}
           disabled={aiLoading}
-          className="flex-1"
+          className="flex-1 h-11"
         >
           {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
           <span className="ml-1">AI invullen</span>
         </Button>
-        <Button variant="outline" size="sm" onClick={handleAddToGroceryList} className="flex-1">
+        <Button variant="outline" size="sm" onClick={handleAddToGroceryList} className="flex-1 h-11">
           <ShoppingCart className="h-4 w-4" />
           <span className="ml-1">Naar lijst</span>
         </Button>
-        <Button variant="ghost" size="sm" onClick={planner.clearWeek}>
-          <Trash2 className="h-4 w-4" />
-        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-11 w-11 p-0"
+              title="Week leegmaken"
+              aria-label="Week leegmaken"
+              disabled={planner.entries.length === 0}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Week van {weekLabel} leegmaken?</AlertDialogTitle>
+              <AlertDialogDescription>Je recepten blijven bewaard.</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Annuleren</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={planner.clearWeek}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Leegmaken
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
 
       {/* Week grid */}
@@ -159,19 +189,20 @@ const MealPlanner = () => {
                         <span>{meal.label}</span>
                       </div>
                       {displayName ? (
-                        <div className="bg-primary/10 rounded-md p-1.5 text-xs text-foreground relative group min-h-[36px] flex items-center">
-                          <span className="line-clamp-2 pr-4">{displayName}</span>
+                        <div className="bg-primary/10 rounded-md p-1.5 text-xs text-foreground relative group min-h-11 flex items-center">
+                          <span className="line-clamp-2 pr-6">{displayName}</span>
                           <button
                             onClick={() => planner.removeMeal(dayIdx, meal.key)}
-                            className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 transition-opacity p-0.5 hover:bg-destructive/20 rounded"
+                            aria-label={`Haal ${displayName} uit je weekplan`}
+                            className="absolute -top-1 -right-1 h-11 w-11 flex items-start justify-end p-1.5 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
                           >
-                            <X className="h-3 w-3 text-destructive" />
+                            <X className="h-3.5 w-3.5 text-destructive" />
                           </button>
                         </div>
                       ) : (
                         <button
                           onClick={() => setPickerOpen({ day: dayIdx, meal: meal.key })}
-                          className="w-full border border-dashed border-muted-foreground/30 rounded-md p-1.5 text-xs text-muted-foreground hover:border-primary hover:text-primary transition-colors min-h-[36px] flex items-center justify-center"
+                          className="w-full border border-dashed border-muted-foreground/30 rounded-md p-1.5 text-xs text-muted-foreground hover:border-primary hover:text-primary transition-colors min-h-11 flex items-center justify-center"
                         >
                           <Plus className="h-3 w-3" />
                         </button>

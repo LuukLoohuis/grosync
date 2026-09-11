@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import type { AhMatch } from '@/services/ahApi';
 import { GroceryItem } from '@/types';
+import { deleteWithUndo } from '@/lib/undoableDelete';
 
 type GroceryRow = Database['public']['Tables']['grocery_items']['Row'];
 
@@ -110,17 +111,39 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
     await supabase.from('grocery_items').update({ checked: !item.checked }).eq('id', id);
   }, [groceryItems]);
 
-  const removeGroceryItem = useCallback(async (id: string) => {
-    setGroceryItems((prev) => prev.filter((i) => i.id !== id));
-    await supabase.from('grocery_items').delete().eq('id', id);
-  }, []);
+  const removeGroceryItem = useCallback((id: string) => {
+    const index = groceryItems.findIndex((i) => i.id === id);
+    const item = groceryItems[index];
+    if (!item) return;
+    deleteWithUndo({
+      message: `“${item.name}” verwijderd`,
+      remove: () => setGroceryItems((prev) => prev.filter((i) => i.id !== id)),
+      restore: () => setGroceryItems((prev) => (
+        prev.some((i) => i.id === id) ? prev : [...prev.slice(0, index), item, ...prev.slice(index)]
+      )),
+      commit: async () => {
+        const { error } = await supabase.from('grocery_items').delete().eq('id', id);
+        if (error) throw error;
+      },
+    });
+  }, [groceryItems]);
 
-  const clearCheckedItems = useCallback(async () => {
+  const clearCheckedItems = useCallback(() => {
     if (!userId) return;
-    const checkedIds = groceryItems.filter((i) => i.checked).map((i) => i.id);
-    if (checkedIds.length === 0) return;
-    setGroceryItems((prev) => prev.filter((i) => !i.checked));
-    await supabase.from('grocery_items').delete().in('id', checkedIds);
+    const checkedItems = groceryItems.filter((i) => i.checked);
+    if (checkedItems.length === 0) return;
+    const checkedIds = checkedItems.map((i) => i.id);
+    deleteWithUndo({
+      message: checkedItems.length === 1
+        ? `“${checkedItems[0].name}” weggehaald`
+        : `${checkedItems.length} afgevinkte boodschappen weggehaald`,
+      remove: () => setGroceryItems((prev) => prev.filter((i) => !checkedIds.includes(i.id))),
+      restore: () => setGroceryItems((prev) => [...prev, ...checkedItems.filter((c) => !prev.some((i) => i.id === c.id))]),
+      commit: async () => {
+        const { error } = await supabase.from('grocery_items').delete().in('id', checkedIds);
+        if (error) throw error;
+      },
+    });
   }, [userId, groceryItems]);
 
   const clearAllItems = useCallback(async () => {

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { UsualItem } from '@/types';
+import { deleteWithUndo } from '@/lib/undoableDelete';
 
 interface UseUsualsOptions {
   userId?: string | null;
@@ -80,10 +81,21 @@ export const useUsuals = ({ userId }: UseUsualsOptions = {}) => {
     );
   }, [userId]);
 
-  const removeUsual = useCallback(async (id: string) => {
-    setUsuals((prev) => prev.filter((i) => i.id !== id));
-    await supabase.from('usuals').delete().eq('id', id);
-  }, []);
+  const removeUsual = useCallback((id: string) => {
+    const item = usuals.find((i) => i.id === id);
+    if (!item) return;
+    deleteWithUndo({
+      message: `“${item.name}” verwijderd uit je favorieten`,
+      remove: () => setUsuals((prev) => prev.filter((i) => i.id !== id)),
+      restore: () => setUsuals((prev) => (
+        prev.some((i) => i.id === id) ? prev : [...prev, item].sort((a, b) => a.name.localeCompare(b.name))
+      )),
+      commit: async () => {
+        const { error } = await supabase.from('usuals').delete().eq('id', id);
+        if (error) throw error;
+      },
+    });
+  }, [usuals]);
 
   return { usuals, loading, addUsual, removeUsual };
 };

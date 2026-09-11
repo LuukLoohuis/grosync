@@ -72,7 +72,7 @@ const handleGoogleLogin = async () => {
       <div className="w-full max-w-sm space-y-6 text-center">
         <div className="flex flex-col items-center">
           <img src={couplecartLogo} alt="CoupleCart" className="h-92 w-auto" width={380} height={380} fetchPriority="high" />
-          <p className="text-muted-foreground -mt-24 font-medium text-xl">Your shared grocery list 🛒</p>
+          <p className="text-muted-foreground -mt-24 font-medium text-xl">Jullie boodschappenlijst</p>
         </div>
 
         <Button

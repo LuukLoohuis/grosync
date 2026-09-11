@@ -18,7 +18,7 @@ const UsualsList = () => {
 
   const handleAddToList = (name: string) => {
     addGroceryItem(name);
-    toast.success(`"${name}" toegevoegd aan je lijstje`);
+    toast.success(`“${name}” op je lijst gezet`);
   };
 
   return (
@@ -26,7 +26,7 @@ const UsualsList = () => {
       {/* Add usual */}
       <div className="flex gap-2">
         <Input
-          placeholder="Nieuw standaard item..."
+          placeholder="Wat koop je vaak?"
           value={newItem}
           onChange={(e) => setNewItem(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
@@ -40,8 +40,8 @@ const UsualsList = () => {
       {/* Empty state */}
       {usuals.length === 0 && (
         <div className="text-center py-12 text-muted-foreground">
-          <p className="text-lg font-display">Nog geen vaste items</p>
-          <p className="text-sm mt-1">Voeg items toe die je vaak koopt!</p>
+          <p className="text-lg font-display">Nog geen favorieten</p>
+          <p className="text-sm mt-1">Zet hier wat je elke week koopt. Eén tik en het staat op je lijst.</p>
         </div>
       )}
 
@@ -50,21 +50,22 @@ const UsualsList = () => {
         {usuals.map((item) => (
           <div
             key={item.id}
-            className="flex items-center gap-1.5 bg-card rounded-full pl-3 pr-1.5 py-1.5 shadow-soft animate-fade-in group"
+            className="flex items-center bg-card rounded-full pl-3 shadow-soft animate-fade-in group"
           >
             <button
               onClick={() => handleAddToList(item.name)}
-              className="flex items-center gap-1.5 hover:text-primary transition-colors"
-              title="Toevoegen aan lijstje"
+              className="flex items-center gap-1.5 min-h-11 pr-1 hover:text-primary transition-colors"
+              aria-label={`Zet ${item.name} op je lijst`}
             >
               <ShoppingCart className="h-3.5 w-3.5 text-primary" />
               <span className="font-body text-sm">{item.name}</span>
             </button>
             <button
               onClick={() => removeUsual(item.id)}
-              className="opacity-0 group-hover:opacity-100 text-destructive transition-opacity p-0.5 rounded-full hover:bg-destructive/10"
+              aria-label={`Verwijder ${item.name}`}
+              className="h-11 w-11 flex items-center justify-center text-destructive rounded-full hover:bg-destructive/10 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
             >
-              <X className="h-3 w-3" />
+              <X className="h-3.5 w-3.5" />
             </button>
           </div>
         ))}

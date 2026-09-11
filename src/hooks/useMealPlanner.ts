@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Recipe } from '@/types';
+import { deleteWithUndo } from '@/lib/undoableDelete';
 
 export type MealType = 'breakfast' | 'lunch' | 'dinner';
 
@@ -121,13 +122,24 @@ export const useMealPlanner = (userId: string | null, recipes: Recipe[]) => {
     }
   }, [userId, weekStart, recipes]);
 
-  const removeMeal = useCallback(async (dayIndex: number, mealType: MealType) => {
+  const removeMeal = useCallback((dayIndex: number, mealType: MealType) => {
     if (!userId) return;
     const entry = entries.find((e) => e.dayIndex === dayIndex && e.mealType === mealType);
     if (!entry) return;
-    setEntries((prev) => prev.filter((e) => e.id !== entry.id));
-    await supabase.from('meal_plans').delete().eq('id', entry.id);
-  }, [userId, entries]);
+    const name = entry.recipe?.name
+      || recipes.find((r) => r.id === entry.recipeId)?.name
+      || entry.customMealName
+      || 'Maaltijd';
+    deleteWithUndo({
+      message: `“${name}” uit je weekplan gehaald`,
+      remove: () => setEntries((prev) => prev.filter((e) => e.id !== entry.id)),
+      restore: () => setEntries((prev) => (prev.some((e) => e.id === entry.id) ? prev : [...prev, entry])),
+      commit: async () => {
+        const { error } = await supabase.from('meal_plans').delete().eq('id', entry.id);
+        if (error) throw error;
+      },
+    });
+  }, [userId, entries, recipes]);
 
   const clearWeek = useCallback(async () => {
     if (!userId) return;

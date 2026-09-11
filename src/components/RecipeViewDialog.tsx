@@ -71,8 +71,9 @@ const RecipeViewDialog = ({ recipe }: RecipeViewDialogProps) => {
   return (
     <Dialog onOpenChange={() => setCurrentServings(baseServings)}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="icon" className="w-full" title="Bekijken">
+        <Button variant="outline" className="w-full h-auto min-h-11 flex-col gap-1 py-2 text-xs font-medium leading-tight whitespace-normal">
           <Eye className="h-4 w-4" />
+          Bekijken
         </Button>
       </DialogTrigger>
       <DialogContent className="bg-background max-h-[90vh] sm:max-w-2xl p-0 overflow-hidden">
@@ -116,14 +117,16 @@ const RecipeViewDialog = ({ recipe }: RecipeViewDialogProps) => {
                   <Users className="h-4 w-4 text-muted-foreground" />
                   <button
                     onClick={() => setCurrentServings(Math.max(1, currentServings - 1))}
-                    className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-background transition-colors"
+                    aria-label="Minder personen"
+                    className="h-11 w-11 flex items-center justify-center rounded-md hover:bg-background transition-colors"
                   >
                     <Minus className="h-3.5 w-3.5" />
                   </button>
                   <span className="font-bold text-sm min-w-[24px] text-center">{currentServings}</span>
                   <button
                     onClick={() => setCurrentServings(currentServings + 1)}
-                    className="h-7 w-7 flex items-center justify-center rounded-md hover:bg-background transition-colors"
+                    aria-label="Meer personen"
+                    className="h-11 w-11 flex items-center justify-center rounded-md hover:bg-background transition-colors"
                   >
                     <Plus className="h-3.5 w-3.5" />
                   </button>

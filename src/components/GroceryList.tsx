@@ -1,17 +1,22 @@
 import { useState } from 'react';
-import { Check, Plus, Trash2, X, Merge, Route, TrendingUp, ExternalLink, Loader2, ShoppingBasket, Tag } from 'lucide-react';
+import { Check, Plus, Trash2, X, Merge, Route, TrendingUp, ExternalLink, Loader2, ShoppingBasket, Tag, MoreVertical } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppContext } from '@/contexts/AppContext';
 import { AH_MAX_ITEMS, ahBasketUrl, ahProductUrl, matchAhProducts } from '@/services/ahApi';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { sortByStoreRoute } from '@/lib/storeRouteSort';
 import { translateForSearch } from '@/lib/groceryTranslations';
 
 const euro = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' });
 
-// Search links show on touch screens; on desktop they appear on hover.
-const storeLinkClass = 'sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shrink-0 flex items-center gap-0.5 text-xs font-semibold';
 
 const GroceryList = () => {
   const [newItem, setNewItem] = useState('');
@@ -74,29 +79,15 @@ const GroceryList = () => {
     <div key={item.id} className="flex items-center gap-3 p-3 bg-card rounded-lg shadow-soft animate-fade-in group">
       <button
         onClick={() => handleToggle(item.id)}
-        className="h-5 w-5 rounded-full border-2 border-primary shrink-0 flex items-center justify-center hover:bg-primary/10 transition-colors" />
+        aria-label={`Vink ${item.name} af`}
+        className="-m-3 h-11 w-11 shrink-0 flex items-center justify-center group/check"
+      >
+        <span className="h-5 w-5 rounded-full border-2 border-primary group-hover/check:bg-primary/10 transition-colors" />
+      </button>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="font-body">{item.name}</span>
-          {item.fromRecipe && <span className="text-xs text-muted-foreground">from {item.fromRecipe}</span>}
-          <a
-            href={`https://www.ah.nl/zoeken?query=${toSearchQuery(item.name)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Zoek op ah.nl"
-            className={`${storeLinkClass} text-[#00811c] hover:text-[#006616]`}
-          >
-            AH <ExternalLink className="h-3 w-3" />
-          </a>
-          <a
-            href={`https://www.jumbo.com/producten/?searchTerms=${toSearchQuery(item.name)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Zoek op jumbo.com"
-            className={`${storeLinkClass} text-[#b58900] hover:text-[#8a6800]`}
-          >
-            Jumbo <ExternalLink className="h-3 w-3" />
-          </a>
+          {item.fromRecipe && <span className="text-xs text-muted-foreground">voor {item.fromRecipe}</span>}
         </div>
         {item.ahProduct && (
           <a
@@ -117,9 +108,35 @@ const GroceryList = () => {
       {item.price != null && (
         <span className="text-sm font-medium tabular-nums shrink-0">{euro.format(item.price)}</span>
       )}
-      <button onClick={() => removeGroceryItem(item.id)} className="opacity-0 group-hover:opacity-100 text-destructive transition-opacity">
-        <X className="h-4 w-4" />
-      </button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            aria-label={`Opties voor ${item.name}`}
+            className="-my-3 -mr-2 h-11 w-11 shrink-0 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+          >
+            <MoreVertical className="h-4 w-4" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem asChild className="gap-2 min-h-11 cursor-pointer">
+            <a href={`https://www.ah.nl/zoeken?query=${toSearchQuery(item.name)}`} target="_blank" rel="noopener noreferrer">
+              <ExternalLink className="h-4 w-4" /> Zoek bij AH
+            </a>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild className="gap-2 min-h-11 cursor-pointer">
+            <a href={`https://www.jumbo.com/producten/?searchTerms=${toSearchQuery(item.name)}`} target="_blank" rel="noopener noreferrer">
+              <ExternalLink className="h-4 w-4" /> Zoek bij Jumbo
+            </a>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            onSelect={() => removeGroceryItem(item.id)}
+            className="gap-2 min-h-11 cursor-pointer text-destructive focus:text-destructive"
+          >
+            <Trash2 className="h-4 w-4" /> Verwijderen
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>;
 
   return (
@@ -127,12 +144,13 @@ const GroceryList = () => {
       {/* Add item */}
       <div className="flex gap-2">
         <Input
-          placeholder="Add an item..."
+          placeholder="Wat moet je halen?"
+          aria-label="Wat moet je halen?"
           value={newItem}
           onChange={(e) => setNewItem(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
           className="bg-card border-border font-body" />
-        <Button onClick={() => handleAdd()} size="icon" className="shrink-0">
+        <Button onClick={() => handleAdd()} size="icon" className="shrink-0 h-11 w-11" aria-label="Toevoegen">
           <Plus className="h-4 w-4" />
         </Button>
       </div>
@@ -145,7 +163,7 @@ const GroceryList = () => {
             <button
               key={item.name}
               onClick={() => handleAdd(item.name)}
-              className="text-xs px-3 py-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors font-medium capitalize"
+              className="text-xs px-3 min-h-11 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors font-medium capitalize"
             >
               + {item.name}
             </button>
@@ -158,7 +176,7 @@ const GroceryList = () => {
         <div className="flex justify-between items-center gap-3">
           <button
             onClick={() => setRouteMode(!routeMode)}
-            className={`text-base flex items-center gap-2 font-semibold py-1.5 px-3 rounded-md transition-colors ${
+            className={`text-base flex items-center gap-2 font-semibold min-h-11 px-3 rounded-md transition-colors ${
               routeMode ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted'}`}
           >
             <Route className="h-5 w-5" />
@@ -167,14 +185,35 @@ const GroceryList = () => {
           <div className="flex gap-3">
             <button
               onClick={mergeDuplicateItems}
-              className="text-primary hover:underline flex items-center gap-1 text-sm">
+              className="text-primary hover:underline flex items-center gap-1 text-sm min-h-11">
               <Merge className="h-3 w-3" /> Dubbele samenvoegen
             </button>
-            <button
-              onClick={clearAllItems}
-              className="text-destructive hover:underline flex items-center gap-1 text-sm">
-              <Trash2 className="h-3 w-3" /> Clear entire cart
-            </button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button className="text-destructive hover:underline flex items-center gap-1 text-sm min-h-11">
+                  <Trash2 className="h-3 w-3" /> Lijst leegmaken
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Hele lijst leegmaken?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    {groceryItems.length === 1
+                      ? 'De boodschap verdwijnt, ook voor wie meekijkt.'
+                      : `Alle ${groceryItems.length} boodschappen verdwijnen, ook voor wie meekijkt.`}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuleren</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={clearAllItems}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Leegmaken
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       }
@@ -212,8 +251,8 @@ const GroceryList = () => {
       {/* Empty state */}
       {unchecked.length === 0 && checked.length === 0 &&
         <div className="text-center py-12 text-muted-foreground">
-          <p className="text-lg font-display">Your list is empty</p>
-          <p className="text-sm mt-1">Add items above or pick a recipe!</p>
+          <p className="text-lg font-display">Je lijst is leeg</p>
+          <p className="text-sm mt-1">Typ hierboven wat je nodig hebt, of zet een recept op je lijst.</p>
         </div>
       }
 
@@ -244,20 +283,28 @@ const GroceryList = () => {
       {checked.length > 0 &&
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground font-medium">Checked ({checked.length})</span>
-            <button onClick={clearCheckedItems} className="text-xs text-destructive hover:underline flex items-center gap-1">
-              <Trash2 className="h-3 w-3" /> Clear
+            <span className="text-sm text-muted-foreground font-medium">Afgevinkt ({checked.length})</span>
+            <button onClick={clearCheckedItems} className="text-xs text-destructive hover:underline flex items-center gap-1 min-h-11">
+              <Trash2 className="h-3 w-3" /> Weghalen
             </button>
           </div>
           {checked.map((item) =>
             <div key={item.id} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg group">
               <button
                 onClick={() => handleToggle(item.id)}
-                className="h-5 w-5 rounded-full bg-primary shrink-0 flex items-center justify-center animate-check-bounce">
-                <Check className="h-3 w-3 text-primary-foreground" />
+                aria-label={`Zet ${item.name} terug op je lijst`}
+                className="-m-3 h-11 w-11 shrink-0 flex items-center justify-center"
+              >
+                <span className="h-5 w-5 rounded-full bg-primary flex items-center justify-center animate-check-bounce">
+                  <Check className="h-3 w-3 text-primary-foreground" />
+                </span>
               </button>
               <span className="font-body line-through text-muted-foreground flex-1">{item.name}</span>
-              <button onClick={() => removeGroceryItem(item.id)} className="opacity-0 group-hover:opacity-100 text-destructive transition-opacity">
+              <button
+                onClick={() => removeGroceryItem(item.id)}
+                aria-label={`Verwijder ${item.name}`}
+                className="-my-3 -mr-2 h-11 w-11 shrink-0 flex items-center justify-center text-destructive transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
+              >
                 <X className="h-4 w-4" />
               </button>
             </div>

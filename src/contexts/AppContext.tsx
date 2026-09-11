@@ -21,18 +21,18 @@ interface AppContextType {
   trackPurchase: (itemName: string) => Promise<void>;
   addGroceryItem: (name: string, fromRecipe?: string) => Promise<void>;
   toggleGroceryItem: (id: string) => Promise<void>;
-  removeGroceryItem: (id: string) => Promise<void>;
-  clearCheckedItems: () => Promise<void>;
+  removeGroceryItem: (id: string) => void;
+  clearCheckedItems: () => void;
   clearAllItems: () => Promise<void>;
   addRecipeToGroceryList: (ingredients: string[], recipeName: string) => Promise<void>;
   mergeDuplicateItems: () => Promise<void>;
   applyAhMatches: (matches: AhMatch[]) => Promise<void>;
   addRecipe: (recipe: Omit<Recipe, 'id'>) => Promise<string | null>;
   updateRecipe: (id: string, updates: Partial<Omit<Recipe, 'id'>>) => Promise<void>;
-  removeRecipe: (id: string) => Promise<void>;
+  removeRecipe: (id: string) => void;
   updateRecipeImage: (id: string, imageUrl: string) => Promise<void>;
   addUsual: (name: string) => Promise<void>;
-  removeUsual: (id: string) => Promise<void>;
+  removeUsual: (id: string) => void;
 }
 
 const AppContext = createContext<AppContextType | null>(null);

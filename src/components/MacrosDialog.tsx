@@ -87,13 +87,13 @@ const MacrosDialog = ({ recipe, onMacrosCalculated }: MacrosDialogProps) => {
       if (error) throw error;
       if (data?.macros && typeof data.macros.calories === 'number') {
         onMacrosCalculated?.(recipe.id, data.macros);
-        toast.success("Macro's berekend!");
+        toast.success('Voedingswaarden berekend');
       } else {
         throw new Error('Invalid response');
       }
     } catch (e) {
       console.error('Failed to calculate macros:', e);
-      toast.error("Kon macro's niet berekenen.");
+      toast.error('Voedingswaarden berekenen lukte niet. Probeer het opnieuw.');
     } finally {
       setCalculating(false);
     }
@@ -102,29 +102,30 @@ const MacrosDialog = ({ recipe, onMacrosCalculated }: MacrosDialogProps) => {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="icon" className="w-full" title="Macro's">
+        <Button variant="outline" className="w-full h-auto min-h-11 flex-col gap-1 py-2 text-xs font-medium leading-tight whitespace-normal">
           <Flame className="h-4 w-4" />
+          Voedingswaarden
         </Button>
       </DialogTrigger>
       <DialogContent className="bg-background sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="font-display text-xl">Macro's — {recipe.name}</DialogTitle>
+          <DialogTitle className="font-display text-xl">Voedingswaarden — {recipe.name}</DialogTitle>
         </DialogHeader>
 
         {macros ? (
           <>
             <MacrosContent macros={macros} />
             <Button variant="outline" size="sm" className="w-full gap-2" onClick={handleCalculate} disabled={calculating}>
-              {calculating ? <><Loader2 className="h-4 w-4 animate-spin" /> Herberekenen...</> : <><Calculator className="h-4 w-4" /> Herbereken macro's</>}
+              {calculating ? <><Loader2 className="h-4 w-4 animate-spin" /> Herberekenen...</> : <><Calculator className="h-4 w-4" /> Opnieuw berekenen</>}
             </Button>
           </>
         ) : (
           <div className="text-center py-8 text-muted-foreground space-y-4">
             <Flame className="h-10 w-10 mx-auto mb-2 opacity-40" />
-            <p className="font-bold">Geen macro's beschikbaar</p>
-            <p className="text-sm">Laat de macro's berekenen op basis van de ingrediënten.</p>
+            <p className="font-bold">Nog geen voedingswaarden</p>
+            <p className="text-sm">Bereken ze op basis van de ingrediënten.</p>
             <Button className="gap-2" onClick={handleCalculate} disabled={calculating}>
-              {calculating ? <><Loader2 className="h-4 w-4 animate-spin" /> Berekenen...</> : <><Calculator className="h-4 w-4" /> Bereken macro's</>}
+              {calculating ? <><Loader2 className="h-4 w-4 animate-spin" /> Berekenen...</> : <><Calculator className="h-4 w-4" /> Voedingswaarden berekenen</>}
             </Button>
           </div>
         )}

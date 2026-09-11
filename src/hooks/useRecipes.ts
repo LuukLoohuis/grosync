@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Recipe } from '@/types';
+import { deleteWithUndo } from '@/lib/undoableDelete';
 
 interface UseRecipesOptions {
   userId?: string | null;
@@ -122,15 +123,24 @@ export const useRecipes = ({ userId }: UseRecipesOptions = {}) => {
     await supabase.from('recipes').update(dbUpdates).eq('id', id);
   }, []);
 
-  const removeRecipe = useCallback(async (id: string) => {
-    const { error } = await supabase.from('recipes').delete().eq('id', id);
-    if (error) {
-      console.error('Failed to delete recipe:', error);
-      throw error;
-    }
-    // Optimistic: remove from local state in case realtime is slow
-    setRecipes((prev) => prev.filter((r) => r.id !== id));
-  }, []);
+  const removeRecipe = useCallback((id: string) => {
+    const index = recipes.findIndex((r) => r.id === id);
+    const recipe = recipes[index];
+    if (!recipe) return;
+    // The database delete waits for the undo window: planned meals that point at
+    // this recipe are removed by the foreign key cascade, so they survive an undo.
+    deleteWithUndo({
+      message: `“${recipe.name}” verwijderd`,
+      remove: () => setRecipes((prev) => prev.filter((r) => r.id !== id)),
+      restore: () => setRecipes((prev) => (
+        prev.some((r) => r.id === id) ? prev : [...prev.slice(0, index), recipe, ...prev.slice(index)]
+      )),
+      commit: async () => {
+        const { error } = await supabase.from('recipes').delete().eq('id', id);
+        if (error) throw error;
+      },
+    });
+  }, [recipes]);
 
   const updateRecipeImage = useCallback(async (id: string, imageUrl: string) => {
     await supabase.from('recipes').update({ image_url: imageUrl }).eq('id', id);

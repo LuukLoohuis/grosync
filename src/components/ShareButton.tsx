@@ -12,18 +12,18 @@ const ShareButton = () => {
   const getListText = () => {
     const unchecked = groceryItems.filter((i) => !i.checked);
     if (unchecked.length === 0) return '';
-    return '🛒 Grocery List\n\n' + unchecked.map((i) => `• ${i.name}`).join('\n');
+    return '🛒 Boodschappenlijst\n\n' + unchecked.map((i) => `• ${i.name}`).join('\n');
   };
 
   const shareWhatsApp = () => {
     const text = getListText();
-    if (!text) { toast.error('No items to share!'); return; }
+    if (!text) { toast.error('Je lijst is leeg, er valt niets te delen'); return; }
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
 
   const shareViaLink = async () => {
     if (!userId) { toast.error('Je moet ingelogd zijn om te delen'); return; }
-    if (groceryItems.length === 0) { toast.error('No items to share!'); return; }
+    if (groceryItems.length === 0) { toast.error('Je lijst is leeg, er valt niets te delen'); return; }
 
     toast.loading('Deellink aanmaken...');
 
@@ -56,17 +56,17 @@ const ShareButton = () => {
     const url = `${window.location.origin}/#/shared/${shareCode}`;
     await navigator.clipboard.writeText(url);
     toast.dismiss();
-    toast.success('Link gekopieerd naar klembord!');
+    toast.success('Link gekopieerd');
   };
 
   const downloadPDF = () => {
     const unchecked = groceryItems.filter((i) => !i.checked);
-    if (unchecked.length === 0) { toast.error('No items to export!'); return; }
+    if (unchecked.length === 0) { toast.error('Je lijst is leeg, er valt niets te downloaden'); return; }
 
     const doc = new jsPDF();
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(20);
-    doc.text('Grocery List', 20, 25);
+    doc.text('Boodschappenlijst', 20, 25);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(12);
     unchecked.forEach((item, i) => {
@@ -74,24 +74,24 @@ const ShareButton = () => {
       if (y > 280) return;
       doc.text(`☐  ${item.name}`, 20, y);
     });
-    doc.save('grocery-list.pdf');
-    toast.success('PDF downloaded!');
+    doc.save('boodschappenlijst.pdf');
+    toast.success('PDF gedownload');
   };
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon"><Share2 className="h-4 w-4" /></Button>
+        <Button variant="outline" size="icon" title="Lijst delen" aria-label="Lijst delen"><Share2 className="h-4 w-4" /></Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuItem onClick={shareWhatsApp} className="gap-2 cursor-pointer">
-          <MessageCircle className="h-4 w-4" /> Share via WhatsApp
+          <MessageCircle className="h-4 w-4" /> Delen via WhatsApp
         </DropdownMenuItem>
         <DropdownMenuItem onClick={downloadPDF} className="gap-2 cursor-pointer">
-          <FileDown className="h-4 w-4" /> Download PDF
+          <FileDown className="h-4 w-4" /> Download als PDF
         </DropdownMenuItem>
         <DropdownMenuItem onClick={shareViaLink} className="gap-2 cursor-pointer">
-          <Link2 className="h-4 w-4" /> Deel via link
+          <Link2 className="h-4 w-4" /> Deellink kopiëren
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

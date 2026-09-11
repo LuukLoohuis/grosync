@@ -56,14 +56,15 @@ const RecipeEditDialog = ({ recipe }: RecipeEditDialogProps) => {
     }
 
     setOpen(false);
-    toast.success('Recipe updated!');
+    toast.success('Recept opgeslagen');
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="icon" className="w-full" title="Bewerken">
+        <Button variant="outline" className="w-full h-auto min-h-11 flex-col gap-1 py-2 text-xs font-medium leading-tight whitespace-normal">
           <Pencil className="h-4 w-4" />
+          Bewerken
         </Button>
       </DialogTrigger>
       <DialogContent className="bg-background max-h-[90vh] overflow-y-auto sm:max-w-xl">

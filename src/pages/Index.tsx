@@ -22,18 +22,18 @@ const Index = () => {
         <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex flex-col items-center">
             <img src={couplecartLogo} alt="CoupleCart" className="h-64 w-auto" width={256} height={256} fetchPriority="high" />
-            <p className="text-base font-bold text-muted-foreground -mt-16">Your shared grocery list 🛒</p>
+            <p className="text-base font-bold text-muted-foreground -mt-16">Jullie boodschappenlijst</p>
           </div>
           <div className="flex items-center gap-1">
             <ShareButton />
-            <a href="https://www.buymeacoffee.com/luukloohuis" target="_blank" rel="noopener noreferrer" title="Support me">
+            <a href="https://www.buymeacoffee.com/luukloohuis" target="_blank" rel="noopener noreferrer" title="Steun CoupleCart">
               <img
                 src="https://img.buymeacoffee.com/button-api/?text=Donate&emoji=🛒&slug=luukloohuis&button_colour=fff7eb&font_colour=000000&font_family=Bree&outline_colour=000000&coffee_colour=FFDD00"
-                alt="Support me on Buy Me a Coffee"
+                alt="Steun CoupleCart via Buy Me a Coffee"
                 className="h-8"
               />
             </a>
-            <Button variant="ghost" size="icon" onClick={signOut} title="Sign out">
+            <Button variant="ghost" size="icon" onClick={signOut} title="Uitloggen" aria-label="Uitloggen">
               <LogOut className="h-4 w-4" />
             </Button>
           </div>
@@ -49,7 +49,7 @@ const Index = () => {
             }`}
           >
             <ShoppingCart className="h-4 w-4" />
-            <span className="font-bold">List</span>
+            <span className="font-bold">Lijst</span>
             {uncheckedCount > 0 && (
               <span className="bg-primary text-primary-foreground text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center">
                 {uncheckedCount}
@@ -63,7 +63,7 @@ const Index = () => {
             }`}
           >
             <Star className="h-4 w-4" />
-            <span className="font-bold">Favorites</span>
+            <span className="font-bold">Favorieten</span>
           </button>
           <button
             onClick={() => setTab('recipes')}
@@ -72,7 +72,7 @@ const Index = () => {
             }`}
           >
             <ChefHat className="h-4 w-4" />
-            <span className="font-bold">Recipes</span>
+            <span className="font-bold">Recepten</span>
           </button>
           <button
             onClick={() => setTab('planner')}
