@@ -386,43 +386,47 @@ function instagramPostFromEmbed(html: string): { caption: string; imageUrl: stri
   return { caption, imageUrl: image ? decodeEntities(image) : null };
 }
 
-async function instagramCaption(url: string): Promise<{ caption: string; imageUrl: string | null }> {
+type FetchAttempt = { url: string; agent: string; status: number; finalUrl: string; length: number; caption: boolean; title: string };
+
+const IPHONE_SAFARI = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1';
+const FACEBOOK_CRAWLER = 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)';
+
+async function instagramCaption(url: string): Promise<{ caption: string; imageUrl: string | null; attempts: FetchAttempt[] }> {
   const id = url.match(/instagram\.com\/(?:[\w.]+\/)?(?:p|reels?)\/([\w-]+)/i)?.[1];
   const postUrl = id ? `https://www.instagram.com/p/${id}/` : url;
+  const embedUrl = id ? `https://www.instagram.com/p/${id}/embed/captioned/` : null;
 
-  // Instagram only renders the caption into meta tags for link-preview crawlers,
-  // and sends datacenter IPs to its login page, so from Supabase this usually fails.
-  try {
-    const response = await fetch(postUrl, {
-      headers: { 'User-Agent': 'facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)' },
-      redirect: 'follow',
-    });
-    const post = instagramPostFromHtml(await response.text());
-    if (post) return post;
-    console.log('No Instagram caption in direct fetch');
-  } catch (e) {
-    console.error('Instagram page failed:', e);
-  }
+  // Instagram renders the caption into the embed page other sites use, and into meta
+  // tags for link-preview crawlers. From Supabase the post page redirects to the login
+  // page while the embed page still works, so the embed page goes first. If both fail
+  // the app asks for the caption text (Firecrawl refuses Instagram altogether).
+  const tries = [
+    ...(embedUrl ? [{ url: embedUrl, agent: IPHONE_SAFARI, parse: instagramPostFromEmbed }] : []),
+    { url: postUrl, agent: FACEBOOK_CRAWLER, parse: instagramPostFromHtml },
+  ];
 
-  // The embed page works without logging in, also when the post page itself does not.
-  if (id) {
+  const attempts: FetchAttempt[] = [];
+  for (const attempt of tries) {
     try {
-      const response = await fetch(`https://www.instagram.com/p/${id}/embed/captioned/`, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
-        },
+      const response = await fetch(attempt.url, { headers: { 'User-Agent': attempt.agent }, redirect: 'follow' });
+      const html = await response.text();
+      const post = attempt.parse(html);
+      attempts.push({
+        url: attempt.url,
+        agent: attempt.agent.slice(0, 24),
+        status: response.status,
+        finalUrl: response.url,
+        length: html.length,
+        caption: Boolean(post),
+        title: html.match(/<title[^>]*>([^<]*)/i)?.[1]?.trim().slice(0, 80) || '',
       });
-      const post = instagramPostFromEmbed(await response.text());
-      if (post) return post;
-      console.log('No Instagram caption in embed page, status', response.status);
+      if (post) return { ...post, attempts };
     } catch (e) {
-      console.error('Instagram embed page failed:', e);
+      console.error('Instagram fetch failed:', attempt.url, e);
     }
   }
-
-  // Firecrawl refuses Instagram ("we do not support this site"), so without either
-  // page the app asks for the caption text instead.
-  return { caption: '', imageUrl: null };
+  console.log('No Instagram caption:', JSON.stringify(attempts));
+  return { caption: '', imageUrl: null, attempts };
 }
 
 Deno.serve(async (req) => {
@@ -442,6 +446,8 @@ Deno.serve(async (req) => {
     const deadline = Date.now() + REQUEST_BUDGET_MS;
     const videoId = url ? youTubeVideoId(url) : null;
     let result: Extraction;
+    // Instagram only: whether the post text itself could be read.
+    let captionFound: boolean | undefined;
 
     if (text) {
       // Pasted post text, for platforms that block server-side fetching.
@@ -452,6 +458,7 @@ Deno.serve(async (req) => {
       result = await recipeFromTikTok(url, deadline);
     } else if (/instagram\.com\/(?:[\w.]+\/)?(?:p|reels?)\//i.test(url)) {
       const { caption, imageUrl } = await instagramCaption(url);
+      captionFound = Boolean(caption);
       result = await recipeFromCaption(caption, imageUrl, deadline);
     } else {
       const page = await scrapePage(url);
@@ -470,6 +477,7 @@ Deno.serve(async (req) => {
       macros: recipe.macros,
       servings: recipe.servings,
       extractedFrom: result.extractedFrom,
+      ...(captionFound === undefined ? {} : { captionFound }),
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

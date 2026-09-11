@@ -104,8 +104,8 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
         setSourceLabel(source && source !== 'none' ? SOURCE_LABELS[source] : null);
         return;
       }
-      if (input.kind === 'url' && /instagram\.com\//i.test(input.url)) {
-        // Instagram sends our server to its login page, so the post text has to come from the user.
+      if (input.kind === 'url' && /instagram\.com\//i.test(input.url) && data?.captionFound !== true) {
+        // Instagram showed our server only its login page, so the post text has to come from the user.
         setImportNotice('instagram');
         setImportValue('');
       } else {

@@ -34,6 +34,8 @@ export interface FetchedRecipe {
   fat?: number;
   fiber?: number;
   extractedFrom?: 'page' | 'description' | 'linked-page' | 'video' | 'none';
+  /** Instagram only: false when Instagram would not show the post to our server. */
+  captionFound?: boolean;
 }
 
 export async function fetchRecipeFromUrl(url: string) {

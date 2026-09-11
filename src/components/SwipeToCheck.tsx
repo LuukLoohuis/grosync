@@ -43,7 +43,11 @@ const SwipeToCheck = ({ onSwipe, children }: SwipeToCheckProps) => {
       if (dx < SLOP || dx < Math.abs(dy)) return;
       g.dragging = true;
       setDragging(true);
-      e.currentTarget.setPointerCapture(e.pointerId);
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {
+        // The pointer is already gone; the row still follows the moves it gets.
+      }
     }
     move(Math.max(0, dx - SLOP));
   };
