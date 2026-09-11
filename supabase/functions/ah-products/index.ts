@@ -162,16 +162,19 @@ async function searchTerms(items: Item[]): Promise<Map<string, SearchTerm>> {
   return terms;
 }
 
+// "3-pack" in an AH title means several packages sold as one, rarely what a list line means.
+const isMultipack = (candidate: Candidate) => /\b\d+\s*-?\s*pack\b|multipack/i.test(candidate.title);
+
 async function chooseProducts(
   lines: { id: string; name: string; amount: string; candidates: Candidate[] }[],
 ): Promise<Map<string, { index: number; quantity: number }>> {
   const result = await askJson(
-    'For each ingredient pick the one Albert Heijn product a home cook would buy for it. Prefer the plain product over snacks, ready meals, flavoured variants and multipacks; prefer the AH house brand when products are otherwise equal; pick the smallest package that covers the amount. "quantity" is the number of packages needed (1 when the amount is unknown or small). Use index -1 when no candidate is that ingredient. Return JSON {"choices":[{"id":"...","index":0,"quantity":1}]}.',
+    'For each ingredient pick the one Albert Heijn product a home cook would buy for it. Respect what the line says about the product itself: "diepvries" or "frozen" means a frozen product (and without it prefer fresh), "gerookt" means smoked. Avoid candidates marked multipack unless the amount needs that many. Prefer the plain product over snacks, ready meals, flavoured variants and multipacks; prefer the AH house brand when products are otherwise equal; pick the smallest package that covers the amount. "quantity" is the number of packages needed (1 when the amount is unknown or small). Use index -1 when no candidate is that ingredient. Return JSON {"choices":[{"id":"...","index":0,"quantity":1}]}.',
     JSON.stringify(lines.map((line) => ({
       id: line.id,
       ingredient: line.name,
       amount: line.amount,
-      candidates: line.candidates.map((c, index) => ({ index, title: c.title, size: c.unitSize, price: c.price, category: c.category })),
+      candidates: line.candidates.map((c, index) => ({ index, title: c.title, size: c.unitSize, price: c.price, category: c.category, multipack: isMultipack(c) })),
     }))),
   );
   const choices = new Map<string, { index: number; quantity: number }>();
@@ -196,7 +199,8 @@ async function sameIngredient(line: string, candidates: Candidate[]): Promise<Ca
     const candidate = Number.isInteger(index) ? candidates[index] : undefined;
     if (candidate && !kept.includes(candidate)) kept.push(candidate);
   }
-  return kept;
+  // The model does not reliably put multipacks last, so do it here.
+  return [...kept.filter((c) => !isMultipack(c)), ...kept.filter(isMultipack)];
 }
 
 function toMatch(itemId: string, candidate: Candidate, quantity: number): Match {
