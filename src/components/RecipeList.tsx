@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { ChefHat, ChevronDown, Plus, ShoppingCart, Link, X, Loader2, PenLine, Globe, Languages } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ChefHat, ChevronDown, Plus, ShoppingCart, Link, X, Loader2, Languages, ClipboardPaste } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useAppContext } from '@/contexts/AppContext';
 import { Input } from '@/components/ui/input';
@@ -13,11 +13,19 @@ import MacrosDialog from '@/components/MacrosDialog';
 import { fetchRecipeFromUrl, fetchRecipeFromText, translateRecipe, calculateMacros, type FetchedRecipe } from '@/services/recipeApi';
 import RecipeSuggestDialog from '@/components/RecipeSuggestDialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import EstimateBadge from '@/components/EstimateBadge';
+import { SOURCE_LABELS, detectImportInput, isEstimated, progressLabel, withoutEstimate, type SourceKey } from '@/lib/recipeImport';
 
-const RecipeList = () => {
+interface RecipeListProps {
+  /** A link or text shared into the app; opens the import dialog and starts fetching. */
+  initialImport?: string | null;
+  onImportConsumed?: () => void;
+}
+
+const RecipeList = ({ initialImport, onImportConsumed }: RecipeListProps) => {
   const { loading, recipes, addRecipe, removeRecipe, addRecipeToGroceryList, updateRecipeImage, updateRecipe } = useAppContext();
   const [open, setOpen] = useState(false);
-  const [mode, setMode] = useState<'choose' | 'manual' | 'url'>('choose');
+  const [manual, setManual] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [ingredientText, setIngredientText] = useState('');
@@ -28,11 +36,14 @@ const RecipeList = () => {
   const [fetchedMacros, setFetchedMacros] = useState<any>(null);
   const [fetchedImageUrl, setFetchedImageUrl] = useState<string | undefined>();
   const [translating, setTranslating] = useState(false);
-  const [pasteMode, setPasteMode] = useState(false);
-  const [pastedText, setPastedText] = useState('');
+  const [importValue, setImportValue] = useState('');
+  const [importNotice, setImportNotice] = useState<'instagram' | 'notfound' | null>(null);
+  const [sourceLabel, setSourceLabel] = useState<string | null>(null);
+  const [progress, setProgress] = useState<string | null>(null);
 
   const resetForm = () => {
-    setName(''); setDescription(''); setIngredientText(''); setInstructions(''); setSourceUrl(''); setMode('choose'); setFetchedMacros(null); setFetchedImageUrl(undefined); setServings(4); setTranslating(false); setPasteMode(false); setPastedText('');
+    setName(''); setDescription(''); setIngredientText(''); setInstructions(''); setSourceUrl(''); setManual(false); setFetchedMacros(null); setFetchedImageUrl(undefined); setServings(4); setTranslating(false);
+    setImportValue(''); setImportNotice(null); setSourceLabel(null); setProgress(null);
   };
 
   // Fills the form from a fetch-url-meta response. Returns false when nothing usable came back.
@@ -74,46 +85,69 @@ const RecipeList = () => {
     return true;
   };
 
-  const fetchFromUrl = async () => {
-    const url = sourceUrl.trim();
-    if (!url) return;
+  const runImport = async (value: string) => {
+    const input = detectImportInput(value);
+    if (!input) return;
+    setImportNotice(null);
+    setFetchingMeta(true);
+    const started = Date.now();
+    setProgress(progressLabel(0, input));
+    const ticker = setInterval(() => setProgress(progressLabel(Date.now() - started, input)), 1000);
     try {
-      setFetchingMeta(true);
-      const data = await fetchRecipeFromUrl(url);
-      if (applyFetchedRecipe(data)) return;
-      if (/instagram\.com\//i.test(url)) {
+      if (input.kind === 'url') setSourceUrl(input.url);
+      const data = input.kind === 'url' ? await fetchRecipeFromUrl(input.url) : await fetchRecipeFromText(input.text);
+      if (applyFetchedRecipe(data)) {
+        const source: SourceKey | undefined = input.kind === 'text' && data?.extractedFrom === 'description' ? 'text' : data?.extractedFrom;
+        setSourceLabel(source && source !== 'none' ? SOURCE_LABELS[source] : null);
+        return;
+      }
+      if (input.kind === 'url' && /instagram\.com\//i.test(input.url)) {
         // Instagram sends our server to its login page, so the post text has to come from the user.
-        setPasteMode(true);
-        toast.error('Instagram laat ons deze post niet uitlezen. Plak de tekst van de post hieronder.');
+        setImportNotice('instagram');
+        setImportValue('');
       } else {
-        setMode('manual');
-        toast.error('Geen recept gevonden in deze link. Vul het hieronder zelf in.');
+        setImportNotice('notfound');
       }
     } catch (e) {
-      console.error('Failed to fetch from URL:', e);
-      toast.error(`Kon recept niet ophalen: ${(e as Error).message}`);
+      console.error('Recipe import failed:', e);
+      toast.error('Recept ophalen lukte niet. Controleer je verbinding en probeer het opnieuw.');
     } finally {
+      clearInterval(ticker);
+      setProgress(null);
       setFetchingMeta(false);
     }
   };
 
-  const fetchFromText = async () => {
-    const text = pastedText.trim();
-    if (!text) return;
+  const canReadClipboard = typeof navigator !== 'undefined' && Boolean(navigator.clipboard?.readText);
+
+  // On iPhone this shows the system "Plakken" bubble; the read only succeeds after tapping it.
+  const pasteFromClipboard = async () => {
     try {
-      setFetchingMeta(true);
-      const data = await fetchRecipeFromText(text);
-      if (!applyFetchedRecipe(data)) {
-        setMode('manual');
-        toast.error('Geen recept gevonden in deze tekst. Vul het hieronder zelf in.');
+      const text = await navigator.clipboard.readText();
+      if (!text.trim()) {
+        toast.error('Je klembord is leeg. Kopieer eerst de link of de tekst.');
+        return;
       }
-    } catch (e) {
-      console.error('Failed to read recipe text:', e);
-      toast.error(`Kon recept niet uitlezen: ${(e as Error).message}`);
-    } finally {
-      setFetchingMeta(false);
+      setImportValue(text);
+      void runImport(text);
+    } catch {
+      toast.error('Plakken lukte niet. Houd het veld ingedrukt en kies Plakken.');
     }
   };
+
+  useEffect(() => {
+    if (!initialImport) return;
+    resetForm();
+    setOpen(true);
+    setImportValue(initialImport);
+    void runImport(initialImport);
+    onImportConsumed?.();
+    // Only react to a new shared link, not to every render of the handlers above.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialImport]);
+
+  const showForm = manual || Boolean(name) || Boolean(ingredientText);
+  const estimatedLines = ingredientText.split('\n').filter(isEstimated);
 
   const translateRecipeHandler = async () => {
     if (!name.trim() && !ingredientText.trim()) {
@@ -206,58 +240,54 @@ const RecipeList = () => {
             <DialogTitle className="font-display text-xl">Nieuw recept</DialogTitle>
           </DialogHeader>
 
-          {mode === 'choose' && (
-            <div className="space-y-3 py-4">
-              <p className="text-sm text-muted-foreground text-center">Hoe wil je het recept toevoegen?</p>
-              <div className="grid grid-cols-2 gap-3">
-                <button onClick={() => setMode('url')} className="flex flex-col items-center gap-3 p-6 rounded-lg border-2 border-border hover:border-primary hover:bg-primary/5 transition-all">
-                  <Globe className="h-8 w-8 text-primary" />
-                  <span className="font-medium text-foreground">Via een link</span>
-                  <span className="text-xs text-muted-foreground text-center">Plak een URL en we halen het recept op</span>
-                </button>
-                <button onClick={() => setMode('manual')} className="flex flex-col items-center gap-3 p-6 rounded-lg border-2 border-border hover:border-primary hover:bg-primary/5 transition-all">
-                  <PenLine className="h-8 w-8 text-primary" />
-                  <span className="font-medium text-foreground">Handmatig</span>
-                  <span className="text-xs text-muted-foreground text-center">Voer het recept zelf in</span>
-                </button>
-              </div>
-            </div>
-          )}
-
-          {mode === 'url' && !name && !ingredientText && (
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm text-muted-foreground mb-1 flex items-center gap-1">
-                  <Link className="h-3.5 w-3.5" /> Plak de recept-URL
-                </label>
-                <div className="flex gap-2">
-                  <Input type="url" placeholder="https://example.com/recipe" value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} autoFocus />
-                  <Button type="button" onClick={fetchFromUrl} disabled={!sourceUrl.trim() || fetchingMeta} className="shrink-0 gap-2">
-                    {fetchingMeta ? <><Loader2 className="h-4 w-4 animate-spin" /> Ophalen...</> : 'Ophalen'}
-                  </Button>
-                </div>
-              </div>
-              {pasteMode ? (
-                <div className="space-y-2">
-                  <label className="text-sm text-muted-foreground mb-1 block">Tekst van de post</label>
-                  <Textarea placeholder="Kopieer de beschrijving van de post en plak hem hier" value={pastedText} onChange={(e) => setPastedText(e.target.value)} rows={6} />
-                  <Button type="button" onClick={fetchFromText} disabled={!pastedText.trim() || fetchingMeta} className="w-full gap-2">
-                    {fetchingMeta ? <><Loader2 className="h-4 w-4 animate-spin" /> Uitlezen...</> : 'Recept uit tekst halen'}
-                  </Button>
-                </div>
-              ) : (
-                <button onClick={() => setPasteMode(true)} className="text-xs text-primary hover:underline block">Of plak de tekst van een post</button>
+          {!showForm && (
+            <div className="space-y-3">
+              {importNotice === 'instagram' && (
+                <p className="rounded-md bg-muted p-3 text-sm text-foreground">
+                  Instagram laat ons deze post niet lezen. Plak hier de tekst van de post.
+                </p>
               )}
-              <button onClick={() => setMode('choose')} className="text-xs text-muted-foreground hover:underline">← Terug</button>
+              {importNotice === 'notfound' && (
+                <div className="rounded-md bg-muted p-3 text-sm text-foreground space-y-2">
+                  <p>In deze link staat geen recept. Plak de tekst van de post, of vul het zelf in.</p>
+                  <Button type="button" variant="outline" size="sm" className="min-h-11" onClick={() => setManual(true)}>
+                    Zelf invullen
+                  </Button>
+                </div>
+              )}
+              <label htmlFor="recipe-import" className="sr-only">Plak een link of de tekst van een recept</label>
+              <Textarea
+                id="recipe-import"
+                placeholder="Plak een link of de tekst van een recept"
+                value={importValue}
+                onChange={(e) => setImportValue(e.target.value)}
+                rows={4}
+                autoFocus
+                disabled={fetchingMeta}
+              />
+              <div className="flex gap-2">
+                {canReadClipboard && (
+                  <Button type="button" variant="outline" className="min-h-11 gap-2" onClick={pasteFromClipboard} disabled={fetchingMeta}>
+                    <ClipboardPaste className="h-4 w-4" /> Plak link
+                  </Button>
+                )}
+                <Button type="button" className="flex-1 min-h-11 gap-2" onClick={() => runImport(importValue)} disabled={!importValue.trim() || fetchingMeta}>
+                  {fetchingMeta ? <><Loader2 className="h-4 w-4 animate-spin" /> Bezig…</> : 'Recept ophalen'}
+                </Button>
+              </div>
+              <p className="min-h-5 text-sm text-muted-foreground" role="status" aria-live="polite">{progress}</p>
+              <button type="button" onClick={() => setManual(true)} className="min-h-11 text-sm text-primary hover:underline">
+                Liever zelf invullen
+              </button>
             </div>
           )}
 
-          {(mode === 'manual' || (mode === 'url' && (name || ingredientText))) && (
+          {showForm && (
             <div className="space-y-4">
-              {mode === 'url' && (
-                <div className="text-xs text-muted-foreground bg-muted/50 rounded-md p-2">
-                  ✅ {pasteMode ? 'Recept uit geplakte tekst gehaald' : 'Recept opgehaald van URL'} — je kunt alles hieronder aanpassen.
-                </div>
+              {sourceLabel && (
+                <p className="text-xs text-muted-foreground bg-muted/50 rounded-md p-2">
+                  <span className="font-semibold text-foreground">{sourceLabel}</span> · Je kunt alles hieronder aanpassen.
+                </p>
               )}
               {fetchedImageUrl && (
                 <div className="aspect-video w-full overflow-hidden rounded-lg bg-muted">
@@ -266,24 +296,28 @@ const RecipeList = () => {
               )}
               <Input placeholder="Recept naam" value={name} onChange={(e) => setName(e.target.value)} />
               <Input placeholder="Korte beschrijving" value={description} onChange={(e) => setDescription(e.target.value)} />
-              {mode === 'manual' && (
-                <div>
-                  <label className="text-sm text-muted-foreground mb-1 flex items-center gap-1">
-                    <Link className="h-3.5 w-3.5" /> Recept URL (optioneel)
-                  </label>
-                  <Input type="url" placeholder="https://example.com/recipe" value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} />
-                </div>
-              )}
+              <div>
+                <label className="text-sm text-muted-foreground mb-1 flex items-center gap-1">
+                  <Link className="h-3.5 w-3.5" /> Link naar het recept (optioneel)
+                </label>
+                <Input type="url" placeholder="https://" value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} />
+              </div>
               <div>
                 <label className="text-sm text-muted-foreground mb-1 block">Ingrediënten (één per regel)</label>
                 <Textarea placeholder={"Kipfilet (500g)\nRijst (300g)\nSojasaus"} value={ingredientText} onChange={(e) => setIngredientText(e.target.value)} rows={6} />
+                {estimatedLines.length > 0 && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    <EstimateBadge />{' '}
+                    {estimatedLines.length === 1 ? 'Deze hoeveelheid is geschat uit de video' : `${estimatedLines.length} hoeveelheden zijn geschat uit de video`}. Kijk even na: {estimatedLines.map(withoutEstimate).join(', ')}
+                  </p>
+                )}
               </div>
               <div>
                 <label className="text-sm text-muted-foreground mb-1 block">Aantal personen</label>
                 <Input type="number" min={1} max={100} value={servings} onChange={(e) => setServings(parseInt(e.target.value) || 4)} />
               </div>
               <div>
-                <label className="text-sm text-muted-foreground mb-1 block">Instructies</label>
+                <label className="text-sm text-muted-foreground mb-1 block">Bereiding</label>
                 <Textarea placeholder={"1. Verwarm de oven voor op 180°C\n2. Kruid de kip...\n3. Bak 25 minuten..."} value={instructions} onChange={(e) => setInstructions(e.target.value)} rows={10} className="min-h-[200px]" />
               </div>
               <div className="flex flex-col gap-2">
@@ -293,7 +327,7 @@ const RecipeList = () => {
                     {translating ? <><Loader2 className="h-4 w-4 animate-spin" /> Vertalen...</> : <><Languages className="h-4 w-4" /> Vertaal naar NL</>}
                   </Button>
                   <Button type="button" variant="outline" onClick={calculateMacrosHandler} className="gap-2">
-                    🍎 Macros
+                    Voedingswaarden
                   </Button>
                   <Button onClick={handleAdd} className="flex-1">Recept opslaan</Button>
                 </div>
@@ -353,7 +387,8 @@ const RecipeList = () => {
                   <ul className="mt-2 space-y-1">
                     {recipe.ingredients.map((ing, i) => (
                       <li key={i} className="text-sm text-foreground/80 flex items-start gap-2">
-                        <span className="text-primary mt-0.5">•</span>{ing}
+                        <span className="text-primary mt-0.5">•</span>
+                        <span>{withoutEstimate(ing)}{isEstimated(ing) && <EstimateBadge />}</span>
                       </li>
                     ))}
                   </ul>

@@ -1,7 +1,8 @@
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
+import { HashRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { PENDING_IMPORT_KEY } from "@/lib/recipeImport";
 import { useAuth } from "@/hooks/useAuth";
 import { AppProvider } from "@/contexts/AppContext";
 import Index from "./pages/Index";
@@ -13,8 +14,14 @@ const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { session, loading } = useAuth();
+  const location = useLocation();
   if (loading) return null;
-  if (!session) return <Navigate to="/auth" replace />;
+  if (!session) {
+    // Keep a link shared into the app (iOS shortcut, Android share) across the login screen.
+    const pending = new URLSearchParams(location.search).get("import");
+    if (pending) sessionStorage.setItem(PENDING_IMPORT_KEY, pending);
+    return <Navigate to="/auth" replace />;
+  }
   return (
     <AppProvider userId={session.user.id}>
       {children}

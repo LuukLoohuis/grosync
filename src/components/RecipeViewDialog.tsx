@@ -7,6 +7,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Recipe } from '@/types';
+import EstimateBadge from '@/components/EstimateBadge';
+import { isEstimated, withoutEstimate } from '@/lib/recipeImport';
 
 interface RecipeViewDialogProps {
   recipe: Recipe;
@@ -141,7 +143,7 @@ const RecipeViewDialog = ({ recipe }: RecipeViewDialogProps) => {
                 {recipe.ingredients.map((ing, i) => (
                   <li key={i} className="text-foreground/90 flex items-start gap-2">
                     <span className="text-primary mt-0.5 shrink-0">•</span>
-                    <span>{scaleIngredient(ing, multiplier)}</span>
+                    <span>{scaleIngredient(withoutEstimate(ing), multiplier)}{isEstimated(ing) && <EstimateBadge />}</span>
                   </li>
                 ))}
               </ul>

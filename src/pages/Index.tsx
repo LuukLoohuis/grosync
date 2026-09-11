@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { ShoppingCart, ChefHat, Star, CalendarDays, type LucideIcon } from 'lucide-react';
 import GroceryList from '@/components/GroceryList';
 import RecipeList from '@/components/RecipeList';
@@ -6,6 +7,7 @@ import UsualsList from '@/components/UsualsList';
 import MealPlanner from '@/components/MealPlanner';
 import AppMenu from '@/components/AppMenu';
 import { useAppContext } from '@/contexts/AppContext';
+import { PENDING_IMPORT_KEY } from '@/lib/recipeImport';
 
 type AppTab = 'list' | 'recipes' | 'planner' | 'usuals';
 
@@ -21,6 +23,20 @@ const Index = () => {
   const { groceryItems } = useAppContext();
   const uncheckedCount = groceryItems.filter((i) => !i.checked).length;
   const current = TABS.find((t) => t.key === tab) ?? TABS[0];
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [pendingImport, setPendingImport] = useState<string | null>(null);
+
+  // A link shared into CoupleCart arrives as #/?import=… (iOS shortcut, Android share target).
+  useEffect(() => {
+    const fromUrl = searchParams.get('import');
+    const fromLogin = sessionStorage.getItem(PENDING_IMPORT_KEY);
+    const value = fromUrl || fromLogin;
+    if (!value) return;
+    sessionStorage.removeItem(PENDING_IMPORT_KEY);
+    if (fromUrl) setSearchParams({}, { replace: true });
+    setTab('recipes');
+    setPendingImport(value);
+  }, [searchParams, setSearchParams]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -57,7 +73,7 @@ const Index = () => {
 
       <main className="max-w-lg mx-auto px-4 pt-6 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:pb-6">
         {tab === 'list' && <GroceryList onNavigate={setTab} />}
-        {tab === 'recipes' && <RecipeList />}
+        {tab === 'recipes' && <RecipeList initialImport={pendingImport} onImportConsumed={() => setPendingImport(null)} />}
         {tab === 'planner' && <MealPlanner />}
         {tab === 'usuals' && <UsualsList />}
       </main>
