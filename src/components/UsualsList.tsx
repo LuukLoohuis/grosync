@@ -3,11 +3,12 @@ import { Plus, X, ShoppingCart } from 'lucide-react';
 import { useAppContext } from '@/contexts/AppContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 
 const UsualsList = () => {
   const [newItem, setNewItem] = useState('');
-  const { usuals, addUsual, removeUsual, addGroceryItem, groceryItems } = useAppContext();
+  const { loading, usuals, addUsual, removeUsual, addGroceryItem, groceryItems } = useAppContext();
 
   const handleAdd = () => {
     if (newItem.trim()) {
@@ -27,20 +28,28 @@ const UsualsList = () => {
       <div className="flex gap-2">
         <Input
           placeholder="Wat koop je vaak?"
+          aria-label="Wat koop je vaak?"
           value={newItem}
           onChange={(e) => setNewItem(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
           className="bg-card border-border font-body"
         />
-        <Button onClick={handleAdd} size="icon" className="shrink-0">
+        <Button onClick={handleAdd} size="icon" className="shrink-0 h-11 w-11" aria-label="Favoriet toevoegen">
           <Plus className="h-4 w-4" />
         </Button>
       </div>
 
+      {/* Loading */}
+      {loading && (
+        <div className="flex flex-wrap gap-2" aria-hidden="true">
+          {[96, 128, 80, 112].map((w) => <Skeleton key={w} className="h-11 rounded-full" style={{ width: w }} />)}
+        </div>
+      )}
+
       {/* Empty state */}
-      {usuals.length === 0 && (
+      {!loading && usuals.length === 0 && (
         <div className="text-center py-12 text-muted-foreground">
-          <p className="text-lg font-display">Nog geen favorieten</p>
+          <p className="text-lg font-display text-foreground">Nog geen favorieten</p>
           <p className="text-sm mt-1">Zet hier wat je elke week koopt. Eén tik en het staat op je lijst.</p>
         </div>
       )}

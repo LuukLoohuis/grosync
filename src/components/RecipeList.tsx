@@ -12,9 +12,10 @@ import RecipeViewDialog from '@/components/RecipeViewDialog';
 import MacrosDialog from '@/components/MacrosDialog';
 import { fetchRecipeFromUrl, fetchRecipeFromText, translateRecipe, calculateMacros, type FetchedRecipe } from '@/services/recipeApi';
 import RecipeSuggestDialog from '@/components/RecipeSuggestDialog';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const RecipeList = () => {
-  const { recipes, addRecipe, removeRecipe, addRecipeToGroceryList, updateRecipeImage, updateRecipe } = useAppContext();
+  const { loading, recipes, addRecipe, removeRecipe, addRecipeToGroceryList, updateRecipeImage, updateRecipe } = useAppContext();
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<'choose' | 'manual' | 'url'>('choose');
   const [name, setName] = useState('');
@@ -304,11 +305,20 @@ const RecipeList = () => {
 
       <RecipeSuggestDialog />
 
-      {recipes.length === 0 && (
+      {loading && (
+        <div className="grid gap-4 sm:grid-cols-2" aria-hidden="true">
+          {[0, 1].map((i) => <Skeleton key={i} className="h-56 rounded-lg" />)}
+        </div>
+      )}
+
+      {!loading && recipes.length === 0 && (
         <div className="text-center py-12 text-muted-foreground">
           <ChefHat className="h-10 w-10 mx-auto mb-2 opacity-40" />
-          <p className="font-display text-lg">Nog geen recepten</p>
+          <p className="font-display text-lg text-foreground">Nog geen recepten</p>
           <p className="text-sm mt-1">Plak een link van TikTok, Instagram, YouTube of een receptsite.</p>
+          <Button className="mt-4 min-h-11 gap-2" onClick={() => setOpen(true)}>
+            <Plus className="h-4 w-4" /> Recept toevoegen
+          </Button>
         </div>
       )}
 

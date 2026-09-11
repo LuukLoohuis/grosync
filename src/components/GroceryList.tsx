@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { useAppContext } from '@/contexts/AppContext';
 import { AH_MAX_ITEMS, ahBasketUrl, ahProductUrl, matchAhProducts } from '@/services/ahApi';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -18,11 +19,11 @@ import { translateForSearch } from '@/lib/groceryTranslations';
 const euro = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' });
 
 
-const GroceryList = () => {
+const GroceryList = ({ onNavigate }: { onNavigate?: (tab: 'recipes') => void }) => {
   const [newItem, setNewItem] = useState('');
   const [routeMode, setRouteMode] = useState(false);
   const [pricing, setPricing] = useState(false);
-  const { groceryItems, addGroceryItem, toggleGroceryItem, removeGroceryItem, clearCheckedItems, clearAllItems, mergeDuplicateItems, applyAhMatches, frequentItems, trackPurchase } = useAppContext();
+  const { loading, groceryItems, addGroceryItem, toggleGroceryItem, removeGroceryItem, clearCheckedItems, clearAllItems, mergeDuplicateItems, applyAhMatches, frequentItems, trackPurchase } = useAppContext();
 
   const handleAdd = (name?: string) => {
     const item = (name || newItem).trim();
@@ -57,7 +58,9 @@ const GroceryList = () => {
         : `${matches.length} van ${batch.length} boodschappen gevonden bij AH`);
     } catch (e) {
       console.error('AH prices failed:', e);
-      toast.error('Kon geen AH-prijzen ophalen');
+      toast.error('AH-prijzen ophalen lukte niet. Controleer je verbinding en probeer het opnieuw.', {
+        action: { label: 'Opnieuw proberen', onClick: () => { void fetchAhPrices(); } },
+      });
     } finally {
       setPricing(false);
     }
@@ -248,11 +251,23 @@ const GroceryList = () => {
         </div>
       }
 
+      {/* Loading */}
+      {loading &&
+        <div className="space-y-2" aria-hidden="true">
+          {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-14 rounded-lg" />)}
+        </div>
+      }
+
       {/* Empty state */}
-      {unchecked.length === 0 && checked.length === 0 &&
+      {!loading && unchecked.length === 0 && checked.length === 0 &&
         <div className="text-center py-12 text-muted-foreground">
-          <p className="text-lg font-display">Je lijst is leeg</p>
+          <p className="text-lg font-display text-foreground">Je lijst is leeg</p>
           <p className="text-sm mt-1">Typ hierboven wat je nodig hebt, of zet een recept op je lijst.</p>
+          {onNavigate &&
+            <Button variant="outline" className="mt-4 min-h-11" onClick={() => onNavigate('recipes')}>
+              Naar recepten
+            </Button>
+          }
         </div>
       }
 

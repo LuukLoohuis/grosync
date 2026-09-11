@@ -1,4 +1,3 @@
-import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -26,8 +25,8 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
+      {/* Above the bottom tab bar on phones, including the iPhone home indicator. */}
+      <Sonner position="bottom-center" offset="calc(5.5rem + env(safe-area-inset-bottom))" />
       <HashRouter>
         <Routes>
           <Route path="/auth" element={<Auth />} />

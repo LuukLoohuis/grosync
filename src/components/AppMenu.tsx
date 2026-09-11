@@ -1,13 +1,16 @@
-import { Share2, MessageCircle, FileDown, Link2 } from 'lucide-react';
-import { useAppContext } from '@/contexts/AppContext';
-import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { MoreVertical, MessageCircle, FileDown, Link2, Heart, LogOut } from 'lucide-react';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
+import { useAppContext } from '@/contexts/AppContext';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
-const ShareButton = () => {
+const AppMenu = () => {
   const { groceryItems, userId } = useAppContext();
+  const { signOut } = useAuth();
 
   const getListText = () => {
     const unchecked = groceryItems.filter((i) => !i.checked);
@@ -25,7 +28,7 @@ const ShareButton = () => {
     if (!userId) { toast.error('Je moet ingelogd zijn om te delen'); return; }
     if (groceryItems.length === 0) { toast.error('Je lijst is leeg, er valt niets te delen'); return; }
 
-    toast.loading('Deellink aanmaken...');
+    const loadingToast = toast.loading('Deellink aanmaken…');
 
     // Check if user already has a shared list (owner can query directly via RLS)
     const { data: existing } = await supabase
@@ -46,8 +49,8 @@ const ShareButton = () => {
         .single();
 
       if (error || !list) {
-        toast.dismiss();
-        toast.error('Kon geen deellink aanmaken');
+        toast.dismiss(loadingToast);
+        toast.error('Deellink aanmaken lukte niet. Probeer het opnieuw.');
         return;
       }
       shareCode = list.share_code;
@@ -55,7 +58,7 @@ const ShareButton = () => {
 
     const url = `${window.location.origin}/#/shared/${shareCode}`;
     await navigator.clipboard.writeText(url);
-    toast.dismiss();
+    toast.dismiss(loadingToast);
     toast.success('Link gekopieerd');
   };
 
@@ -81,21 +84,36 @@ const ShareButton = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon" title="Lijst delen" aria-label="Lijst delen"><Share2 className="h-4 w-4" /></Button>
+        <button
+          aria-label="Menu"
+          className="-mr-2 h-11 w-11 shrink-0 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+        >
+          <MoreVertical className="h-5 w-5" />
+        </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={shareWhatsApp} className="gap-2 cursor-pointer">
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuLabel>Lijst delen</DropdownMenuLabel>
+        <DropdownMenuItem onSelect={shareWhatsApp} className="gap-2 min-h-11 cursor-pointer">
           <MessageCircle className="h-4 w-4" /> Delen via WhatsApp
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={downloadPDF} className="gap-2 cursor-pointer">
+        <DropdownMenuItem onSelect={shareViaLink} className="gap-2 min-h-11 cursor-pointer">
+          <Link2 className="h-4 w-4" /> Deellink kopiëren
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={downloadPDF} className="gap-2 min-h-11 cursor-pointer">
           <FileDown className="h-4 w-4" /> Download als PDF
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={shareViaLink} className="gap-2 cursor-pointer">
-          <Link2 className="h-4 w-4" /> Deellink kopiëren
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild className="gap-2 min-h-11 cursor-pointer">
+          <a href="https://www.buymeacoffee.com/luukloohuis" target="_blank" rel="noopener noreferrer">
+            <Heart className="h-4 w-4" /> Steun CoupleCart
+          </a>
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={signOut} className="gap-2 min-h-11 cursor-pointer">
+          <LogOut className="h-4 w-4" /> Uitloggen
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );
 };
 
-export default ShareButton;
+export default AppMenu;

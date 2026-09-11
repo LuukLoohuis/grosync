@@ -3,6 +3,7 @@ import { useAppContext } from '@/contexts/AppContext';
 import { useMealPlanner, MealType } from '@/hooks/useMealPlanner';
 import { ChevronLeft, ChevronRight, Plus, X, Sparkles, ShoppingCart, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
@@ -168,11 +169,17 @@ const MealPlanner = () => {
 
       {/* Week grid */}
       {planner.loading ? (
-        <div className="flex justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <div className="space-y-2" aria-hidden="true">
+          {Array.from({ length: 7 }, (_, i) => <Skeleton key={i} className="h-24 rounded-lg" />)}
         </div>
       ) : (
         <div className="space-y-2">
+          {planner.entries.length === 0 && (
+            <div className="rounded-lg border border-dashed border-border p-4 text-center">
+              <p className="font-display text-lg text-foreground">Nog niets gepland deze week</p>
+              <p className="text-sm text-muted-foreground mt-1">Tik op een dag om een recept te kiezen.</p>
+            </div>
+          )}
           {Array.from({ length: 7 }, (_, dayIdx) => (
             <div key={dayIdx} className="bg-card rounded-lg p-3 border border-border">
               <div className="text-sm font-bold text-foreground mb-2">{DAYS_FULL[dayIdx]}</div>
