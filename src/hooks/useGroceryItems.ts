@@ -13,6 +13,7 @@ const toGroceryItem = (row: GroceryRow): GroceryItem => ({
   checked: row.checked,
   fromRecipe: row.from_recipe || undefined,
   price: row.price ?? null,
+  priceCheckedAt: row.price_checked_at,
   ahProduct: row.ah_product_id
     ? {
         id: row.ah_product_id,
@@ -110,6 +111,13 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
     setGroceryItems((prev) => prev.map((i) => i.id === id ? { ...i, checked: !i.checked } : i));
     await supabase.from('grocery_items').update({ checked: !item.checked }).eq('id', id);
   }, [groceryItems]);
+
+  // Sets the state explicitly, so an undo from a toast never flips it the wrong way.
+  const setGroceryItemChecked = useCallback(async (id: string, checked: boolean) => {
+    setGroceryItems((prev) => prev.map((i) => i.id === id ? { ...i, checked } : i));
+    const { error } = await supabase.from('grocery_items').update({ checked }).eq('id', id);
+    if (error) console.error('Updating item failed:', error);
+  }, []);
 
   const removeGroceryItem = useCallback((id: string) => {
     const index = groceryItems.findIndex((i) => i.id === id);
@@ -230,15 +238,20 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
     await supabase.from('grocery_items').update({ price }).eq('id', id);
   }, []);
 
-  const applyAhMatches = useCallback(async (matches: AhMatch[]) => {
-    if (matches.length === 0) return;
+  const applyAhMatches = useCallback(async (matches: AhMatch[], unmatchedIds: string[] = []) => {
+    if (matches.length === 0 && unmatchedIds.length === 0) return;
     const byItem = new Map(matches.map((m) => [m.itemId, m]));
+    const unmatched = new Set(unmatchedIds);
+    const checkedAt = new Date().toISOString();
     setGroceryItems((prev) => prev.map((i) => {
+      // Marked as searched, so the list can say "Kies zelf · Zoek bij AH".
+      if (unmatched.has(i.id)) return { ...i, price: null, ahProduct: null, priceCheckedAt: checkedAt };
       const match = byItem.get(i.id);
       if (!match) return i;
       return {
         ...i,
         price: match.price,
+        priceCheckedAt: checkedAt,
         ahProduct: {
           id: match.productId,
           title: match.title,
@@ -249,8 +262,8 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
         },
       };
     }));
-    const checkedAt = new Date().toISOString();
-    await Promise.all(matches.map((m) => supabase.from('grocery_items').update({
+    await Promise.all([
+      ...matches.map((m) => supabase.from('grocery_items').update({
       price: m.price,
       ah_product_id: m.productId,
       ah_product_title: m.title,
@@ -259,7 +272,11 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
       ah_image_url: m.imageUrl,
       ah_is_bonus: m.isBonus,
       price_checked_at: checkedAt,
-    }).eq('id', m.itemId)));
+      }).eq('id', m.itemId)),
+      ...(unmatchedIds.length > 0
+        ? [supabase.from('grocery_items').update({ ...CLEARED_AH_MATCH, price_checked_at: checkedAt }).in('id', unmatchedIds)]
+        : []),
+    ]);
   }, []);
 
   return {
@@ -270,6 +287,7 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
     removeGroceryItem,
     clearCheckedItems,
     clearAllItems,
+    setGroceryItemChecked,
     addRecipeToGroceryList,
     mergeDuplicateItems,
     updateGroceryItemPrice,

@@ -22,12 +22,13 @@ interface AppContextType {
   trackPurchase: (itemName: string) => Promise<void>;
   addGroceryItem: (name: string, fromRecipe?: string) => Promise<void>;
   toggleGroceryItem: (id: string) => Promise<void>;
+  setGroceryItemChecked: (id: string, checked: boolean) => Promise<void>;
   removeGroceryItem: (id: string) => void;
   clearCheckedItems: () => void;
   clearAllItems: () => Promise<void>;
   addRecipeToGroceryList: (ingredients: string[], recipeName: string) => Promise<boolean>;
   mergeDuplicateItems: () => Promise<void>;
-  applyAhMatches: (matches: AhMatch[]) => Promise<void>;
+  applyAhMatches: (matches: AhMatch[], unmatchedIds?: string[]) => Promise<void>;
   addRecipe: (recipe: Omit<Recipe, 'id'>) => Promise<string | null>;
   updateRecipe: (id: string, updates: Partial<Omit<Recipe, 'id'>>) => Promise<void>;
   removeRecipe: (id: string) => void;
@@ -63,6 +64,7 @@ export const AppProvider = ({ children, userId }: { children: React.ReactNode; u
     trackPurchase: purchaseHook.trackPurchase,
     addGroceryItem: grocery.addGroceryItem,
     toggleGroceryItem: grocery.toggleGroceryItem,
+    setGroceryItemChecked: grocery.setGroceryItemChecked,
     removeGroceryItem: grocery.removeGroceryItem,
     clearCheckedItems: grocery.clearCheckedItems,
     clearAllItems: grocery.clearAllItems,

@@ -6,6 +6,8 @@ export interface GroceryItem {
   fromRecipe?: string;
   price?: number | null;
   ahProduct?: AhProduct | null;
+  /** When AH was last searched for this item, also when nothing matched. */
+  priceCheckedAt?: string | null;
 }
 
 export interface AhProduct {

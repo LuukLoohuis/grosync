@@ -371,6 +371,21 @@ function instagramPostFromHtml(html: string): { caption: string; imageUrl: strin
   return { caption: captions[0], imageUrl: metaContent(html, 'og:image') || null };
 }
 
+// The embed page that other sites use to show a post carries the caption as HTML.
+function instagramPostFromEmbed(html: string): { caption: string; imageUrl: string | null } | null {
+  const block = html.match(/class="Caption">([\s\S]*?)<div class="CaptionComments"/i)?.[1];
+  if (!block) return null;
+  const caption = decodeEntities(
+    block
+      .replace(/<a[^>]*class="CaptionUsername"[\s\S]*?<\/a>/i, '')
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<[^>]+>/g, ''),
+  ).trim();
+  if (!caption) return null;
+  const image = html.match(/<img[^>]*class="EmbeddedMediaImage"[^>]*src="([^"]+)"/i)?.[1];
+  return { caption, imageUrl: image ? decodeEntities(image) : null };
+}
+
 async function instagramCaption(url: string): Promise<{ caption: string; imageUrl: string | null }> {
   const id = url.match(/instagram\.com\/(?:[\w.]+\/)?(?:p|reels?)\/([\w-]+)/i)?.[1];
   const postUrl = id ? `https://www.instagram.com/p/${id}/` : url;
@@ -389,8 +404,24 @@ async function instagramCaption(url: string): Promise<{ caption: string; imageUr
     console.error('Instagram page failed:', e);
   }
 
-  // Firecrawl refuses Instagram ("we do not support this site"), so there is no
-  // server-side fallback; the app asks for the caption text instead.
+  // The embed page works without logging in, also when the post page itself does not.
+  if (id) {
+    try {
+      const response = await fetch(`https://www.instagram.com/p/${id}/embed/captioned/`, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
+        },
+      });
+      const post = instagramPostFromEmbed(await response.text());
+      if (post) return post;
+      console.log('No Instagram caption in embed page, status', response.status);
+    } catch (e) {
+      console.error('Instagram embed page failed:', e);
+    }
+  }
+
+  // Firecrawl refuses Instagram ("we do not support this site"), so without either
+  // page the app asks for the caption text instead.
   return { caption: '', imageUrl: null };
 }
 

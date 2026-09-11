@@ -33,11 +33,12 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       {/* Keep toasts above the bottom tab bar and the iPhone home indicator. Sonner uses
-          mobileOffset instead of offset below 600px, so both need the bottom value. */}
+          mobileOffset instead of offset below 600px, so both need the bottom value.
+          GroceryList raises --toast-offset while its AH price bar is showing. */}
       <Sonner
         position="bottom-center"
-        offset={{ bottom: 'calc(5.5rem + env(safe-area-inset-bottom))' }}
-        mobileOffset={{ bottom: 'calc(5.5rem + env(safe-area-inset-bottom))' }}
+        offset={{ bottom: 'var(--toast-offset, calc(5.5rem + env(safe-area-inset-bottom)))' }}
+        mobileOffset={{ bottom: 'var(--toast-offset, calc(5.5rem + env(safe-area-inset-bottom)))' }}
       />
       <HashRouter>
         <Routes>
