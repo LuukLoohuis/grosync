@@ -10,6 +10,8 @@ const SEARCH_CONCURRENCY = 5;
 
 type Item = { id: string; name: string };
 
+type SearchTerm = { query: string; amount: string; fallback: string };
+
 type Candidate = {
   webshopId: number;
   title: string;
@@ -104,6 +106,14 @@ async function searchAh(query: string, size = 15, keep = 10): Promise<Candidate[
   }
 }
 
+// AH's search finds nothing for some everyday words ("keukenrol"), so the second wording gets a turn.
+async function searchWithFallback(term: SearchTerm | undefined, size?: number, keep?: number): Promise<Candidate[]> {
+  if (!term) return [];
+  const first = await searchAh(term.query, size, keep);
+  if (first.length > 0 || !term.fallback || term.fallback === term.query) return first;
+  return searchAh(term.fallback, size, keep);
+}
+
 async function mapWithConcurrency<T, R>(values: T[], limit: number, fn: (value: T) => Promise<R>): Promise<R[]> {
   const results: R[] = new Array(values.length);
   let next = 0;
@@ -134,15 +144,19 @@ async function askJson(system: string, user: string): Promise<any> {
   return JSON.parse((await response.json()).choices?.[0]?.message?.content || '{}');
 }
 
-async function searchTerms(items: Item[]): Promise<Map<string, { query: string; amount: string }>> {
+async function searchTerms(items: Item[]): Promise<Map<string, SearchTerm>> {
   const result = await askJson(
-    'You turn grocery list lines into Albert Heijn (Dutch supermarket) searches. For each line give "query": the Dutch word(s) a shopper types to find the plain base product, without brand, quantity or preparation, but keeping words that make it a different product, such as diepvries, gerookt, halfvolle or volkoren (e.g. "ca. 300g bread flour" → "tarwebloem", "2 large eggs" → "scharreleieren", "parmesan" → "parmigiano reggiano", "1 clove garlic, grated" → "knoflook", "diepvries spinazie" → "diepvries spinazie"), and "amount": the needed quantity as written, or "" if none. Return JSON {"items":[{"id":"...","query":"...","amount":"..."}]} with every id.',
+    'You turn grocery list lines into Albert Heijn (Dutch supermarket) searches. For each line give "query": the Dutch word(s) a shopper types to find the plain base product, without brand, quantity or preparation, but keeping words that make it a different product, such as diepvries, gerookt, halfvolle or volkoren (e.g. "ca. 300g bread flour" → "tarwebloem", "2 large eggs" → "scharreleieren", "parmesan" → "parmigiano reggiano", "1 clove garlic, grated" → "knoflook", "diepvries spinazie" → "diepvries spinazie"), and "amount": the needed quantity as written, or "" if none, and "fallback": a second search in the words AH itself uses on its products, for when the first search finds nothing (e.g. "keukenrol" → "keukenpapier", "wc-papier" → "toiletpapier"), or "" when the query already is that wording. Return JSON {"items":[{"id":"...","query":"...","amount":"...","fallback":"..."}]} with every id.',
     JSON.stringify(items.map(({ id, name }) => ({ id, line: name }))),
   );
-  const terms = new Map<string, { query: string; amount: string }>();
+  const terms = new Map<string, SearchTerm>();
   for (const entry of result.items || []) {
     if (typeof entry?.id === 'string' && typeof entry?.query === 'string' && entry.query.trim()) {
-      terms.set(entry.id, { query: entry.query.trim(), amount: String(entry.amount || '') });
+      terms.set(entry.id, {
+        query: entry.query.trim(),
+        amount: String(entry.amount || ''),
+        fallback: typeof entry.fallback === 'string' ? entry.fallback.trim() : '',
+      });
     }
   }
   return terms;
@@ -174,7 +188,7 @@ async function chooseProducts(
 async function sameIngredient(line: string, candidates: Candidate[]): Promise<Candidate[]> {
   if (candidates.length === 0) return [];
   const result = await askJson(
-    'A shopper wants a different Albert Heijn product for one grocery list line. From the candidates keep only products that ARE that ingredient: other brands, sizes, organic or free-range variants are fine. Drop dishes, salads, snacks, baked goods, spreads, drinks and other products that merely contain it or share a word with it. Order the kept ones by how well they fit a home cook. Return JSON {"indexes":[...]}.',
+    'A shopper wants a different Albert Heijn product for one grocery list line. From the candidates keep only products that ARE that ingredient: other brands, sizes, organic or free-range variants are fine. Drop dishes, salads, snacks, baked goods, spreads, drinks and other products that merely contain it or share a word with it. Order the kept ones for a home cook: the plain everyday version in a normal household size first, then other sizes, brands and organic or premium variants, and multipacks last. Return JSON {"indexes":[...]}.',
     JSON.stringify({ line, candidates: candidates.map((c, index) => ({ index, title: c.title, size: c.unitSize, category: c.category })) }),
   );
   const kept: Candidate[] = [];
@@ -231,8 +245,9 @@ Deno.serve(async (req) => {
       }
       const exclude = Number(body.exclude) || null;
       const terms = await searchTerms([{ id: item.id, name: item.name }]);
-      const query = terms.get(item.id)?.query || '';
-      const candidates = query ? await searchAh(query, 30, 20) : [];
+      const term = terms.get(item.id);
+      const query = term?.query || '';
+      const candidates = await searchWithFallback(term, 30, 20);
       const fitting = await sameIngredient(item.name, candidates.filter((c) => c.webshopId !== exclude));
       const alternatives = fitting.slice(0, 5).map(toAlternative);
       return json({ query, alternatives });
@@ -247,7 +262,7 @@ Deno.serve(async (req) => {
     const terms = await searchTerms(list);
     const lines = await mapWithConcurrency(list, SEARCH_CONCURRENCY, async (item) => {
       const term = terms.get(item.id);
-      const candidates = term ? await searchAh(term.query) : [];
+      const candidates = await searchWithFallback(term);
       return { id: item.id, name: item.name, amount: term?.amount || '', query: term?.query || '', candidates };
     });
 
