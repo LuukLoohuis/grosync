@@ -163,7 +163,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
                 {item.ahProduct.quantity}× {item.ahProduct.title}{item.ahProduct.unitSize ? ` · ${item.ahProduct.unitSize}` : ''}
               </span>
               {item.ahProduct.isBonus && (
-                <span className="shrink-0 rounded bg-[#ff7900]/15 px-1 font-semibold text-[#c25e00]">Bonus</span>
+                <span className="shrink-0 rounded bg-[#ff7900]/15 px-1 font-semibold text-[#c25e00] dark:text-[#ff9d57]">Bonus</span>
               )}
               <ChevronRight className="h-3 w-3 shrink-0" aria-hidden="true" />
             </button>

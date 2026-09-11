@@ -38,7 +38,16 @@
   <meta name="twitter:title" content="CoupleCart">
   <meta property="og:description" content="Your shared grocery list">
   <meta name="twitter:description" content="Your shared grocery list">
-</head>
+    <script>
+      // Set the dark class before the first paint, so a dark phone never flashes white.
+      try {
+        var theme = localStorage.getItem('couplecart-theme');
+        if (theme === 'dark' || ((!theme || theme === 'system') && matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.classList.add('dark');
+        }
+      } catch (e) {}
+    </script>
+  </head>
 
   <body>
     <div id="root"></div>

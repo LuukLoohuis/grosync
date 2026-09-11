@@ -1,3 +1,4 @@
+import { ThemeProvider } from "next-themes";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -29,27 +30,30 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
+// Follows the phone's light or dark setting unless you pick one under "Thema".
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      {/* Keep toasts above the bottom tab bar and the iPhone home indicator. Sonner uses
-          mobileOffset instead of offset below 600px, so both need the bottom value.
-          GroceryList raises --toast-offset while its AH price bar is showing. */}
-      <Sonner
-        position="bottom-center"
-        offset={{ bottom: 'var(--toast-offset, calc(5.5rem + env(safe-area-inset-bottom)))' }}
-        mobileOffset={{ bottom: 'var(--toast-offset, calc(5.5rem + env(safe-area-inset-bottom)))' }}
-      />
-      <HashRouter>
-        <Routes>
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/shared/:shareCode" element={<SharedList />} />
-          <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </HashRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <ThemeProvider attribute="class" defaultTheme="system" enableSystem storageKey="couplecart-theme" disableTransitionOnChange>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        {/* Keep toasts above the bottom tab bar and the iPhone home indicator. Sonner uses
+            mobileOffset instead of offset below 600px, so both need the bottom value.
+            GroceryList raises --toast-offset while its AH price bar is showing. */}
+        <Sonner
+          position="bottom-center"
+          offset={{ bottom: 'var(--toast-offset, calc(5.5rem + env(safe-area-inset-bottom)))' }}
+          mobileOffset={{ bottom: 'var(--toast-offset, calc(5.5rem + env(safe-area-inset-bottom)))' }}
+        />
+        <HashRouter>
+          <Routes>
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/shared/:shareCode" element={<SharedList />} />
+            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </HashRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ThemeProvider>
 );
 
 export default App;

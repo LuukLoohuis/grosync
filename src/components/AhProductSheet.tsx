@@ -126,7 +126,7 @@ const AhProductSheet = ({ item, onClose }: AhProductSheetProps) => {
                         </span>
                       </span>
                       {choice.isBonus && (
-                        <span className="shrink-0 rounded bg-[#ff7900]/15 px-1.5 py-0.5 text-xs font-semibold text-[#c25e00]">Bonus</span>
+                        <span className="shrink-0 rounded bg-[#ff7900]/15 px-1.5 py-0.5 text-xs font-semibold text-[#c25e00] dark:text-[#ff9d57]">Bonus</span>
                       )}
                     </button>
                   );
