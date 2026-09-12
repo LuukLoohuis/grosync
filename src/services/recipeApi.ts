@@ -1,3 +1,4 @@
+import { supabase } from '@/integrations/supabase/client';
 // Recipe API service - Direct calls to Supabase Edge Functions
 const FUNCTIONS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -134,25 +135,10 @@ export interface RecipeSuggestion {
   extra_needed: string[];
 }
 
-export async function suggestRecipes(ingredients: string[]): Promise<{ recipes: RecipeSuggestion[] }> {
-  try {
-    const response = await fetch(`${FUNCTIONS_URL}/suggest-recipes`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ ingredients }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to suggest recipes');
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('suggestRecipes error:', error);
-    throw error;
-  }
+export async function suggestRecipes(ingredients: string[], staples: string[] = []): Promise<{ recipes: RecipeSuggestion[] }> {
+  // Through invoke, so the call carries your own session and not just the public key.
+  const { data, error } = await supabase.functions.invoke('suggest-recipes', { body: { ingredients, staples } });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+  return data as { recipes: RecipeSuggestion[] };
 }

@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ChefHat, Loader2, RefreshCw, Tag } from 'lucide-react';
+import { ChefHat, Loader2, Plus, RefreshCw, Sparkles, Tag } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import AddToListSheet from '@/components/AddToListSheet';
 import EmptyState from '@/components/EmptyState';
 import RecipeViewDialog from '@/components/RecipeViewDialog';
 import { useAppContext } from '@/contexts/AppContext';
-import { fetchBonusMatches, type BonusResult } from '@/services/bonusApi';
+import { fetchBonusMatches, fetchBonusRecipes, type BonusRecipe, type BonusResult } from '@/services/bonusApi';
 import type { Recipe } from '@/types';
 
 const euro = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' });
@@ -20,10 +21,13 @@ const untilLabel = (endDate: string | null) => {
 
 /** Bonuschef: which of your own recipes are in the bonus at Albert Heijn this week. */
 const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => void }) => {
-  const { recipes } = useAppContext();
+  const { recipes, addRecipe, pantryStaples } = useAppContext();
   const [result, setResult] = useState<BonusResult | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
-  const [addRecipe, setAddRecipe] = useState<Recipe | null>(null);
+  const [listRecipe, setListRecipe] = useState<Recipe | null>(null);
+  const [ideas, setIdeas] = useState<BonusRecipe[]>([]);
+  const [thinking, setThinking] = useState(false);
+  const [saved, setSaved] = useState<string[]>([]);
 
   const load = useCallback(async () => {
     if (recipes.length === 0) {
@@ -43,6 +47,32 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
 
   useEffect(() => { void load(); }, [load]);
 
+  const think = async () => {
+    const offers = result?.sample ?? [];
+    if (offers.length < 10) return;
+    setThinking(true);
+    try {
+      setIdeas(await fetchBonusRecipes(offers, pantryStaples));
+    } catch (error) {
+      console.error('Bonus recipes failed:', error);
+      toast.error('Recepten bedenken lukte niet. Probeer het zo nog eens.');
+    } finally {
+      setThinking(false);
+    }
+  };
+
+  const keep = async (idea: BonusRecipe) => {
+    await addRecipe({
+      name: idea.name,
+      description: idea.description,
+      ingredients: idea.ingredients,
+      instructions: idea.instructions,
+      servings: idea.servings,
+    });
+    setSaved((previous) => [...previous, idea.name]);
+    toast.success(`"${idea.name}" staat bij je recepten`);
+  };
+
   const matches = result?.matches ?? [];
   const until = untilLabel(result?.endDate ?? null);
 
@@ -56,6 +86,54 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
           {until && ` ${until}.`}
         </p>
       </header>
+
+      {status === 'ready' && (result?.sample?.length ?? 0) >= 10 && (
+        <section className="space-y-3 rounded-[14px] border border-accent/25 bg-accent-soft p-3.5">
+          <div>
+            <h2 className="font-display text-[1.0625rem] font-semibold text-foreground">Koken met de bonus</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Drie avondmaaltijden uit de aanbiedingen van deze week, met jouw basisproducten erbij.
+            </p>
+          </div>
+          <Button className="w-full gap-2" onClick={() => void think()} disabled={thinking}>
+            {thinking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            {thinking ? 'Even koken…' : ideas.length > 0 ? 'Bedenk nieuwe gerechten' : 'Maak een recept van de bonus'}
+          </Button>
+
+          {ideas.map((idea) => (
+            <article key={idea.name} className="space-y-2 rounded-xl border border-border bg-card p-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <h3 className="font-display text-[0.9375rem] font-semibold text-foreground">{idea.name}</h3>
+                  <p className="text-xs text-muted-foreground">
+                    {idea.description}
+                    {idea.minutes ? ` · ${idea.minutes} min` : ''} · voor {idea.servings}
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="shrink-0 gap-1"
+                  disabled={saved.includes(idea.name)}
+                  onClick={() => void keep(idea)}
+                >
+                  <Plus className="h-3.5 w-3.5" /> {saved.includes(idea.name) ? 'Opgeslagen' : 'Opslaan'}
+                </Button>
+              </div>
+              {idea.usedBonus.length > 0 && (
+                <p className="text-xs text-accent-ink">Uit de bonus: {idea.usedBonus.join(' · ')}</p>
+              )}
+              <details className="text-xs text-muted-foreground">
+                <summary className="min-h-11 cursor-pointer font-medium text-primary">Ingrediënten en bereiding</summary>
+                <ul className="mt-1.5 space-y-0.5">
+                  {idea.ingredients.map((ingredient) => <li key={ingredient}>• {ingredient}</li>)}
+                </ul>
+                <p className="mt-2 whitespace-pre-line">{idea.instructions}</p>
+              </details>
+            </article>
+          ))}
+        </section>
+      )}
 
       {status === 'loading' && (
         <div className="space-y-2" aria-hidden="true">
@@ -127,10 +205,10 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
             </ul>
 
             <div className="flex gap-2">
-              <Button className="flex-1" onClick={() => setAddRecipe(recipe)}>Zet op je lijst</Button>
+              <Button className="flex-1" onClick={() => setListRecipe(recipe)}>Zet op je lijst</Button>
               <RecipeViewDialog
                 recipe={recipe}
-                onAddToList={() => setAddRecipe(recipe)}
+                onAddToList={() => setListRecipe(recipe)}
                 trigger={<Button variant="outline" className="px-3.5">Bekijken</Button>}
               />
             </div>
@@ -145,7 +223,7 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
         </p>
       )}
 
-      <AddToListSheet recipe={addRecipe} onClose={() => setAddRecipe(null)} onNavigate={() => onNavigate?.('list')} />
+      <AddToListSheet recipe={listRecipe} onClose={() => setListRecipe(null)} onNavigate={() => onNavigate?.('list')} />
     </div>
   );
 };

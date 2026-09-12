@@ -1,7 +1,1 @@
 project_id = "wguzdygvwtacfbzqwnxa"
-
-[functions.calculate-macros]
-verify_jwt = false
-
-[functions.suggest-meal-plan]
-verify_jwt = false

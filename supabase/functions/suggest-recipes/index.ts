@@ -3,13 +3,30 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+// Only signed-in users, otherwise the public key turns this into a free OpenAI proxy.
+async function isSignedIn(req: Request): Promise<boolean> {
+  const token = req.headers.get('Authorization')?.replace(/^Bearer\s+/i, '');
+  const url = Deno.env.get('SUPABASE_URL');
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
+  if (!token || !url || !anonKey) return false;
+  const response = await fetch(`${url}/auth/v1/user`, { headers: { apikey: anonKey, Authorization: `Bearer ${token}` } });
+  return response.ok;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { ingredients } = await req.json();
+    if (!(await isSignedIn(req))) {
+      return new Response(JSON.stringify({ error: 'Sign in required' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const { ingredients, staples } = await req.json();
     if (!ingredients || !Array.isArray(ingredients) || ingredients.length === 0) {
       return new Response(JSON.stringify({ error: 'Ingredients array is required' }), {
         status: 400,
@@ -43,7 +60,9 @@ Deno.serve(async (req) => {
           },
           {
             role: 'user',
-            content: `Ik heb de volgende ingrediënten beschikbaar:\n${ingredients.join('\n')}\n\nSuggereer 3 recepten die ik hiermee kan maken. Het mogen recepten zijn die ook een paar extra ingrediënten nodig hebben, maar de meeste ingrediënten moeten uit de lijst komen.`,
+            content: `Ik heb de volgende ingrediënten beschikbaar:\n${ingredients.join('\n')}\n\n` +
+              `Deze basisproducten heb ik altijd in huis: ${(Array.isArray(staples) && staples.length ? staples : ['zout', 'peper', 'olie']).join(', ')}.\n\n` +
+              `Suggereer 3 recepten die ik hiermee kan maken, haalbaar op een doordeweekse avond. Basisproducten tellen niet als "extra nodig". De meeste andere ingrediënten moeten uit de lijst komen.`,
           },
         ],
         tools: [

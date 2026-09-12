@@ -139,6 +139,42 @@ const STOP = new Set([
   'naturel', 'gekookt', 'gekookte', 'gebakken', 'stukjes', 'blokjes', 'reepjes', 'plakjes', 'gram', 'kilo', 'liter',
 ]);
 
+// A handful of cooking ingredients, spread over departments, for "Maak een recept van de bonus".
+// This travels with the answer so recipes also work before the bonus_products table exists.
+const SAMPLE_SIZE = 70;
+
+function sampleOffers(bonus: BonusRow[]) {
+  const usable = bonus.filter((row) => {
+    const category = row.category ?? '';
+    return category && !NON_FOOD_CATEGORY.test(category) && !TREAT_CATEGORY.test(category);
+  });
+  const byCategory = new Map<string, BonusRow[]>();
+  for (const row of usable) {
+    const list = byCategory.get(row.category ?? '') ?? [];
+    list.push(row);
+    byCategory.set(row.category ?? '', list);
+  }
+  const picked: BonusRow[] = [];
+  for (let round = 0; round < 12 && picked.length < SAMPLE_SIZE; round++) {
+    let added = false;
+    for (const list of byCategory.values()) {
+      const row = list[round];
+      if (!row) continue;
+      picked.push(row);
+      added = true;
+      if (picked.length >= SAMPLE_SIZE) break;
+    }
+    if (!added) break;
+  }
+  return picked.map((row) => ({
+    title: row.title,
+    category: row.category,
+    price: row.price,
+    price_before: row.price_before,
+    mechanism: row.mechanism,
+  }));
+}
+
 // Beer, crisps and sweets share words with real ingredients ("Radler citroen", "chips paprika").
 const TREAT_CATEGORY = /borrel|chips|snack|snoep|chocolade|koek|tussendoortje|bier|wijn|aperitie|frisdrank|sappen|water|koffie|thee/i;
 const TREAT_WORD = /\b(bier|wijn|chips|koek|koekjes|chocolade|frisdrank|cola|sap|koffie|thee|snoep|borrel)\b/i;
@@ -147,6 +183,15 @@ const NON_FOOD_CATEGORY = /huishouden|drogisterij|baby|huisdier|koken|tafelen|vr
 // Ready-made meals only count when the recipe asks for one.
 const MEAL_CATEGORY = /maaltijd|salade|pizza/i;
 const MEAL_WORD = /\b(maaltijd|salade|pizza)\b/i;
+
+// Salt, pepper and oil stand in almost every recipe, so they would match crisps ("Mini crackers zout")
+// or tuna in olive oil. Basics never drive a match; the ingredient only counts on its own words.
+const PANTRY = new Set([
+  'zout', 'zeezout', 'keukenzout', 'salt', 'peper', 'pepers', 'peperkorrels', 'pepper',
+  'olie', 'olijfolie', 'zonnebloemolie', 'bakolie', 'plantaardige', 'boter', 'roomboter',
+  'water', 'suiker', 'kristalsuiker', 'rietsuiker', 'basterdsuiker', 'sugar',
+  'bloem', 'tarwebloem', 'patentbloem', 'flour', 'azijn', 'maizena',
+]);
 
 const wordsOf = (text: string) =>
   new Set(
@@ -196,6 +241,7 @@ Deno.serve(async (req) => {
         const wantsMeal = MEAL_WORD.test(ingredient);
         let best: BonusRow | undefined;
         for (const word of wordsOf(ingredient)) {
+          if (PANTRY.has(word)) continue;
           const candidates = byWord.get(word);
           if (!candidates) continue;
           for (const candidate of candidates) {
@@ -247,7 +293,7 @@ Deno.serve(async (req) => {
       if (row.end_date && row.end_date <= horizon) dateCount.set(row.end_date, (dateCount.get(row.end_date) ?? 0) + 1);
     }
     const endDate = [...dateCount.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
-    return json({ matches, bonusCount: bonus.length, endDate });
+    return json({ matches, bonusCount: bonus.length, endDate, sample: sampleOffers(bonus) });
   } catch (error) {
     console.error('ah-bonus failed:', error);
     return json({ error: 'Bonus ophalen lukte niet' }, 500);
