@@ -34,7 +34,9 @@ const TodayScreen = ({ onNavigate }: { onNavigate: (tab: TodayTarget) => void })
 
   // Monday is day 0 in the week plan.
   const dinner = planner.getEntry((new Date().getDay() + 6) % 7, 'dinner');
-  const recipe = dinner?.recipe;
+  // The planner links its recipe when the plan arrives; look it up again in case the
+  // recipes were still loading at that moment.
+  const recipe = dinner?.recipe ?? recipes.find((r) => r.id === dinner?.recipeId);
   const plannedDinners = planner.entries.filter((e) => e.mealType === 'dinner').length;
   const openDinners = 7 - plannedDinners;
 
