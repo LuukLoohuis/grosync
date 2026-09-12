@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { CalendarDays, ChefHat, ShoppingCart } from 'lucide-react';
+import { ChefHat, ShoppingCart } from 'lucide-react';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -12,7 +13,7 @@ import { useAppContext } from '@/contexts/AppContext';
 import { useMealPlanner } from '@/hooks/useMealPlanner';
 import type { GroceryItem, Recipe } from '@/types';
 
-type TodayTarget = 'list' | 'recipes' | 'planner';
+type TodayTarget = 'list' | 'recipes';
 
 const euro = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' });
 
@@ -31,14 +32,20 @@ const TodayScreen = ({ onNavigate }: { onNavigate: (tab: TodayTarget) => void })
   const { userId, recipes, groceryItems, usuals, loading, addGroceryItem, setGroceryItemChecked, trackPurchase } = useAppContext();
   const planner = useMealPlanner(userId, recipes);
   const [addRecipe, setAddRecipe] = useState<Recipe | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   // Monday is day 0 in the week plan.
   const dinner = planner.getEntry((new Date().getDay() + 6) % 7, 'dinner');
   // The planner links its recipe when the plan arrives; look it up again in case the
   // recipes were still loading at that moment.
   const recipe = dinner?.recipe ?? recipes.find((r) => r.id === dinner?.recipeId);
-  const plannedDinners = planner.entries.filter((e) => e.mealType === 'dinner').length;
-  const openDinners = 7 - plannedDinners;
+  const todayIndex = (new Date().getDay() + 6) % 7;
+
+  const chooseDinner = async (chosen: Recipe) => {
+    setPickerOpen(false);
+    await planner.setMeal(todayIndex, 'dinner', chosen.id);
+    toast.success(`Vanavond: ${chosen.name}`);
+  };
 
   const unchecked = groceryItems.filter((i) => !i.checked);
   const priced = unchecked.filter((i) => i.ahProduct);
@@ -71,7 +78,7 @@ const TodayScreen = ({ onNavigate }: { onNavigate: (tab: TodayTarget) => void })
   const dinnerTitle = recipe?.name ?? dinner?.customMealName ?? 'Nog niets gepland';
   const dinnerCaption = recipe
     ? `Voor ${personen(recipe.servings || 4)} · ${recipe.ingredients.length} ingrediënten`
-    : dinner ? 'Uit je weekplan' : 'Kies wat jullie vanavond eten.';
+    : dinner ? 'Voor vanavond gekozen' : 'Kies wat jullie vanavond eten.';
 
   return (
     <div>
@@ -113,16 +120,16 @@ const TodayScreen = ({ onNavigate }: { onNavigate: (tab: TodayTarget) => void })
               trigger={<Button variant="accent" className="flex-1">Bekijk recept</Button>}
             />
           ) : (
-            <Button variant="accent" className="flex-1" onClick={() => onNavigate('planner')}>
-              {dinner ? 'Naar weekplan' : 'Plan vanavond'}
+            <Button variant="accent" className="flex-1" onClick={() => setPickerOpen(true)}>
+              Kies wat we eten
             </Button>
           )}
           <Button
             variant="outline"
-            onClick={() => onNavigate(dinner ? 'planner' : 'recipes')}
+            onClick={() => (recipe || dinner ? setPickerOpen(true) : onNavigate('recipes'))}
             className="border-[#3C6F5B] bg-transparent px-3.5 text-primary-foreground hover:bg-primary-deep dark:border-border-strong dark:text-foreground dark:hover:bg-card"
           >
-            {dinner ? 'Ruilen' : 'Recepten'}
+            {recipe || dinner ? 'Ruilen' : 'Recepten'}
           </Button>
         </div>
       </section>
@@ -140,13 +147,13 @@ const TodayScreen = ({ onNavigate }: { onNavigate: (tab: TodayTarget) => void })
             </span>
             <span className="block text-xs text-muted-foreground">{listCaption}</span>
           </button>
-          <button type="button" onClick={() => onNavigate('planner')} className={TILE}>
+          <button type="button" onClick={() => onNavigate('recipes')} className={TILE}>
             <span className="flex items-center gap-1.5 text-xs font-semibold text-accent-ink">
-              <CalendarDays className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" /> Weekplan
+              <ChefHat className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" /> Recepten
             </span>
-            <span className="mt-1.5 block font-display text-2xl font-bold tabular-nums text-foreground">{plannedDinners} van 7</span>
+            <span className="mt-1.5 block font-display text-2xl font-bold tabular-nums text-foreground">{recipes.length}</span>
             <span className="block text-xs text-muted-foreground">
-              {plannedDinners === 0 ? 'Nog niets gepland' : openDinners === 0 ? 'Hele week gepland' : `Nog ${openDinners} ${openDinners === 1 ? 'avond' : 'avonden'} open`}
+              {recipes.length === 0 ? 'Plak een link om er een toe te voegen' : 'Kies er een voor vanavond'}
             </span>
           </button>
         </div>
@@ -220,6 +227,49 @@ const TodayScreen = ({ onNavigate }: { onNavigate: (tab: TodayTarget) => void })
       </div>
 
       <AddToListSheet recipe={addRecipe} onClose={() => setAddRecipe(null)} onNavigate={() => onNavigate('list')} />
+
+      <Sheet open={pickerOpen} onOpenChange={setPickerOpen}>
+        <SheetContent side="bottom" className="mx-auto flex max-h-[85dvh] max-w-lg flex-col gap-0 rounded-t-[20px] p-0 shadow-sheet">
+          <SheetHeader className="px-5 pb-3 pr-14 pt-5 text-left">
+            <SheetTitle className="font-display text-xl">Wat eten we vanavond?</SheetTitle>
+            <SheetDescription>Kies een recept uit je eigen lijst.</SheetDescription>
+          </SheetHeader>
+          <div className="flex-1 space-y-2 overflow-y-auto px-5 pb-[calc(1.25rem+env(safe-area-inset-bottom))]">
+            {recipes.length === 0 ? (
+              <EmptyState
+                icon={ChefHat}
+                title="Nog geen recepten"
+                body="Plak een link van een recept, dan kun je hem hier kiezen."
+                action={{ label: 'Naar recepten', onClick: () => { setPickerOpen(false); onNavigate('recipes'); } }}
+              />
+            ) : (
+              recipes.map((option) => (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => chooseDinner(option)}
+                  className="flex min-h-14 w-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-2 text-left transition-colors hover:border-border-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  {option.imageUrl ? (
+                    <img src={option.imageUrl} alt="" loading="lazy" className="h-11 w-11 shrink-0 rounded-[10px] object-cover" />
+                  ) : (
+                    <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-primary-soft text-primary">
+                      <ChefHat className="h-5 w-5" strokeWidth={1.8} />
+                    </span>
+                  )}
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[0.9375rem] font-medium text-foreground">{option.name}</span>
+                    <span className="block truncate text-xs text-muted-foreground">
+                      Voor {personen(option.servings || 4)} · {option.ingredients.length} ingrediënten
+                    </span>
+                  </span>
+                  {recipe?.id === option.id && <span className="shrink-0 text-xs font-semibold text-primary">Nu</span>}
+                </button>
+              ))
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };
