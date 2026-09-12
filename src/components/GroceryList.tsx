@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Check, ChevronDown, ChevronRight, Plus, Trash2, X, Merge, TrendingUp, ExternalLink, Loader2, ShoppingBasket, Tag, MoreVertical, RefreshCw } from 'lucide-react';
+import { Check, ChevronDown, ChevronRight, Plus, Trash2, X, Merge, TrendingUp, ExternalLink, Loader2, ShoppingBasket, ShoppingCart, Tag, MoreVertical, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppContext } from '@/contexts/AppContext';
 import { AH_MAX_ITEMS, ahBasketUrl, matchAhProducts } from '@/services/ahApi';
@@ -14,6 +14,7 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import SwipeToCheck from '@/components/SwipeToCheck';
+import EmptyState from '@/components/EmptyState';
 import AhProductSheet from '@/components/AhProductSheet';
 import { sortByStoreRoute } from '@/lib/storeRouteSort';
 import { translateForSearch } from '@/lib/groceryTranslations';
@@ -79,6 +80,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
   const ahTotal = pricedItems.reduce((sum, i) => sum + (i.price ?? 0), 0);
   const showBar = !loading && unchecked.length > 0;
   const hasPrices = pricedItems.length > 0;
+  const bonusCount = pricedItems.filter((i) => i.ahProduct?.isBonus).length;
 
   const fetchAhPrices = async () => {
     const batch = unchecked.slice(0, AH_MAX_ITEMS);
@@ -139,17 +141,17 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
 
   const renderItem = (item: GroceryItem) =>
     <SwipeToCheck key={item.id} onSwipe={() => checkOff(item)}>
-      <div className="flex min-h-14 items-center gap-2 bg-card px-1 py-1.5">
+      <div className="flex min-h-14 items-center gap-1.5 rounded-xl border border-border bg-card py-1 pl-0.5 pr-1">
         <button
           onClick={() => checkOff(item)}
           aria-label={`Vink ${item.name} af`}
           className="h-11 w-11 shrink-0 flex items-center justify-center group/check"
         >
-          <span className="h-5 w-5 rounded-full border-2 border-primary group-hover/check:bg-primary/10 transition-colors" />
+          <span className="h-6 w-6 rounded-lg border-2 border-primary transition-colors group-hover/check:bg-primary-soft" />
         </button>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="font-body">{item.name}</span>
+            <span className="text-[0.9375rem] font-medium">{item.name}</span>
             {item.fromRecipe && <span className="text-xs text-muted-foreground">voor {item.fromRecipe}</span>}
           </div>
           {item.ahProduct && (
@@ -163,7 +165,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
                 {item.ahProduct.quantity}× {item.ahProduct.title}{item.ahProduct.unitSize ? ` · ${item.ahProduct.unitSize}` : ''}
               </span>
               {item.ahProduct.isBonus && (
-                <span className="shrink-0 rounded bg-[#ff7900]/15 px-1 font-semibold text-[#c25e00] dark:text-[#ff9d57]">Bonus</span>
+                <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-ah-bonus/15 px-1.5 py-0.5 font-semibold text-accent-ink"><Tag className="h-3 w-3" aria-hidden="true" />Bonus</span>
               )}
               <ChevronRight className="h-3 w-3 shrink-0" aria-hidden="true" />
             </button>
@@ -190,7 +192,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
           )}
         </div>
         {item.price != null && (
-          <span className="text-sm font-medium tabular-nums shrink-0">{euro.format(item.price)}</span>
+          <span className="shrink-0 font-display text-sm font-semibold tabular-nums">{euro.format(item.price)}</span>
         )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -248,7 +250,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
             <button
               key={item.name}
               onClick={() => handleAdd(item.name)}
-              className="text-xs px-3 min-h-11 rounded-full bg-primary/10 text-primary hover:bg-primary/20 transition-colors font-medium capitalize"
+              className="min-h-11 rounded-full bg-primary-soft px-3.5 text-[0.8125rem] font-semibold capitalize text-primary transition-colors hover:bg-primary-soft/70"
             >
               + {item.name}
             </button>
@@ -259,15 +261,15 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
       {/* Order and list actions */}
       {groceryItems.length > 0 &&
         <div className="space-y-2">
-          <div role="group" aria-label="Volgorde van je lijst" className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1">
-            {([['department', 'Op afdeling'], ['added', 'Op volgorde van toevoegen']] as const).map(([value, label]) => (
+          <div role="group" aria-label="Volgorde van je lijst" className="flex gap-2">
+            {([['department', 'Op afdeling'], ['added', 'Op volgorde']] as const).map(([value, label]) => (
               <button
                 key={value}
                 type="button"
                 onClick={() => changeOrder(value)}
                 aria-pressed={order === value}
-                className={`min-h-11 rounded-md px-2 text-sm font-semibold leading-tight transition-colors ${
-                  order === value ? 'bg-card text-foreground shadow-soft' : 'text-muted-foreground hover:text-foreground'}`}
+                className={`min-h-11 rounded-full px-3.5 text-[0.8125rem] font-semibold transition-colors ${
+                  order === value ? 'bg-primary text-primary-foreground' : 'border-[1.5px] border-border text-foreground/80 hover:border-border-strong'}`}
               >
                 {label}
               </button>
@@ -318,15 +320,12 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
 
       {/* Empty state */}
       {!loading && unchecked.length === 0 && checked.length === 0 &&
-        <div className="text-center py-12 text-muted-foreground">
-          <p className="text-lg font-display text-foreground">Je lijst is leeg</p>
-          <p className="text-sm mt-1">Typ hierboven wat je nodig hebt, of zet een recept op je lijst.</p>
-          {onNavigate &&
-            <Button variant="outline" className="mt-4 min-h-11" onClick={() => onNavigate('recipes')}>
-              Naar recepten
-            </Button>
-          }
-        </div>
+        <EmptyState
+          icon={ShoppingCart}
+          title="Je lijst is leeg"
+          body="Typ wat je nodig hebt, of zet een recept op je lijst."
+          action={onNavigate ? { label: 'Naar recepten', onClick: () => onNavigate('recipes') } : undefined}
+        />
       }
 
       {/* Items - per department */}
@@ -334,7 +333,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
         <div className="space-y-4">
           {categorized.map((group) =>
             <div key={group.category}>
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mb-2">
+              <p className="mb-2 text-[0.6875rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
                 {group.label}
               </p>
               <div className="space-y-2">
@@ -370,17 +369,17 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
             </button>
           </div>
           {showChecked && checked.map((item) =>
-            <div key={item.id} className="flex min-h-14 items-center gap-2 rounded-lg bg-muted/50 px-1 py-1.5 group">
+            <div key={item.id} className="group flex min-h-14 items-center gap-1.5 rounded-xl border border-border/70 bg-background py-1 pl-0.5 pr-1">
               <button
                 onClick={() => { void setGroceryItemChecked(item.id, false); }}
                 aria-label={`Zet ${item.name} terug op je lijst`}
                 className="h-11 w-11 shrink-0 flex items-center justify-center"
               >
-                <span className="h-5 w-5 rounded-full bg-primary flex items-center justify-center animate-check-bounce">
-                  <Check className="h-3 w-3 text-primary-foreground" />
+                <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary">
+                  <Check className="h-3.5 w-3.5 text-primary-foreground" strokeWidth={3} />
                 </span>
               </button>
-              <span className="font-body line-through text-muted-foreground flex-1">{item.name}</span>
+              <span className="flex-1 text-[0.9375rem] text-muted-foreground line-through">{item.name}</span>
               <button
                 onClick={() => removeGroceryItem(item.id)}
                 aria-label={`Verwijder ${item.name}`}
@@ -413,7 +412,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
                 <div className="flex items-center gap-2">
                   <div className="min-w-0 flex-1 leading-tight">
                     <p className="text-xs text-muted-foreground">Totaal bij AH</p>
-                    <p className="text-lg font-semibold tabular-nums">{euro.format(ahTotal)}</p>
+                    <p className="font-display text-xl font-bold tabular-nums">{euro.format(ahTotal)}</p>
                   </div>
                   <button
                     type="button"
@@ -425,7 +424,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
                   >
                     <RefreshCw className={`h-4 w-4 ${pricing ? 'animate-spin' : ''}`} />
                   </button>
-                  <Button asChild className="min-h-11 shrink-0 gap-2 px-3 bg-[#00a0e2] text-white hover:bg-[#008cc6]">
+                  <Button asChild variant="ah" className="shrink-0 px-3">
                     <a
                       href={ahBasketUrl(pricedItems.flatMap((i) => (i.ahProduct ? [{ id: i.ahProduct.id, quantity: i.ahProduct.quantity }] : [])))}
                       target="_blank"
@@ -436,7 +435,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
                   </Button>
                 </div>
                 <p className="mt-0.5 text-[11px] text-muted-foreground">
-                  <span className="tabular-nums">{pricedItems.length} van {unchecked.length} gevonden</span> · Je bestelt bij AH, in de app of op ah.nl.
+                  <span className="tabular-nums">{pricedItems.length} van {unchecked.length} gevonden{bonusCount > 0 ? ` · ${bonusCount} in de bonus` : ''}</span> · Je bestelt bij AH, in de app of op ah.nl.
                 </p>
               </>
             ) : (

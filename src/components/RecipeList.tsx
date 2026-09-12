@@ -357,7 +357,7 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
 
       <div className="grid gap-4">
         {recipes.map((recipe) => (
-          <div key={recipe.id} className="bg-card rounded-lg overflow-hidden shadow-soft animate-fade-in group relative">
+          <div key={recipe.id} className="group relative overflow-hidden rounded-[14px] border border-border bg-card">
             {recipe.imageUrl && (
               <div className="aspect-video w-full overflow-hidden bg-muted">
                 <img src={recipe.imageUrl} alt={recipe.name} className="w-full h-full object-cover" loading="lazy" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />

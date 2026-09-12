@@ -71,7 +71,7 @@ const SwipeToCheck = ({ onSwipe, children }: SwipeToCheckProps) => {
   };
 
   return (
-    <div className="relative overflow-hidden rounded-lg shadow-soft animate-fade-in">
+    <div className="relative overflow-hidden rounded-xl">
       <div
         aria-hidden="true"
         className="absolute inset-0 flex items-center gap-2 bg-primary pl-4 text-sm font-semibold text-primary-foreground"

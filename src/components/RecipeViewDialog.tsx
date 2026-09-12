@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Eye, ExternalLink, Users, ShoppingCart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -12,9 +12,11 @@ interface RecipeViewDialogProps {
   recipe: Recipe;
   /** Opens the sheet where you choose servings and ingredients. */
   onAddToList: () => void;
+  /** Replaces the "Bekijken" button that recipe cards use. */
+  trigger?: ReactNode;
 }
 
-const RecipeViewDialog = ({ recipe, onAddToList }: RecipeViewDialogProps) => {
+const RecipeViewDialog = ({ recipe, onAddToList, trigger }: RecipeViewDialogProps) => {
   const [open, setOpen] = useState(false);
   const servings = recipe.servings || 4;
 
@@ -26,10 +28,12 @@ const RecipeViewDialog = ({ recipe, onAddToList }: RecipeViewDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="w-full h-auto min-h-11 flex-col gap-1 px-1 py-2 text-[11px] font-medium leading-tight whitespace-normal">
-          <Eye className="h-4 w-4" />
-          Bekijken
-        </Button>
+        {trigger ?? (
+          <Button variant="outline" className="w-full h-auto min-h-11 flex-col gap-1 px-1 py-2 text-[11px] font-medium leading-tight whitespace-normal">
+            <Eye className="h-4 w-4" />
+            Bekijken
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="bg-background max-h-[90vh] sm:max-w-2xl p-0 overflow-hidden">
         <ScrollArea className="max-h-[90vh]">

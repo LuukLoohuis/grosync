@@ -93,7 +93,7 @@ const AhProductSheet = ({ item, onClose }: AhProductSheetProps) => {
 
   return (
     <Sheet open={Boolean(item)} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <SheetContent side="bottom" className="mx-auto flex max-h-[90dvh] max-w-lg flex-col gap-0 rounded-t-2xl p-0">
+      <SheetContent side="bottom" className="mx-auto flex max-h-[90dvh] max-w-lg flex-col gap-0 rounded-t-[20px] p-0 shadow-sheet">
         {shown && (
           <>
             <SheetHeader className="px-5 pb-3 pt-5 pr-14 text-left">
@@ -126,7 +126,7 @@ const AhProductSheet = ({ item, onClose }: AhProductSheetProps) => {
                         </span>
                       </span>
                       {choice.isBonus && (
-                        <span className="shrink-0 rounded bg-[#ff7900]/15 px-1.5 py-0.5 text-xs font-semibold text-[#c25e00] dark:text-[#ff9d57]">Bonus</span>
+                        <span className="shrink-0 rounded-md bg-ah-bonus/15 px-1.5 py-0.5 text-xs font-semibold text-accent-ink">Bonus</span>
                       )}
                     </button>
                   );

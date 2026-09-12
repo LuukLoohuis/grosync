@@ -67,7 +67,7 @@ const UsualsList = () => {
         {usuals.map((item) => (
           <div
             key={item.id}
-            className="flex items-center bg-card rounded-full pl-3 shadow-soft animate-fade-in group"
+            className="group flex items-center rounded-full border border-border bg-card pl-3"
           >
             <button
               onClick={() => handleAddToList(item.name)}

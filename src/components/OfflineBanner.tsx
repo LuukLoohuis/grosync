@@ -1,11 +1,14 @@
+import { WifiOff } from 'lucide-react';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import { cn } from '@/lib/utils';
 
-const OfflineBanner = () => {
+const OfflineBanner = ({ className }: { className?: string }) => {
   const online = useOnlineStatus();
   if (online) return null;
   return (
-    <p role="status" className="bg-amber-100 px-4 py-1.5 text-center text-sm font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-100">
-      Geen verbinding · je wijzigingen worden bewaard
+    <p role="status" className={cn('flex items-center gap-2.5 rounded-xl bg-info-soft px-3 py-2.5 text-[0.8125rem] font-medium text-info', className)}>
+      <WifiOff className="h-4 w-4 shrink-0" aria-hidden="true" />
+      Geen bereik. Je wijzigingen gaan mee zodra je weer online bent.
     </p>
   );
 };

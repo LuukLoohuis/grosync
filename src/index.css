@@ -2,83 +2,101 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Design system "Voorraadkast": warm cream ground, deep green as a plane, orange for action. */
 @layer base {
   :root {
-    --background: 45 40% 97%;
-    --foreground: 20 35% 10%;
+    --background: 48 33% 94%;      /* #F4F2EA warm cream */
+    --foreground: 108 19% 7%;      /* #10160F near-black green ink */
+    --card: 0 0% 100%;
+    --card-foreground: 108 19% 7%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 108 19% 7%;
 
-    --card: 44 35% 94%;
-    --card-foreground: 20 35% 10%;
+    --primary: 160 69% 18%;        /* #0E4D38 deep green, 9.9:1 on white */
+    --primary-foreground: 150 20% 94%;
+    --primary-deep: 160 70% 14%;   /* #0B3F2E plane within the green plane */
+    --primary-soft: 158 25% 91%;   /* #E3EFE9 badges, active tab */
+    --primary-muted: 152 26% 69%;  /* #9DC4B2 secondary text on the green plane */
 
-    --popover: 45 40% 97%;
-    --popover-foreground: 20 35% 10%;
+    --secondary: 26 87% 56%;       /* #F07A2E warm orange */
+    --secondary-foreground: 26 82% 9%;
+    --accent: 26 87% 56%;
+    --accent-foreground: 26 82% 9%;
+    --accent-ink: 22 84% 37%;      /* #B04A0F orange as text on cream (AA) */
+    --accent-soft: 26 82% 94%;     /* #FDEDE1 */
 
-    --primary: 155 55% 32%;
-    --primary-foreground: 45 40% 97%;
+    --muted: 48 20% 90%;           /* #EDEBE1 */
+    --muted-foreground: 102 6% 39%;/* #5F6A5C, 5.6:1 on cream */
+    --destructive: 3 71% 41%;      /* #B3261E */
+    --destructive-foreground: 48 33% 96%;
 
-    --secondary: 18 80% 58%;
-    --secondary-foreground: 45 40% 97%;
-
-    --muted: 42 25% 90%;
-    --muted-foreground: 20 18% 42%;
-
-    --accent: 18 80% 58%;
-    --accent-foreground: 45 40% 97%;
-
-    --destructive: 0 72% 50%;
-    --destructive-foreground: 45 40% 97%;
-
-    --border: 38 25% 82%;
-    --input: 38 25% 82%;
-    --ring: 155 55% 32%;
-
+    --border: 47 21% 85%;          /* #E1DECF */
+    --border-strong: 48 15% 75%;   /* #C9C5B4 outlines that must read as controls */
+    --input: 47 21% 85%;
+    --ring: 160 69% 18%;
     --radius: 0.75rem;
 
-    --sidebar-background: 44 35% 94%;
-    --sidebar-foreground: 20 35% 10%;
-    --sidebar-primary: 155 55% 32%;
-    --sidebar-primary-foreground: 45 40% 97%;
-    --sidebar-accent: 42 25% 90%;
-    --sidebar-accent-foreground: 20 35% 10%;
-    --sidebar-border: 38 25% 82%;
-    --sidebar-ring: 155 55% 32%;
+    --ah-basket: 198 100% 44%;     /* #00A0E2, Albert Heijn basket actions only */
+    --ah-bonus: 28 100% 50%;       /* #FF7900, Bonus label only */
+    --info: 223 42% 34%;           /* #31437A offline, queued */
+    --info-soft: 225 30% 93%;      /* #E6E9F2 */
 
-    --font-display: 'DM Serif Display', serif;
-    --font-body: 'DM Sans', sans-serif;
+    --sidebar-background: 48 33% 94%;
+    --sidebar-foreground: 108 19% 7%;
+    --sidebar-primary: 160 69% 18%;
+    --sidebar-primary-foreground: 150 20% 94%;
+    --sidebar-accent: 48 20% 90%;
+    --sidebar-accent-foreground: 108 19% 7%;
+    --sidebar-border: 47 21% 85%;
+    --sidebar-ring: 160 69% 18%;
 
-    --gradient-hero: linear-gradient(135deg, hsl(155 55% 32%), hsl(160 45% 42%));
-    --shadow-soft: 0 2px 12px -2px hsl(20 35% 10% / 0.08);
-    --shadow-card: 0 4px 20px -4px hsl(20 35% 10% / 0.12);
+    --font-display: 'Space Grotesk', system-ui, sans-serif;
+    --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+    --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+    --shadow-flat: 0 1px 2px hsl(108 19% 7% / .06);
+    --shadow-soft: 0 4px 14px -6px hsl(108 19% 7% / .18);
+    --shadow-sheet: 0 -8px 30px -10px hsl(108 19% 7% / .25);
+    --ease-out: cubic-bezier(.2, .8, .2, 1);
+    --dur-tap: 150ms;
+    --dur-sheet: 220ms;
   }
 
   .dark {
-    --background: 22 22% 7%;
-    --foreground: 42 25% 93%;
+    --background: 120 8% 8%;       /* #131711 */
+    --foreground: 48 20% 92%;      /* #F0EEE4 */
+    --card: 120 7% 12%;            /* #1D211B */
+    --card-foreground: 48 20% 92%;
+    --popover: 120 7% 12%;
+    --popover-foreground: 48 20% 92%;
 
-    --card: 22 20% 11%;
-    --card-foreground: 42 25% 93%;
+    --primary: 158 44% 44%;        /* #3FA37B */
+    --primary-foreground: 160 60% 8%;
+    --primary-deep: 160 40% 16%;
+    --primary-soft: 158 26% 18%;
+    --primary-muted: 150 14% 68%;
 
-    --popover: 22 20% 11%;
-    --popover-foreground: 42 25% 93%;
+    --secondary: 24 78% 57%;       /* #E8803C */
+    --secondary-foreground: 26 82% 9%;
+    --accent: 24 78% 57%;
+    --accent-foreground: 26 82% 9%;
+    --accent-ink: 26 90% 68%;      /* #FFA95C */
+    --accent-soft: 24 30% 16%;
 
-    --primary: 155 50% 42%;
-    --primary-foreground: 22 22% 7%;
+    --muted: 120 6% 16%;
+    --muted-foreground: 100 8% 66%;/* #A7AFA3 */
+    --destructive: 3 62% 48%;
+    --destructive-foreground: 48 20% 92%;
 
-    --secondary: 18 70% 52%;
-    --secondary-foreground: 22 22% 7%;
+    --border: 120 6% 17%;          /* #2A2E26 */
+    --border-strong: 90 8% 23%;    /* #3A3F35 */
+    --input: 120 6% 17%;
+    --ring: 158 44% 44%;
 
-    --muted: 22 16% 16%;
-    --muted-foreground: 42 18% 55%;
-
-    --accent: 18 70% 52%;
-    --accent-foreground: 22 22% 7%;
-
-    --destructive: 0 62% 42%;
-    --destructive-foreground: 42 25% 93%;
-
-    --border: 22 16% 18%;
-    --input: 22 16% 18%;
-    --ring: 155 50% 42%;
+    --ah-basket: 198 85% 52%;
+    --ah-bonus: 28 100% 62%;
+    --info: 223 40% 72%;
+    --info-soft: 223 25% 18%;
   }
 }
 
@@ -90,6 +108,7 @@
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
   }
 
   h1, h2, h3 {
@@ -98,11 +117,17 @@
 }
 
 @layer utilities {
+  .shadow-flat {
+    box-shadow: var(--shadow-flat);
+  }
   .shadow-soft {
     box-shadow: var(--shadow-soft);
   }
   .shadow-card {
-    box-shadow: var(--shadow-card);
+    box-shadow: var(--shadow-soft);
+  }
+  .shadow-sheet {
+    box-shadow: var(--shadow-sheet);
   }
 }
 

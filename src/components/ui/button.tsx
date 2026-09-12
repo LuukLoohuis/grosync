@@ -5,22 +5,25 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-[0.9375rem] font-semibold ring-offset-background transition-[background-color,border-color,color,transform] duration-150 ease-[cubic-bezier(.2,.8,.2,1)] active:scale-[.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "bg-primary text-primary-foreground hover:bg-primary/90",
-        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
-        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
+        default:
+          "bg-primary text-primary-foreground hover:bg-primary-deep disabled:bg-[#C7CDC4] disabled:text-[#6E756C] dark:hover:bg-primary/90 dark:disabled:bg-muted dark:disabled:text-muted-foreground",
+        accent: "bg-accent text-accent-foreground hover:bg-[#D9661C] disabled:opacity-50 dark:hover:bg-accent/90",
+        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50",
+        outline: "border-[1.5px] border-border-strong bg-card text-foreground hover:bg-background disabled:opacity-50",
+        secondary: "bg-accent text-accent-foreground hover:bg-[#D9661C] disabled:opacity-50 dark:hover:bg-accent/90",
+        ghost: "text-primary hover:bg-primary-soft disabled:opacity-50",
         link: "text-primary underline-offset-4 hover:underline",
+        ah: "bg-ah-basket text-white hover:bg-ah-basket/90 disabled:opacity-50",
       },
       size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-9 rounded-md px-3",
-        lg: "h-11 rounded-md px-8",
-        icon: "h-10 w-10",
+        default: "min-h-11 px-[18px] py-2",
+        sm: "min-h-11 px-3.5 text-[0.8125rem]",
+        lg: "min-h-12 px-8",
+        icon: "h-11 w-11",
       },
     },
     defaultVariants: {

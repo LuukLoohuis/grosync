@@ -34,7 +34,7 @@ const SharedListContent = () => {
             <Link2 className="h-4 w-4" />
           </Button>
         </div>
-        <OfflineBanner />
+        <div className="mx-auto max-w-lg px-4"><OfflineBanner className="mb-2" /></div>
       </header>
 
       <div className="max-w-lg mx-auto px-4 pt-4">
@@ -42,7 +42,7 @@ const SharedListContent = () => {
           <button
             onClick={() => setTab('list')}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-md text-sm font-medium transition-all ${
-              tab === 'list' ? 'bg-card shadow-soft text-foreground' : 'text-muted-foreground hover:text-foreground'
+              tab === 'list' ? 'bg-card shadow-flat text-foreground' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             <ShoppingCart className="h-4 w-4" /> Boodschappen
@@ -50,7 +50,7 @@ const SharedListContent = () => {
           <button
             onClick={() => setTab('usuals')}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-md text-sm font-medium transition-all ${
-              tab === 'usuals' ? 'bg-card shadow-soft text-foreground' : 'text-muted-foreground hover:text-foreground'
+              tab === 'usuals' ? 'bg-card shadow-flat text-foreground' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             <Star className="h-4 w-4" /> Favorieten
@@ -58,7 +58,7 @@ const SharedListContent = () => {
           <button
             onClick={() => setTab('recipes')}
             className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-md text-sm font-medium transition-all ${
-              tab === 'recipes' ? 'bg-card shadow-soft text-foreground' : 'text-muted-foreground hover:text-foreground'
+              tab === 'recipes' ? 'bg-card shadow-flat text-foreground' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             <ChefHat className="h-4 w-4" /> Recepten

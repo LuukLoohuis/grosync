@@ -8,29 +8,33 @@ import {
   DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-const ICON_BUTTON =
-  'h-11 w-11 shrink-0 flex items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
-
 const THEMES = [
   ['system', 'Zoals je telefoon'],
   ['light', 'Licht'],
   ['dark', 'Donker'],
 ] as const;
 
-const HeaderActions = () => {
+/** Share, theme menu and sign out. `onDark` styles them for the green plane on "Vandaag". */
+const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
   const { signOut } = useAuth();
   const { theme, setTheme } = useTheme();
   const [shareOpen, setShareOpen] = useState(false);
 
+  const iconButton = `h-11 w-11 shrink-0 flex items-center justify-center rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
+    onDark
+      ? 'text-primary-foreground/85 hover:bg-primary-deep hover:text-primary-foreground focus-visible:ring-primary-foreground focus-visible:ring-offset-primary dark:text-foreground/85 dark:hover:bg-card dark:focus-visible:ring-foreground'
+      : 'text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-ring'
+  }`;
+
   return (
     <div className="-mr-2 flex items-center">
-      <button type="button" onClick={() => setShareOpen(true)} aria-label="Lijst delen" title="Lijst delen" className={ICON_BUTTON}>
-        <Share2 className="h-5 w-5" />
+      <button type="button" onClick={() => setShareOpen(true)} aria-label="Lijst delen" title="Lijst delen" className={iconButton}>
+        <Share2 className="h-5 w-5" strokeWidth={1.9} />
       </button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button type="button" aria-label="Thema en meer" title="Thema en meer" className={ICON_BUTTON}>
-            <MoreVertical className="h-5 w-5" />
+          <button type="button" aria-label="Thema en meer" title="Thema en meer" className={iconButton}>
+            <MoreVertical className="h-5 w-5" strokeWidth={1.9} />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
@@ -50,8 +54,8 @@ const HeaderActions = () => {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <button type="button" onClick={signOut} aria-label="Uitloggen" title="Uitloggen" className={ICON_BUTTON}>
-        <LogOut className="h-5 w-5" />
+      <button type="button" onClick={signOut} aria-label="Uitloggen" title="Uitloggen" className={iconButton}>
+        <LogOut className="h-5 w-5" strokeWidth={1.9} />
       </button>
       <ShareListSheet open={shareOpen} onOpenChange={setShareOpen} />
     </div>
