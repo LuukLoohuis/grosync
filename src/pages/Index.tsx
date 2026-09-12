@@ -1,21 +1,23 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ShoppingCart, ChefHat, Star, Home, type LucideIcon } from 'lucide-react';
+import { ShoppingCart, ChefHat, Star, Home, Tag, type LucideIcon } from 'lucide-react';
 import GroceryList from '@/components/GroceryList';
 import RecipeList from '@/components/RecipeList';
 import UsualsList from '@/components/UsualsList';
 import TodayScreen from '@/components/TodayScreen';
+import BonusChef from '@/components/BonusChef';
 import HeaderActions from '@/components/HeaderActions';
 import OfflineBanner from '@/components/OfflineBanner';
 import { useAppContext } from '@/contexts/AppContext';
 import { PENDING_IMPORT_KEY } from '@/lib/recipeImport';
 
-type AppTab = 'today' | 'list' | 'recipes' | 'usuals';
+type AppTab = 'today' | 'list' | 'recipes' | 'bonus' | 'usuals';
 
 const TABS: { key: AppTab; label: string; icon: LucideIcon }[] = [
   { key: 'today', label: 'Vandaag', icon: Home },
   { key: 'list', label: 'Lijst', icon: ShoppingCart },
   { key: 'recipes', label: 'Recepten', icon: ChefHat },
+  { key: 'bonus', label: 'Bonus', icon: Tag },
   { key: 'usuals', label: 'Favorieten', icon: Star },
 ];
 
@@ -80,6 +82,7 @@ const Index = () => {
         {onToday && <TodayScreen onNavigate={setTab} />}
         {tab === 'list' && <GroceryList onNavigate={setTab} />}
         {tab === 'recipes' && <RecipeList initialImport={pendingImport} onImportConsumed={() => setPendingImport(null)} onNavigate={setTab} />}
+        {tab === 'bonus' && <BonusChef onNavigate={setTab} />}
         {tab === 'usuals' && <UsualsList />}
       </main>
 
@@ -87,7 +90,7 @@ const Index = () => {
         className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-card pb-[env(safe-area-inset-bottom)] sm:hidden"
         aria-label="Onderdelen"
       >
-        <div className="grid h-16 grid-cols-4 px-1.5">
+        <div className="grid h-16 grid-cols-5 px-1.5">
           {TABS.map(({ key, label, icon: Icon }) => {
             const active = tab === key;
             return (
