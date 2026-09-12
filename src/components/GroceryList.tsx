@@ -147,7 +147,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
           aria-label={`Vink ${item.name} af`}
           className="h-11 w-11 shrink-0 flex items-center justify-center group/check"
         >
-          <span className="h-6 w-6 rounded-lg border-2 border-primary transition-colors group-hover/check:bg-primary-soft" />
+          <span className="h-6 w-6 rounded-[8px] border-2 border-primary transition-colors group-hover/check:bg-primary-soft" />
         </button>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -375,7 +375,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
                 aria-label={`Zet ${item.name} terug op je lijst`}
                 className="h-11 w-11 shrink-0 flex items-center justify-center"
               >
-                <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary">
+                <span className="flex h-6 w-6 items-center justify-center rounded-[8px] bg-primary">
                   <Check className="h-3.5 w-3.5 text-primary-foreground" strokeWidth={3} />
                 </span>
               </button>

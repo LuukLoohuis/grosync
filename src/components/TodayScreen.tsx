@@ -192,7 +192,7 @@ const TodayScreen = ({ onNavigate }: { onNavigate: (tab: TodayTarget) => void })
                     aria-label={`Vink ${item.name} af`}
                     className="group/check flex h-11 w-11 shrink-0 items-center justify-center rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
-                    <span className="h-6 w-6 rounded-lg border-2 border-primary transition-colors group-hover/check:bg-primary-soft" />
+                    <span className="h-6 w-6 rounded-[8px] border-2 border-primary transition-colors group-hover/check:bg-primary-soft" />
                   </button>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[0.9375rem] font-medium">{item.name}</span>
