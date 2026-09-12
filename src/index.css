@@ -50,6 +50,18 @@
     --sidebar-border: 47 21% 85%;
     --sidebar-ring: 160 69% 18%;
 
+    /* One quiet hue per shop department, for the headings in "Op afdeling". */
+    --dept-groente: 152 45% 30%;
+    --dept-brood: 32 55% 38%;
+    --dept-vlees: 8 55% 42%;
+    --dept-zuivel: 218 45% 40%;
+    --dept-maaltijden: 96 35% 32%;
+    --dept-pasta: 22 60% 38%;
+    --dept-houdbaar: 40 18% 38%;
+    --dept-drinken: 188 45% 32%;
+    --dept-huishouden: 258 25% 42%;
+    --dept-diepvries: 200 50% 36%;
+
     --font-display: 'Space Grotesk', system-ui, sans-serif;
     --font-body: 'IBM Plex Sans', system-ui, sans-serif;
     --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
@@ -97,6 +109,17 @@
     --ah-bonus: 28 100% 62%;
     --info: 223 40% 72%;
     --info-soft: 223 25% 18%;
+
+    --dept-groente: 152 40% 62%;
+    --dept-brood: 32 55% 66%;
+    --dept-vlees: 8 55% 68%;
+    --dept-zuivel: 218 50% 70%;
+    --dept-maaltijden: 96 32% 62%;
+    --dept-pasta: 22 65% 66%;
+    --dept-houdbaar: 40 15% 66%;
+    --dept-drinken: 188 42% 62%;
+    --dept-huishouden: 258 35% 72%;
+    --dept-diepvries: 200 50% 66%;
   }
 }
 

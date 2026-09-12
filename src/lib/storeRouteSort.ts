@@ -4,7 +4,7 @@
  * anders zoeken we op trefwoorden in de naam.
  */
 
-type Department =
+export type Department =
   | 'groente_fruit'
   | 'brood'
   | 'vlees_vis'

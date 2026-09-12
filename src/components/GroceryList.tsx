@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import SwipeToCheck from '@/components/SwipeToCheck';
 import EmptyState from '@/components/EmptyState';
+import DepartmentHeading from '@/components/DepartmentHeading';
 import AhProductSheet from '@/components/AhProductSheet';
 import { sortByStoreRoute } from '@/lib/storeRouteSort';
 import { translateForSearch } from '@/lib/groceryTranslations';
@@ -333,9 +334,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
         <div className="space-y-4">
           {categorized.map((group) =>
             <div key={group.category}>
-              <p className="mb-2 text-[0.6875rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
-                {group.label}
-              </p>
+              <DepartmentHeading category={group.category} label={group.label} count={group.items.length} />
               <div className="space-y-2">
                 {group.items.map(renderItem)}
               </div>
