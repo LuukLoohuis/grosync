@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Camera, Loader2, Minus, Plus, ShoppingCart, X } from 'lucide-react';
+import { Camera, Loader2, Minus, Pencil, Plus, ShoppingCart, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -101,10 +101,13 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
           <button
             type="button"
             onClick={() => setEditing({ id: item.id, name: item.name })}
-            className="min-h-11 flex-1 truncate text-left text-[0.9375rem] text-foreground first-letter:uppercase focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label={`${item.name} hernoemen`}
+            className="flex min-h-11 flex-1 items-center gap-1.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            {item.name}
-            {item.quantity === 0 && <span className="ml-2 text-xs font-semibold text-destructive">Op</span>}
+            <span className="truncate text-[0.9375rem] text-foreground first-letter:uppercase">{item.name}</span>
+            {item.quantity === 0 && <span className="shrink-0 text-xs font-semibold text-destructive">Op</span>}
+            {/* The pencil says the name can be tapped; without it nobody tries. */}
+            <Pencil className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" aria-hidden="true" />
           </button>
         )}
         <button
