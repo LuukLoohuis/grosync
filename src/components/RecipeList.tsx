@@ -368,7 +368,7 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
                 <Textarea placeholder={"1. Verwarm de oven voor op 180°C\n2. Kruid de kip...\n3. Bak 25 minuten..."} value={instructions} onChange={(e) => setInstructions(e.target.value)} rows={10} className="min-h-[200px]" />
               </div>
               <div className="flex flex-col gap-2">
-                <div className="flex gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <button type="button" onClick={resetForm} className="min-h-11 px-1 text-sm text-muted-foreground hover:underline">← Terug</button>
                   <Button type="button" variant="outline" onClick={translateRecipeHandler} disabled={translating || (!name.trim() && !ingredientText.trim())} className="gap-2">
                     {translating ? <><Loader2 className="h-4 w-4 animate-spin" /> Vertalen...</> : <><Languages className="h-4 w-4" /> Vertaal naar NL</>}
@@ -376,7 +376,7 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
                   <Button type="button" variant="outline" onClick={calculateMacrosHandler} className="gap-2">
                     Voedingswaarden
                   </Button>
-                  <Button onClick={handleAdd} className="flex-1">Recept opslaan</Button>
+                  <Button onClick={handleAdd} className="min-w-full sm:min-w-0 sm:flex-1">Recept opslaan</Button>
                 </div>
               </div>
             </div>

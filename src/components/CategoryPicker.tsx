@@ -99,7 +99,7 @@ const CategoryPicker = ({ value, onChange }: CategoryPickerProps) => {
               <X className="h-4 w-4" />
             </button>
           </div>
-          <div className="mt-3 flex items-center gap-2">
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             {CATEGORY_COLORS.map((option) => (
               <button
                 key={option}
@@ -107,7 +107,7 @@ const CategoryPicker = ({ value, onChange }: CategoryPickerProps) => {
                 onClick={() => setColor(option)}
                 aria-label={`Kleur ${option}`}
                 aria-pressed={color === option}
-                className={`h-7 w-7 rounded-full ${dotOf(option)} transition-transform duration-150 ease-smooth ${
+                className={`h-8 w-8 shrink-0 rounded-full ${dotOf(option)} transition-transform duration-150 ease-smooth ${
                   color === option ? 'ring-2 ring-foreground ring-offset-2 ring-offset-background' : 'opacity-70 hover:opacity-100'
                 }`}
               />
