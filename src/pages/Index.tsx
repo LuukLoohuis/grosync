@@ -9,6 +9,7 @@ import BonusChef from '@/components/BonusChef';
 import HeaderActions from '@/components/HeaderActions';
 import OfflineBanner from '@/components/OfflineBanner';
 import { useAppContext } from '@/contexts/AppContext';
+import { useIdleTabBar } from '@/hooks/useIdleTabBar';
 import { PENDING_IMPORT_KEY } from '@/lib/recipeImport';
 
 type AppTab = 'today' | 'list' | 'recipes' | 'bonus' | 'usuals';
@@ -28,6 +29,7 @@ const Index = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [pendingImport, setPendingImport] = useState<string | null>(null);
   const onToday = tab === 'today';
+  const barVisible = useIdleTabBar();
 
   // A link shared into CoupleCart arrives as #/?import=… (iOS shortcut, Android share target).
   useEffect(() => {
@@ -87,7 +89,9 @@ const Index = () => {
       </main>
 
       <nav
-        className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-card pb-[env(safe-area-inset-bottom)] sm:hidden"
+        className={`fixed inset-x-0 bottom-0 z-20 border-t border-border bg-card pb-[env(safe-area-inset-bottom)] transition-transform duration-200 ease-smooth sm:hidden ${
+          barVisible ? 'translate-y-0' : 'translate-y-full'
+        }`}
         aria-label="Onderdelen"
       >
         <div className="grid h-16 grid-cols-5 px-1.5">

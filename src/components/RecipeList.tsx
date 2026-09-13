@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChefHat, ChevronDown, Plus, ShoppingCart, Link, X, Loader2, Languages, ClipboardPaste } from 'lucide-react';
+import { ChefHat, ChevronDown, Plus, Settings2, ShoppingCart, Link, X, Loader2, Languages, ClipboardPaste } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useAppContext } from '@/contexts/AppContext';
 import { Input } from '@/components/ui/input';
@@ -48,6 +48,7 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
   const [progress, setProgress] = useState<string | null>(null);
   const [listRecipeId, setListRecipeId] = useState<string | null>(null);
   const [categoryRecipeId, setCategoryRecipeId] = useState<string | null>(null);
+  const [managing, setManaging] = useState(false);
   const [categories, setCategories] = useState<string[]>([]);
   const [filter, setFilter] = useState<string | null>(null);
 
@@ -260,6 +261,11 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
     return names;
   }, [recipeCategories, recipes]);
 
+  // A category can be deleted while its filter is on; then everything comes back.
+  useEffect(() => {
+    if (filter && !filterNames.some((label) => sameName(label, filter))) setFilter(null);
+  }, [filter, filterNames]);
+
   const visibleRecipes = filter
     ? recipes.filter((recipe) => (recipe.categories ?? []).some((label) => sameName(label, filter)))
     : recipes;
@@ -267,7 +273,11 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
   return (
     <div className="space-y-4">
       <AddToListSheet recipe={listRecipe} onClose={() => setListRecipeId(null)} onNavigate={onNavigate} />
-      <RecipeCategorySheet recipe={categoryRecipe} onClose={() => setCategoryRecipeId(null)} />
+      <RecipeCategorySheet
+        recipe={categoryRecipe}
+        open={Boolean(categoryRecipe) || managing}
+        onClose={() => { setCategoryRecipeId(null); setManaging(false); }}
+      />
       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
         <DialogTrigger asChild>
           <Button className="w-full gap-2">
@@ -420,6 +430,16 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
             >
               Alles <span className="tabular-nums opacity-70">{recipes.length}</span>
             </button>
+            {recipeCategories.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setManaging(true)}
+                aria-label="Categorieën beheren"
+                className="order-last inline-flex min-h-11 items-center gap-1.5 rounded-full border border-dashed border-border-strong px-3 font-display text-xs font-bold text-muted-foreground transition-colors duration-150 ease-smooth hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <Settings2 className="h-3.5 w-3.5" /> Beheren
+              </button>
+            )}
             {filterNames.map((label) => {
               const category = findCategory(recipeCategories, label);
               const active = filter !== null && sameName(filter, label);

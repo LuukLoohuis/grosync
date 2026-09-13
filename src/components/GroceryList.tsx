@@ -400,7 +400,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
       {showBar &&
         <div
           ref={barRef}
-          className={`fixed inset-x-0 z-10 border-t border-border bg-background/95 backdrop-blur-md ${
+          className={`above-tabbar fixed inset-x-0 z-10 border-t border-border bg-background/95 backdrop-blur-md ${
             aboveTabBar
               ? 'bottom-[calc(4rem+1px+env(safe-area-inset-bottom))] sm:bottom-0 sm:pb-[env(safe-area-inset-bottom)]'
               : 'bottom-0 pb-[env(safe-area-inset-bottom)]'}`}

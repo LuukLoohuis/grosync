@@ -159,6 +159,19 @@
 }
 
 @layer utilities {
+  /* Parked above the tab bar; drops down with it once the bar steps aside. */
+  .above-tabbar {
+    transition: transform var(--dur-sheet) var(--ease-out);
+  }
+  .tabbar-hidden .above-tabbar {
+    transform: translateY(calc(4rem + 1px));
+  }
+  @media (min-width: 640px) {
+    .tabbar-hidden .above-tabbar {
+      transform: none;
+    }
+  }
+
   .shadow-flat {
     box-shadow: var(--shadow-flat);
   }
