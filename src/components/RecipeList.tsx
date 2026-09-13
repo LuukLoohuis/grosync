@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChefHat, ChevronDown, Plus, Settings2, ShoppingCart, Link, X, Loader2, Languages, ClipboardPaste } from 'lucide-react';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ArrowUpDown, ChefHat, Plus, Search, Settings2, Link, X, Loader2, Languages, ClipboardPaste } from 'lucide-react';
 import { useAppContext } from '@/contexts/AppContext';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -8,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import RecipeEditDialog from '@/components/RecipeEditDialog';
-import RecipeViewDialog from '@/components/RecipeViewDialog';
 import MacrosDialog from '@/components/MacrosDialog';
 import { fetchRecipeFromUrl, fetchRecipeFromText, translateRecipe, calculateMacros, type FetchedRecipe } from '@/services/recipeApi';
 import RecipeSuggestDialog from '@/components/RecipeSuggestDialog';
@@ -17,7 +15,8 @@ import EstimateBadge from '@/components/EstimateBadge';
 import AddToListSheet from '@/components/AddToListSheet';
 import { SOURCE_LABELS, detectImportInput, isEstimated, progressLabel, withoutEstimate, type SourceKey } from '@/lib/recipeImport';
 import CategoryPicker from '@/components/CategoryPicker';
-import CategoryChip from '@/components/CategoryChip';
+import RecipeTile from '@/components/RecipeTile';
+import RecipeDetailSheet from '@/components/RecipeDetailSheet';
 import RecipeCategorySheet from '@/components/RecipeCategorySheet';
 import { PRESETS, countPerCategory, dotOf, findCategory, sameName, suggestCategories, tintOf, usedCategories } from '@/lib/recipeCategories';
 
@@ -49,6 +48,11 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
   const [listRecipeId, setListRecipeId] = useState<string | null>(null);
   const [categoryRecipeId, setCategoryRecipeId] = useState<string | null>(null);
   const [managing, setManaging] = useState(false);
+  const [search, setSearch] = useState('');
+  const [sort, setSort] = useState<'nieuw' | 'naam'>('nieuw');
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [macrosId, setMacrosId] = useState<string | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
   const [filter, setFilter] = useState<string | null>(null);
 
@@ -234,6 +238,9 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
 
   const listRecipe = recipes.find((r) => r.id === listRecipeId) ?? null;
   const categoryRecipe = recipes.find((r) => r.id === categoryRecipeId) ?? null;
+  const detailRecipe = recipes.find((r) => r.id === detailId) ?? null;
+  const editRecipe = recipes.find((r) => r.id === editId) ?? null;
+  const macrosRecipe = recipes.find((r) => r.id === macrosId) ?? null;
 
   // A first guess at the category, from what has been filled in so far.
   const suggestion = useMemo(() => {
@@ -266,9 +273,21 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
     if (filter && !filterNames.some((label) => sameName(label, filter))) setFilter(null);
   }, [filter, filterNames]);
 
-  const visibleRecipes = filter
-    ? recipes.filter((recipe) => (recipe.categories ?? []).some((label) => sameName(label, filter)))
-    : recipes;
+  const visibleRecipes = useMemo(() => {
+    const needle = search.trim().toLowerCase();
+    const found = recipes.filter((recipe) => {
+      if (filter && !(recipe.categories ?? []).some((label) => sameName(label, filter))) return false;
+      if (!needle) return true;
+      // Searching on an ingredient answers "wat kan ik met kip?" without extra UI.
+      return recipe.name.toLowerCase().includes(needle)
+        || recipe.description.toLowerCase().includes(needle)
+        || recipe.ingredients.some((ingredient) => ingredient.toLowerCase().includes(needle));
+    });
+    // The list arrives oldest first, so "newest" walks it backwards.
+    return sort === 'naam'
+      ? [...found].sort((a, b) => a.name.localeCompare(b.name, 'nl'))
+      : [...found].reverse();
+  }, [recipes, filter, search, sort]);
 
   return (
     <div className="space-y-4">
@@ -278,10 +297,11 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
         open={Boolean(categoryRecipe) || managing}
         onClose={() => { setCategoryRecipeId(null); setManaging(false); }}
       />
+      <div className="grid grid-cols-2 gap-2">
       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
         <DialogTrigger asChild>
-          <Button className="w-full gap-2">
-            <Plus className="h-4 w-4" /> Recept toevoegen
+          <Button className="min-h-11 w-full gap-2">
+            <Plus className="h-4 w-4" /> Recept
           </Button>
         </DialogTrigger>
         <DialogContent className="bg-background max-h-[90vh] overflow-y-auto sm:max-w-xl">
@@ -399,156 +419,152 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
       </Dialog>
 
       <RecipeSuggestDialog />
+      </div>
+
+      <RecipeDetailSheet
+        recipe={detailRecipe}
+        onClose={() => setDetailId(null)}
+        onAddToList={(item) => setListRecipeId(item.id)}
+        onEdit={(item) => setEditId(item.id)}
+        onMacros={(item) => setMacrosId(item.id)}
+        onCategories={(item) => setCategoryRecipeId(item.id)}
+      />
+      {editRecipe && (
+        <RecipeEditDialog recipe={editRecipe} open onOpenChange={(next) => { if (!next) setEditId(null); }} />
+      )}
+      {macrosRecipe && (
+        <MacrosDialog
+          recipe={macrosRecipe}
+          open
+          onOpenChange={(next) => { if (!next) setMacrosId(null); }}
+          onMacrosCalculated={(id, macros) => updateRecipe(id, { macros })}
+        />
+      )}
 
       {loading && (
-        <div className="grid gap-4" aria-hidden="true">
-          {[0, 1].map((i) => <Skeleton key={i} className="h-56 rounded-lg" />)}
+        <div className="grid grid-cols-2 gap-3" aria-hidden="true">
+          {[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-52 rounded-[14px]" />)}
         </div>
       )}
 
       {!loading && recipes.length === 0 && (
-        <div className="text-center py-12 text-muted-foreground">
-          <ChefHat className="h-10 w-10 mx-auto mb-2 opacity-40" />
+        <div className="py-12 text-center text-muted-foreground">
+          <ChefHat className="mx-auto mb-2 h-10 w-10 opacity-40" />
           <p className="font-display text-lg text-foreground">Nog geen recepten</p>
-          <p className="text-sm mt-1">Plak een link van TikTok, Instagram, YouTube of een receptsite.</p>
+          <p className="mt-1 text-sm">Plak een link van TikTok, Instagram, YouTube of een receptsite.</p>
           <Button className="mt-4 min-h-11 gap-2" onClick={() => setOpen(true)}>
             <Plus className="h-4 w-4" /> Recept toevoegen
           </Button>
         </div>
       )}
 
-      {!loading && recipes.length > 0 && filterNames.length > 0 && (
-        <div className="-mx-4 overflow-x-auto px-4 pb-1">
-          <div className="flex w-max items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setFilter(null)}
-              aria-pressed={filter === null}
-              className={`inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 font-display text-xs font-bold tracking-[-0.01em] transition-colors duration-150 ease-smooth ${
-                filter === null ? 'bg-primary text-primary-foreground' : 'border border-border text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              Alles <span className="tabular-nums opacity-70">{recipes.length}</span>
-            </button>
-            {recipeCategories.length > 0 && (
+      {!loading && recipes.length > 0 && (
+        <>
+          {/* Sticks under the header, so searching and filtering stay within reach
+              however far you have scrolled. */}
+          <div className="sticky top-14 z-10 -mx-4 space-y-2 bg-background/95 px-4 pb-2 pt-2 backdrop-blur-md">
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Zoek op naam of ingrediënt"
+              aria-label="Zoek in je recepten"
+              className="bg-card pl-9 pr-10 font-body"
+            />
+            {search && (
               <button
                 type="button"
-                onClick={() => setManaging(true)}
-                aria-label="Categorieën beheren"
-                className="order-last inline-flex min-h-11 items-center gap-1.5 rounded-full border border-dashed border-border-strong px-3 font-display text-xs font-bold text-muted-foreground transition-colors duration-150 ease-smooth hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                onClick={() => setSearch('')}
+                aria-label="Zoekopdracht wissen"
+                className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
               >
-                <Settings2 className="h-3.5 w-3.5" /> Beheren
+                <X className="h-4 w-4" />
               </button>
             )}
-            {filterNames.map((label) => {
-              const category = findCategory(recipeCategories, label);
-              const active = filter !== null && sameName(filter, label);
-              const count = counts.get(label.trim().toLowerCase()) ?? 0;
-              return (
+          </div>
+
+          {filterNames.length > 0 && (
+            <div className="-mx-4 overflow-x-auto px-4 pb-1">
+              <div className="flex w-max items-center gap-2">
                 <button
-                  key={label}
                   type="button"
-                  onClick={() => setFilter(active ? null : label)}
-                  aria-pressed={active}
+                  onClick={() => setFilter(null)}
+                  aria-pressed={filter === null}
                   className={`inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 font-display text-xs font-bold tracking-[-0.01em] transition-colors duration-150 ease-smooth ${
-                    active
-                      ? `${tintOf(category.color)} ring-1 ring-current`
-                      : 'border border-border text-muted-foreground hover:text-foreground'
+                    filter === null ? 'bg-primary text-primary-foreground' : 'border border-border text-muted-foreground hover:text-foreground'
                   }`}
                 >
-                  <span className={`h-2 w-2 rounded-full ${dotOf(category.color)}`} />
-                  {category.name} <span className="tabular-nums opacity-70">{count}</span>
+                  Alles <span className="tabular-nums opacity-70">{recipes.length}</span>
                 </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {!loading && filter !== null && visibleRecipes.length === 0 && (
-        <p className="py-8 text-center text-sm text-muted-foreground">
-          Nog geen recept in “{filter}”. Open een recept en zet het label erbij.
-        </p>
-      )}
-
-      <div className="grid gap-4">
-        {visibleRecipes.map((recipe) => (
-          <div key={recipe.id} className="group relative overflow-hidden rounded-[14px] border border-border bg-card">
-            {recipe.imageUrl && (
-              <div className="aspect-video w-full overflow-hidden bg-muted">
-                <img src={recipe.imageUrl} alt={recipe.name} className="w-full h-full object-cover" loading="lazy" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-              </div>
-            )}
-            <div className="p-4">
-              <button
-                onClick={() => removeRecipe(recipe.id)}
-                aria-label={`Verwijder ${recipe.name}`}
-                className="absolute top-1 right-1 h-11 w-11 flex items-center justify-center text-destructive transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
-              >
-                <span className="bg-background/80 rounded-full p-1.5"><X className="h-4 w-4" /></span>
-              </button>
-              <h3 className="font-display text-lg text-foreground">{recipe.name}</h3>
-              {/* The whole row is the target, so the labels themselves open the picker. */}
-              <button
-                type="button"
-                onClick={() => setCategoryRecipeId(recipe.id)}
-                aria-label={`Categorieën van ${recipe.name} aanpassen`}
-                className="mt-1 flex min-h-11 w-full flex-wrap items-center gap-1.5 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                {(recipe.categories ?? []).map((label) => {
+                {filterNames.map((label) => {
                   const category = findCategory(recipeCategories, label);
-                  return <CategoryChip key={label} name={category.name} color={category.color} />;
+                  const active = filter !== null && sameName(filter, label);
+                  const count = counts.get(label.trim().toLowerCase()) ?? 0;
+                  return (
+                    <button
+                      key={label}
+                      type="button"
+                      onClick={() => setFilter(active ? null : label)}
+                      aria-pressed={active}
+                      className={`inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 font-display text-xs font-bold tracking-[-0.01em] transition-colors duration-150 ease-smooth ${
+                        active ? `${tintOf(category.color)} ring-1 ring-current` : 'border border-border text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      <span className={`h-2 w-2 rounded-full ${dotOf(category.color)}`} />
+                      {category.name} <span className="tabular-nums opacity-70">{count}</span>
+                    </button>
+                  );
                 })}
-                <span className="inline-flex items-center gap-1 rounded-full border border-dashed border-border-strong px-2 py-1 font-display text-[0.6875rem] font-bold text-muted-foreground">
-                  <Plus className="h-3 w-3" />
-                  {(recipe.categories ?? []).length > 0 ? 'Categorie' : 'In een categorie'}
-                </span>
-              </button>
-              <p className="text-sm text-muted-foreground mt-1">{recipe.description}</p>
-              {recipe.sourceUrl && (
-                <a href={recipe.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline mt-1 flex items-center gap-1">
-                  <Link className="h-3 w-3" /> Origineel bekijken
-                </a>
-              )}
-              <Collapsible>
-                <CollapsibleTrigger className="text-sm text-primary hover:underline mt-2 flex items-center gap-1 cursor-pointer">
-                  <ChevronDown className="h-3.5 w-3.5" /> Ingrediënten ({recipe.ingredients.length})
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <ul className="mt-2 space-y-1">
-                    {recipe.ingredients.map((ing, i) => (
-                      <li key={i} className="text-sm text-foreground/80 flex items-start gap-2">
-                        <span className="text-primary mt-0.5">•</span>
-                        <span>{withoutEstimate(ing)}{isEstimated(ing) && <EstimateBadge />}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </CollapsibleContent>
-              </Collapsible>
-              {recipe.instructions && (
-                <Collapsible>
-                  <CollapsibleTrigger className="text-sm text-primary hover:underline mt-2 flex items-center gap-1 cursor-pointer">
-                    <ChevronDown className="h-3.5 w-3.5" /> Bereiding
-                  </CollapsibleTrigger>
-                  <CollapsibleContent>
-                    <p className="mt-2 text-sm text-foreground/80 whitespace-pre-line">{recipe.instructions}</p>
-                  </CollapsibleContent>
-                </Collapsible>
-              )}
-              <div className="mt-4 space-y-2">
-                <Button className="w-full min-h-11 gap-2" onClick={() => setListRecipeId(recipe.id)}>
-                  <ShoppingCart className="h-4 w-4" /> Zet op je lijst
-                </Button>
-                <div className="grid grid-cols-3 gap-2">
-                  <RecipeViewDialog recipe={recipe} onAddToList={() => setListRecipeId(recipe.id)} />
-                  <RecipeEditDialog recipe={recipe} />
-                  <MacrosDialog recipe={recipe} onMacrosCalculated={(id, macros) => updateRecipe(id, { macros })} />
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setManaging(true)}
+                  aria-label="Categorieën beheren"
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-dashed border-border-strong px-3 font-display text-xs font-bold text-muted-foreground transition-colors duration-150 ease-smooth hover:text-foreground"
+                >
+                  <Settings2 className="h-3.5 w-3.5" /> Beheren
+                </button>
               </div>
             </div>
+          )}
           </div>
-        ))}
-      </div>
+
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-muted-foreground">
+              <span className="tabular-nums">{visibleRecipes.length}</span>
+              {visibleRecipes.length === 1 ? ' recept' : ' recepten'}
+            </p>
+            <button
+              type="button"
+              onClick={() => setSort((prev) => (prev === 'nieuw' ? 'naam' : 'nieuw'))}
+              className="inline-flex min-h-11 items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground"
+            >
+              <ArrowUpDown className="h-3.5 w-3.5" />
+              {sort === 'nieuw' ? 'Nieuwste eerst' : 'Op naam'}
+            </button>
+          </div>
+
+          {visibleRecipes.length === 0 && (
+            <p className="py-8 text-center text-sm text-muted-foreground">
+              {search.trim()
+                ? `Niets gevonden voor “${search.trim()}”.`
+                : `Nog geen recept in “${filter}”. Open een recept en zet het label erbij.`}
+            </p>
+          )}
+
+          <div className="grid grid-cols-2 gap-3">
+            {visibleRecipes.map((recipe) => (
+              <RecipeTile
+                key={recipe.id}
+                recipe={recipe}
+                categories={recipeCategories}
+                onOpen={() => setDetailId(recipe.id)}
+                onAddToList={() => setListRecipeId(recipe.id)}
+              />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 };

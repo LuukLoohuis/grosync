@@ -9,6 +9,9 @@ import { toast } from 'sonner';
 interface MacrosDialogProps {
   recipe: Recipe;
   onMacrosCalculated?: (recipeId: string, macros: Macros) => void;
+  /** Leave out for the button; pass these to open it from somewhere else. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 const MacroBar = ({ label, value, unit, max, color, icon: Icon }: {
@@ -70,7 +73,8 @@ const MacrosContent = ({ macros }: { macros: Macros }) => (
   </div>
 );
 
-const MacrosDialog = ({ recipe, onMacrosCalculated }: MacrosDialogProps) => {
+const MacrosDialog = ({ recipe, onMacrosCalculated, open, onOpenChange }: MacrosDialogProps) => {
+  const controlled = open !== undefined;
   const [calculating, setCalculating] = useState(false);
   const macros = recipe.macros;
 
@@ -100,13 +104,15 @@ const MacrosDialog = ({ recipe, onMacrosCalculated }: MacrosDialogProps) => {
   };
 
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button variant="outline" className="w-full h-auto min-h-11 flex-col gap-1 px-1 py-2 text-[11px] font-medium leading-tight whitespace-normal">
-          <Flame className="h-4 w-4" />
-          Voedingswaarden
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {!controlled && (
+        <DialogTrigger asChild>
+          <Button variant="outline" className="w-full h-auto min-h-11 flex-col gap-1 px-1 py-2 text-[11px] font-medium leading-tight whitespace-normal">
+            <Flame className="h-4 w-4" />
+            Voedingswaarden
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="bg-background sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="font-display text-xl">Voedingswaarden — {recipe.name}</DialogTitle>

@@ -52,8 +52,8 @@ const RecipeSuggestDialog = () => {
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setSuggestions([]); }}>
       <DialogTrigger asChild>
-        <Button variant="outline" className="w-full gap-2" onClick={() => { setOpen(true); handleSuggest(); }}>
-          <Lightbulb className="h-4 w-4" /> Wat kun je koken?
+        <Button variant="outline" className="min-h-11 w-full gap-2 px-2" onClick={() => { setOpen(true); handleSuggest(); }}>
+          <Lightbulb className="h-4 w-4 shrink-0" /> <span className="truncate">Wat kun je koken?</span>
         </Button>
       </DialogTrigger>
       <DialogContent className="bg-background max-h-[90vh] overflow-y-auto sm:max-w-xl">

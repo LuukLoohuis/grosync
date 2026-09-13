@@ -12,11 +12,17 @@ import CategoryPicker from '@/components/CategoryPicker';
 
 interface RecipeEditDialogProps {
   recipe: Recipe;
+  /** Leave out for the button; pass these to open it from somewhere else. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-const RecipeEditDialog = ({ recipe }: RecipeEditDialogProps) => {
+const RecipeEditDialog = ({ recipe, open: openProp, onOpenChange }: RecipeEditDialogProps) => {
   const { updateRecipe, updateRecipeImage } = useAppContext();
-  const [open, setOpen] = useState(false);
+  const [ownOpen, setOwnOpen] = useState(false);
+  const controlled = openProp !== undefined;
+  const open = controlled ? openProp : ownOpen;
+  const setOpen = (next: boolean) => { if (controlled) onOpenChange?.(next); else setOwnOpen(next); };
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [ingredientText, setIngredientText] = useState('');
@@ -65,12 +71,14 @@ const RecipeEditDialog = ({ recipe }: RecipeEditDialogProps) => {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" className="w-full h-auto min-h-11 flex-col gap-1 px-1 py-2 text-[11px] font-medium leading-tight whitespace-normal">
-          <Pencil className="h-4 w-4" />
-          Bewerken
-        </Button>
-      </DialogTrigger>
+      {!controlled && (
+        <DialogTrigger asChild>
+          <Button variant="outline" className="w-full h-auto min-h-11 flex-col gap-1 px-1 py-2 text-[11px] font-medium leading-tight whitespace-normal">
+            <Pencil className="h-4 w-4" />
+            Bewerken
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent className="bg-background max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <DialogTitle className="font-display text-xl">Recept bewerken</DialogTitle>
