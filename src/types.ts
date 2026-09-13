@@ -57,7 +57,10 @@ export interface RecipeCategory {
 export interface PantryItem {
   id: string;
   name: string;
-  level: 'ruim' | 'bijna' | 'op';
+  /** How many you have; 0 means you are out. */
+  quantity: number;
+  /** Set by hand when what is left will not get you through the week. */
+  low: boolean;
   source: string;
   updatedAt?: string;
 }

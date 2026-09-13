@@ -44,8 +44,10 @@ interface AppContextType {
   removeUsual: (id: string) => void;
   pantry: PantryItem[];
   pantryLoading: boolean;
-  stockUp: (name: string, level?: 'ruim' | 'bijna' | 'op', source?: string) => Promise<void>;
-  setPantryLevel: (id: string, level: 'ruim' | 'bijna' | 'op') => Promise<void>;
+  stockUp: (name: string, source?: string, bump?: boolean) => Promise<void>;
+  setPantryQuantity: (id: string, quantity: number) => Promise<void>;
+  setPantryLow: (id: string, low: boolean) => Promise<void>;
+  renamePantryItem: (id: string, name: string) => Promise<void>;
   removePantryItem: (id: string) => Promise<void>;
   pantryStaples: string[];
   savePantryStaples: (staples: string[]) => Promise<void>;
@@ -99,7 +101,9 @@ export const AppProvider = ({ children, userId }: { children: React.ReactNode; u
     pantry: pantryHook.pantry,
     pantryLoading: pantryHook.pantryLoading,
     stockUp: pantryHook.stockUp,
-    setPantryLevel: pantryHook.setLevel,
+    setPantryQuantity: pantryHook.setQuantity,
+    setPantryLow: pantryHook.setLow,
+    renamePantryItem: pantryHook.renamePantryItem,
     removePantryItem: pantryHook.removePantryItem,
     pantryStaples: pantry.pantryStaples,
     savePantryStaples: pantry.savePantryStaples,

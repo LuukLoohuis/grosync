@@ -1,4 +1,4 @@
-import { Beef, Carrot, CookingPot, Croissant, CupSoda, Milk, Package, Salad, Snowflake, SprayCan, type LucideIcon } from 'lucide-react';
+import { Beef, Carrot, CookingPot, Croissant, CupSoda, Leaf, Milk, Package, Salad, Snowflake, SprayCan, type LucideIcon } from 'lucide-react';
 import type { Department } from '@/lib/storeRouteSort';
 
 /**
@@ -6,7 +6,11 @@ import type { Department } from '@/lib/storeRouteSort';
  * you read the word. The tints are written out per department because Tailwind
  * only keeps class names it can see in the source.
  */
-const DEPARTMENTS: Record<Department, { icon: LucideIcon; tint: string }> = {
+/** "kruiden" is not a shop department; the cupboard keeps its own shelf for it. */
+export type HeadingCategory = Department | 'kruiden';
+
+const DEPARTMENTS: Record<HeadingCategory, { icon: LucideIcon; tint: string }> = {
+  kruiden: { icon: Leaf, tint: 'bg-[hsl(var(--cat-olijf)/0.15)] text-[hsl(var(--cat-olijf))] dark:bg-[hsl(var(--cat-olijf)/0.22)]' },
   groente_fruit: { icon: Carrot, tint: 'bg-[hsl(var(--dept-groente)/0.15)] text-[hsl(var(--dept-groente))] dark:bg-[hsl(var(--dept-groente)/0.22)]' },
   brood: { icon: Croissant, tint: 'bg-[hsl(var(--dept-brood)/0.15)] text-[hsl(var(--dept-brood))] dark:bg-[hsl(var(--dept-brood)/0.22)]' },
   vlees_vis: { icon: Beef, tint: 'bg-[hsl(var(--dept-vlees)/0.15)] text-[hsl(var(--dept-vlees))] dark:bg-[hsl(var(--dept-vlees)/0.22)]' },
@@ -20,7 +24,7 @@ const DEPARTMENTS: Record<Department, { icon: LucideIcon; tint: string }> = {
 };
 
 interface DepartmentHeadingProps {
-  category: Department;
+  category: HeadingCategory;
   label: string;
   count: number;
 }

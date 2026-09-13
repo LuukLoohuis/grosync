@@ -69,7 +69,7 @@ const TodayScreen = ({ onNavigate }: { onNavigate: (tab: TodayTarget) => void })
 
   const checkOff = (item: GroceryItem) => {
     trackPurchase(item.name);
-    void stockUp(item.name, 'ruim', 'lijst');
+    void stockUp(item.name, 'lijst');
     void setGroceryItemChecked(item.id, true);
     toast(`“${item.name}” afgevinkt`, {
       action: { label: 'Ongedaan maken', onClick: () => { void setGroceryItemChecked(item.id, false); } },

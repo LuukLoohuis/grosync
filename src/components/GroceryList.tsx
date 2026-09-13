@@ -70,7 +70,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
   const checkOff = (item: GroceryItem) => {
     trackPurchase(item.name);
     // Wat in het mandje gaat, staat straks in de kast.
-    void stockUp(item.name, 'ruim', 'lijst');
+    void stockUp(item.name, 'lijst');
     void setGroceryItemChecked(item.id, true);
     toast(`“${item.name}” afgevinkt`, {
       action: { label: 'Ongedaan maken', onClick: () => { void setGroceryItemChecked(item.id, false); } },
