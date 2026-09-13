@@ -71,8 +71,17 @@ const handleGoogleLogin = async () => {
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-5 py-10">
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center text-center">
-          <img src={couplecartLogo} alt="CoupleCart" className="h-52 w-auto sm:h-56" width={1024} height={1024} fetchPriority="high" />
-          <p className="-mt-5 font-display text-[1.375rem] font-bold tracking-[-0.01em] text-foreground">Samen één lijst</p>
+          {/* The artwork fills only the middle 29% of a square PNG; the negative
+              margins crop the empty space so the logo itself can be big. */}
+          <img
+            src={couplecartLogo}
+            alt="CoupleCart"
+            className="-mb-[32%] -mt-[28%] w-[min(23rem,90vw)] max-w-full"
+            width={1024}
+            height={1024}
+            fetchPriority="high"
+          />
+          <p className="font-display text-[1.375rem] font-bold tracking-[-0.01em] text-foreground">Two People. One Cart.</p>
         </div>
 
         <div className="mt-7 space-y-3">
