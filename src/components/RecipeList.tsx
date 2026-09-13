@@ -18,6 +18,7 @@ import AddToListSheet from '@/components/AddToListSheet';
 import { SOURCE_LABELS, detectImportInput, isEstimated, progressLabel, withoutEstimate, type SourceKey } from '@/lib/recipeImport';
 import CategoryPicker from '@/components/CategoryPicker';
 import CategoryChip from '@/components/CategoryChip';
+import RecipeCategorySheet from '@/components/RecipeCategorySheet';
 import { PRESETS, countPerCategory, dotOf, findCategory, sameName, suggestCategories, tintOf, usedCategories } from '@/lib/recipeCategories';
 
 interface RecipeListProps {
@@ -46,6 +47,7 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
   const [sourceLabel, setSourceLabel] = useState<string | null>(null);
   const [progress, setProgress] = useState<string | null>(null);
   const [listRecipeId, setListRecipeId] = useState<string | null>(null);
+  const [categoryRecipeId, setCategoryRecipeId] = useState<string | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
   const [filter, setFilter] = useState<string | null>(null);
 
@@ -230,6 +232,7 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
   };
 
   const listRecipe = recipes.find((r) => r.id === listRecipeId) ?? null;
+  const categoryRecipe = recipes.find((r) => r.id === categoryRecipeId) ?? null;
 
   // A first guess at the category, from what has been filled in so far.
   const suggestion = useMemo(() => {
@@ -264,6 +267,7 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
   return (
     <div className="space-y-4">
       <AddToListSheet recipe={listRecipe} onClose={() => setListRecipeId(null)} onNavigate={onNavigate} />
+      <RecipeCategorySheet recipe={categoryRecipe} onClose={() => setCategoryRecipeId(null)} />
       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
         <DialogTrigger asChild>
           <Button className="w-full gap-2">
@@ -464,14 +468,22 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
                 <span className="bg-background/80 rounded-full p-1.5"><X className="h-4 w-4" /></span>
               </button>
               <h3 className="font-display text-lg text-foreground">{recipe.name}</h3>
-              {(recipe.categories ?? []).length > 0 && (
-                <div className="mt-1.5 flex flex-wrap gap-1.5">
-                  {(recipe.categories ?? []).map((label) => {
-                    const category = findCategory(recipeCategories, label);
-                    return <CategoryChip key={label} name={category.name} color={category.color} />;
-                  })}
-                </div>
-              )}
+              {/* The whole row is the target, so the labels themselves open the picker. */}
+              <button
+                type="button"
+                onClick={() => setCategoryRecipeId(recipe.id)}
+                aria-label={`Categorieën van ${recipe.name} aanpassen`}
+                className="mt-1 flex min-h-11 w-full flex-wrap items-center gap-1.5 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {(recipe.categories ?? []).map((label) => {
+                  const category = findCategory(recipeCategories, label);
+                  return <CategoryChip key={label} name={category.name} color={category.color} />;
+                })}
+                <span className="inline-flex items-center gap-1 rounded-full border border-dashed border-border-strong px-2 py-1 font-display text-[0.6875rem] font-bold text-muted-foreground">
+                  <Plus className="h-3 w-3" />
+                  {(recipe.categories ?? []).length > 0 ? 'Categorie' : 'In een categorie'}
+                </span>
+              </button>
               <p className="text-sm text-muted-foreground mt-1">{recipe.description}</p>
               {recipe.sourceUrl && (
                 <a href={recipe.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline mt-1 flex items-center gap-1">
