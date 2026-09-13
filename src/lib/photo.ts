@@ -1,8 +1,8 @@
 /** Longest side of the photo that is sent; enough to read a label, small enough to send fast. */
-const MAX_SIDE = 1280;
-const QUALITY = 0.72;
+const MAX_SIDE = 1600;
+const QUALITY = 0.82;
 
-/** Shrinks a camera photo to a JPEG data URL, so a 4 MB shot travels as ~200 kB. */
+/** Shrinks a camera photo to a JPEG data URL, small enough to send, sharp enough to read a label. */
 export const toSmallDataUrl = (file: File): Promise<string> =>
   new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);

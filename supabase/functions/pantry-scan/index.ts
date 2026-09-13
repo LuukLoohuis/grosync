@@ -3,8 +3,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-// A photo of one shelf holds a handful of things; more than this is a mis-read.
-const MAX_ITEMS = 25;
+// A full cupboard holds plenty; the checkboxes downstream are the filter, not this.
+const MAX_ITEMS = 40;
 // Roughly 5 MB of image after base64; the app sends about 200 kB.
 const MAX_BASE64 = 7_000_000;
 
@@ -23,19 +23,22 @@ async function isSignedIn(req: Request): Promise<boolean> {
 }
 
 const PROMPT = `Je kijkt naar een foto van een voorraadkast, koelkast of aanrecht in een Nederlands huishouden.
-Noem wat je met zekerheid ziet staan, als boodschappen.
+Noem alles wat eetbaar is en wat je op de foto kunt aanwijzen. Kijk de hele foto af: elke plank van
+boven naar beneden, ook de randen, de achterste rij en wat half achter iets anders staat.
 
 Regels:
 - Nederlandse, algemene productnamen in enkelvoud en kleine letters: "pindakaas", "passata", "volkoren brood".
 - Geen merknamen, tenzij het product zonder merk niet te benoemen is (nutella, cup-a-soup).
-- Geen hoeveelheden, gewichten of verpakkingen. Niet "pak rijst", wel "rijst".
-- Sla over wat je niet duidelijk kunt lezen of herkennen; liever vijf zekere dan vijftien gokken.
+- Kun je het etiket niet lezen, benoem dan wat het duidelijk is: "blik tomaten", "pak melk", "pot jam".
+- Geen hoeveelheden, gewichten of verpakkingsmaten. Niet "pak rijst", wel "rijst".
+- Hetzelfde product maar één keer, ook als er meerdere pakken van staan.
 - Sla schoonmaakmiddelen, keukengerei, servies en versiering over.
-- Hetzelfde product maar één keer, ook als er meerdere pakken staan.
+- Twijfel je? Noem het tóch, met een lage zekerheid. De gebruiker vinkt zelf af wat klopt,
+  dus iets missen is vervelender dan iets voorstellen.
 - Hoogstens ${MAX_ITEMS} producten.
 
 Antwoord als JSON: {"items":[{"naam":"pindakaas","zeker":0.9}]}
-"zeker" is tussen 0 en 1: hoe zeker je bent dat dit product er echt staat.`;
+"zeker" is tussen 0 en 1: 0.9 als je het etiket leest, 0.5 als je het aan de vorm ziet, 0.3 als je gokt.`;
 
 type Item = { naam?: unknown; zeker?: unknown };
 
@@ -57,14 +60,16 @@ Deno.serve(async (req) => {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        // A cupboard photo is a cluttered scene; the small model skips things the big one reads.
+        model: env('SCAN_MODEL') || 'gpt-4o',
         response_format: { type: 'json_object' },
-        max_tokens: 700,
+        max_tokens: 1200,
         messages: [{
           role: 'user',
           content: [
             { type: 'text', text: PROMPT },
-            { type: 'image_url', image_url: { url: image } },
+            // "high" makes the model tile the image instead of reading one small thumbnail.
+            { type: 'image_url', image_url: { url: image, detail: 'high' } },
           ],
         }],
       }),

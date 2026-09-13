@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import DepartmentHeading from '@/components/DepartmentHeading';
 import PantryScanSheet from '@/components/PantryScanSheet';
+import PantryItemSheet from '@/components/PantryItemSheet';
 import UsualsList from '@/components/UsualsList';
 import { useAppContext } from '@/contexts/AppContext';
 import { MAX_QUANTITY, isHerb, sameProduct } from '@/lib/pantry';
@@ -27,19 +28,24 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
   const [scanning, setScanning] = useState(false);
   const [hits, setHits] = useState<ScanHit[] | null>(null);
   const [editing, setEditing] = useState<{ id: string; name: string } | null>(null);
+  const [herbId, setHerbId] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const onList = new Set(groceryItems.filter((i) => !i.checked).map((i) => i.name.trim().toLowerCase()));
   const herbs = pantry.filter((item) => isHerb(item.name));
   const departments = sortByStoreRoute(pantry.filter((item) => !isHerb(item.name)));
   const runningOut = pantry.filter((item) => item.low || item.quantity === 0);
+  const herb = pantry.find((item) => item.id === herbId) ?? null;
 
-  const takePhoto = async (file: File | undefined) => {
-    if (!file) return;
+  // A cupboard rarely fits in one frame, so several photos land in one list.
+  const takePhotos = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
     setScanning(true);
     try {
-      const image = await toSmallDataUrl(file);
-      setHits(await scanPantryPhoto(image));
+      for (const file of Array.from(files)) {
+        const image = await toSmallDataUrl(file);
+        setHits(await scanPantryPhoto(image));
+      }
     } catch (error) {
       console.error('Pantry scan failed:', error);
       toast.error('De foto lezen lukte niet. Probeer het nog eens.');
@@ -178,8 +184,9 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
         type="file"
         accept="image/*"
         capture="environment"
+        multiple
         className="sr-only"
-        onChange={(e) => takePhoto(e.target.files?.[0])}
+        onChange={(e) => takePhotos(e.target.files)}
       />
 
       <section className="rounded-[14px] border border-border bg-accent-soft p-4">
@@ -243,7 +250,33 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
       {herbs.length > 0 && (
         <section>
           <DepartmentHeading category="kruiden" label="Kruiden & specerijen" count={herbs.length} />
-          <ul className="space-y-1">{herbs.map(row)}</ul>
+          {/* A spice rack, not a stack of rows: nobody counts jars of oregano. */}
+          <div className="flex flex-wrap gap-2">
+            {herbs.map((item) => {
+              const out = item.quantity === 0;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setHerbId(item.id)}
+                  aria-label={`${item.name} openen`}
+                  className={`inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3 text-sm transition-colors duration-150 ease-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                    out
+                      ? 'border-destructive/40 bg-destructive/10 text-destructive'
+                      : item.low
+                        ? 'border-transparent bg-accent-soft text-accent-ink'
+                        : 'border-border bg-card text-foreground hover:border-border-strong'
+                  }`}
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--cat-olijf))]" aria-hidden="true" />
+                  <span className="first-letter:uppercase">{item.name}</span>
+                  {item.quantity > 1 && <span className="text-xs tabular-nums opacity-70">×{item.quantity}</span>}
+                  {out && <span className="text-xs font-semibold">op</span>}
+                  {!out && item.low && <span className="text-xs font-semibold">bijna op</span>}
+                </button>
+              );
+            })}
+          </div>
         </section>
       )}
 
@@ -259,7 +292,14 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
         <UsualsList />
       </section>
 
-      <PantryScanSheet hits={hits} onClose={() => setHits(null)} onConfirm={keep} />
+      <PantryScanSheet
+        hits={hits}
+        onClose={() => setHits(null)}
+        onConfirm={keep}
+        onAnotherPhoto={() => fileInput.current?.click()}
+        scanning={scanning}
+      />
+      <PantryItemSheet item={herb} onClose={() => setHerbId(null)} onAddToList={toList} />
     </div>
   );
 };
