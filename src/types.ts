@@ -53,3 +53,11 @@ export interface RecipeCategory {
   name: string;
   color: string;
 }
+
+export interface PantryItem {
+  id: string;
+  name: string;
+  level: 'ruim' | 'bijna' | 'op';
+  source: string;
+  updatedAt?: string;
+}

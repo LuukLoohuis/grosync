@@ -4,9 +4,10 @@ import { useRecipes } from '@/hooks/useRecipes';
 import { useUsuals } from '@/hooks/useUsuals';
 import { usePantryStaples } from '@/hooks/usePantryStaples';
 import { useRecipeCategories } from '@/hooks/useRecipeCategories';
+import { usePantry } from '@/hooks/usePantry';
 import { usePurchaseHistory } from '@/hooks/usePurchaseHistory';
 import type { AhMatch } from '@/services/ahApi';
-import { GroceryItem, Recipe, RecipeCategory, UsualItem } from '@/types';
+import { GroceryItem, PantryItem, Recipe, RecipeCategory, UsualItem } from '@/types';
 
 interface FrequentItem {
   name: string;
@@ -41,6 +42,11 @@ interface AppContextType {
   removeRecipeCategory: (id: string) => Promise<void>;
   addUsual: (name: string) => Promise<void>;
   removeUsual: (id: string) => void;
+  pantry: PantryItem[];
+  pantryLoading: boolean;
+  stockUp: (name: string, level?: 'ruim' | 'bijna' | 'op', source?: string) => Promise<void>;
+  setPantryLevel: (id: string, level: 'ruim' | 'bijna' | 'op') => Promise<void>;
+  removePantryItem: (id: string) => Promise<void>;
   pantryStaples: string[];
   savePantryStaples: (staples: string[]) => Promise<void>;
 }
@@ -60,6 +66,7 @@ export const AppProvider = ({ children, userId }: { children: React.ReactNode; u
   const purchaseHook = usePurchaseHistory(userId);
   const pantry = usePantryStaples(userId);
   const categoryHook = useRecipeCategories({ userId });
+  const pantryHook = usePantry({ userId });
 
   const value: AppContextType = {
     userId,
@@ -89,6 +96,11 @@ export const AppProvider = ({ children, userId }: { children: React.ReactNode; u
     removeRecipeCategory: categoryHook.removeCategory,
     addUsual: usualsHook.addUsual,
     removeUsual: usualsHook.removeUsual,
+    pantry: pantryHook.pantry,
+    pantryLoading: pantryHook.pantryLoading,
+    stockUp: pantryHook.stockUp,
+    setPantryLevel: pantryHook.setLevel,
+    removePantryItem: pantryHook.removePantryItem,
     pantryStaples: pantry.pantryStaples,
     savePantryStaples: pantry.savePantryStaples,
   };

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ShoppingCart, ChefHat, Star, Home, Tag, type LucideIcon } from 'lucide-react';
+import { ShoppingCart, ChefHat, Boxes, Home, Tag, type LucideIcon } from 'lucide-react';
 import GroceryList from '@/components/GroceryList';
 import RecipeList from '@/components/RecipeList';
-import UsualsList from '@/components/UsualsList';
+import PantryScreen from '@/components/PantryScreen';
 import TodayScreen from '@/components/TodayScreen';
 import BonusChef from '@/components/BonusChef';
 import HeaderActions from '@/components/HeaderActions';
@@ -12,14 +12,14 @@ import { useAppContext } from '@/contexts/AppContext';
 import { useIdleTabBar } from '@/hooks/useIdleTabBar';
 import { PENDING_IMPORT_KEY } from '@/lib/recipeImport';
 
-type AppTab = 'today' | 'list' | 'recipes' | 'bonus' | 'usuals';
+type AppTab = 'today' | 'list' | 'recipes' | 'bonus' | 'pantry';
 
 const TABS: { key: AppTab; label: string; icon: LucideIcon }[] = [
   { key: 'today', label: 'Vandaag', icon: Home },
   { key: 'list', label: 'Lijst', icon: ShoppingCart },
   { key: 'recipes', label: 'Recepten', icon: ChefHat },
   { key: 'bonus', label: 'Bonus', icon: Tag },
-  { key: 'usuals', label: 'Favorieten', icon: Star },
+  { key: 'pantry', label: 'Voorraad', icon: Boxes },
 ];
 
 const Index = () => {
@@ -85,7 +85,7 @@ const Index = () => {
         {tab === 'list' && <GroceryList onNavigate={setTab} />}
         {tab === 'recipes' && <RecipeList initialImport={pendingImport} onImportConsumed={() => setPendingImport(null)} onNavigate={setTab} />}
         {tab === 'bonus' && <BonusChef onNavigate={setTab} />}
-        {tab === 'usuals' && <UsualsList />}
+        {tab === 'pantry' && <PantryScreen onNavigate={setTab} />}
       </main>
 
       <nav
