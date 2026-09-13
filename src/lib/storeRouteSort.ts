@@ -192,9 +192,22 @@ function fromAhCategory(category: string | null | undefined): Department | null 
   return department && department !== 'by-name' ? department : null;
 }
 
+// Words that hide another word: pindakaas is no cheese, kokosmelk no dairy,
+// and a boterham belongs with the bread. These are checked before the keywords.
+const COMPOUNDS: [RegExp, Department][] = [
+  [/\bpinda ?kaas\b/, 'houdbaar'],
+  [/\bkokos(melk|room|water)\b/, 'pasta_rijst'],
+  [/\bmelkchocolade\b/, 'houdbaar'],
+  [/\bboterham(men)?\b/, 'brood'],
+  [/\bboterkoek\b/, 'brood'],
+];
+
 function fromKeywords(itemName: string): Department {
   const lower = itemName.toLowerCase().trim();
   if (FROZEN.test(lower)) return 'diepvries';
+
+  const compound = COMPOUNDS.find(([pattern]) => pattern.test(lower));
+  if (compound) return compound[1];
 
   // Remove leading quantity (e.g. "2 bananen" → "bananen")
   const withoutQty = lower.replace(/^\d+(?:[.,]\d+)?\s+/, '');
