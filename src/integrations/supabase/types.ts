@@ -161,8 +161,33 @@ export type Database = {
         }
         Relationships: []
       }
+      recipe_categories: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       recipes: {
         Row: {
+          categories: string[]
           created_at: string
           description: string
           id: string
@@ -176,6 +201,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          categories?: string[]
           created_at?: string
           description?: string
           id?: string
@@ -189,6 +215,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          categories?: string[]
           created_at?: string
           description?: string
           id?: string

@@ -62,6 +62,16 @@
     --dept-huishouden: 258 25% 42%;
     --dept-diepvries: 200 50% 36%;
 
+    /* One hue per recipe category, from the same earthy family as the departments. */
+    --cat-groen: 152 45% 30%;
+    --cat-terracotta: 8 55% 42%;
+    --cat-blauw: 205 48% 36%;
+    --cat-amber: 32 55% 38%;
+    --cat-olijf: 96 35% 32%;
+    --cat-paars: 258 25% 42%;
+    --cat-teal: 188 45% 32%;
+    --cat-roze: 340 40% 44%;
+
     --font-display: 'Space Grotesk', system-ui, sans-serif;
     --font-body: 'IBM Plex Sans', system-ui, sans-serif;
     --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
@@ -120,6 +130,15 @@
     --dept-drinken: 188 42% 62%;
     --dept-huishouden: 258 35% 72%;
     --dept-diepvries: 200 50% 66%;
+
+    --cat-groen: 152 40% 62%;
+    --cat-terracotta: 8 55% 68%;
+    --cat-blauw: 205 50% 68%;
+    --cat-amber: 32 55% 66%;
+    --cat-olijf: 96 32% 62%;
+    --cat-paars: 258 35% 72%;
+    --cat-teal: 188 42% 62%;
+    --cat-roze: 340 45% 72%;
   }
 }
 

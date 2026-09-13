@@ -3,9 +3,10 @@ import { useGroceryItems } from '@/hooks/useGroceryItems';
 import { useRecipes } from '@/hooks/useRecipes';
 import { useUsuals } from '@/hooks/useUsuals';
 import { usePantryStaples } from '@/hooks/usePantryStaples';
+import { useRecipeCategories } from '@/hooks/useRecipeCategories';
 import { usePurchaseHistory } from '@/hooks/usePurchaseHistory';
 import type { AhMatch } from '@/services/ahApi';
-import { GroceryItem, Recipe, UsualItem } from '@/types';
+import { GroceryItem, Recipe, RecipeCategory, UsualItem } from '@/types';
 
 interface FrequentItem {
   name: string;
@@ -33,6 +34,9 @@ interface AppContextType {
   updateRecipe: (id: string, updates: Partial<Omit<Recipe, 'id'>>) => Promise<void>;
   removeRecipe: (id: string) => void;
   updateRecipeImage: (id: string, imageUrl: string) => Promise<void>;
+  recipeCategories: RecipeCategory[];
+  addRecipeCategory: (name: string, color?: string) => Promise<string>;
+  removeRecipeCategory: (id: string) => Promise<void>;
   addUsual: (name: string) => Promise<void>;
   removeUsual: (id: string) => void;
   pantryStaples: string[];
@@ -53,6 +57,7 @@ export const AppProvider = ({ children, userId }: { children: React.ReactNode; u
   const usualsHook = useUsuals({ userId });
   const purchaseHook = usePurchaseHistory(userId);
   const pantry = usePantryStaples(userId);
+  const categoryHook = useRecipeCategories({ userId });
 
   const value: AppContextType = {
     userId,
@@ -75,6 +80,9 @@ export const AppProvider = ({ children, userId }: { children: React.ReactNode; u
     updateRecipe: recipeHook.updateRecipe,
     removeRecipe: recipeHook.removeRecipe,
     updateRecipeImage: recipeHook.updateRecipeImage,
+    recipeCategories: categoryHook.categories,
+    addRecipeCategory: categoryHook.addCategory,
+    removeRecipeCategory: categoryHook.removeCategory,
     addUsual: usualsHook.addUsual,
     removeUsual: usualsHook.removeUsual,
     pantryStaples: pantry.pantryStaples,

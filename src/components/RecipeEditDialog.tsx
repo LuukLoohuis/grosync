@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { useAppContext } from '@/contexts/AppContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Recipe } from '@/types';
+import CategoryPicker from '@/components/CategoryPicker';
 
 interface RecipeEditDialogProps {
   recipe: Recipe;
@@ -22,6 +23,7 @@ const RecipeEditDialog = ({ recipe }: RecipeEditDialogProps) => {
   const [instructions, setInstructions] = useState('');
   const [sourceUrl, setSourceUrl] = useState('');
   const [servings, setServings] = useState<number>(4);
+  const [categories, setCategories] = useState<string[]>([]);
 
   useEffect(() => {
     if (open) {
@@ -31,6 +33,7 @@ const RecipeEditDialog = ({ recipe }: RecipeEditDialogProps) => {
       setInstructions(recipe.instructions || '');
       setSourceUrl(recipe.sourceUrl || '');
       setServings(recipe.servings || 4);
+      setCategories(recipe.categories ?? []);
     }
   }, [open, recipe]);
 
@@ -46,6 +49,7 @@ const RecipeEditDialog = ({ recipe }: RecipeEditDialogProps) => {
       instructions: instructions.trim() || undefined,
       sourceUrl: trimmedUrl,
       servings: servings,
+      categories,
     });
 
     if (urlChanged && trimmedUrl) {
@@ -88,6 +92,7 @@ const RecipeEditDialog = ({ recipe }: RecipeEditDialogProps) => {
             <label className="text-sm text-muted-foreground mb-1 block">Aantal personen</label>
             <Input type="number" min={1} max={100} value={servings} onChange={(e) => setServings(parseInt(e.target.value) || 4)} />
           </div>
+          <CategoryPicker value={categories} onChange={setCategories} />
           <div>
             <label className="text-sm text-muted-foreground mb-1 block">Instructies</label>
             <Textarea placeholder={"1. Verwarm de oven voor..."} value={instructions} onChange={(e) => setInstructions(e.target.value)} rows={10} className="min-h-[200px]" />

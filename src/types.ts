@@ -44,4 +44,12 @@ export interface Recipe {
   sourceUrl?: string;
   macros?: Macros;
   servings?: number;
+  /** Labels like "Vega" or "Snel"; a recipe can sit in more than one. */
+  categories?: string[];
+}
+
+export interface RecipeCategory {
+  id: string;
+  name: string;
+  color: string;
 }

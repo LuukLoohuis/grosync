@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ChefHat, ChevronDown, Plus, ShoppingCart, Link, X, Loader2, Languages, ClipboardPaste } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useAppContext } from '@/contexts/AppContext';
@@ -16,6 +16,9 @@ import { Skeleton } from '@/components/ui/skeleton';
 import EstimateBadge from '@/components/EstimateBadge';
 import AddToListSheet from '@/components/AddToListSheet';
 import { SOURCE_LABELS, detectImportInput, isEstimated, progressLabel, withoutEstimate, type SourceKey } from '@/lib/recipeImport';
+import CategoryPicker from '@/components/CategoryPicker';
+import CategoryChip from '@/components/CategoryChip';
+import { PRESETS, countPerCategory, dotOf, findCategory, sameName, suggestCategories, tintOf, usedCategories } from '@/lib/recipeCategories';
 
 interface RecipeListProps {
   /** A link or text shared into the app; opens the import dialog and starts fetching. */
@@ -25,7 +28,7 @@ interface RecipeListProps {
 }
 
 const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListProps) => {
-  const { loading, recipes, addRecipe, removeRecipe, updateRecipeImage, updateRecipe } = useAppContext();
+  const { loading, recipes, addRecipe, removeRecipe, updateRecipeImage, updateRecipe, recipeCategories, addRecipeCategory } = useAppContext();
   const [open, setOpen] = useState(false);
   const [manual, setManual] = useState(false);
   const [name, setName] = useState('');
@@ -43,10 +46,12 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
   const [sourceLabel, setSourceLabel] = useState<string | null>(null);
   const [progress, setProgress] = useState<string | null>(null);
   const [listRecipeId, setListRecipeId] = useState<string | null>(null);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [filter, setFilter] = useState<string | null>(null);
 
   const resetForm = () => {
     setName(''); setDescription(''); setIngredientText(''); setInstructions(''); setSourceUrl(''); setManual(false); setFetchedMacros(null); setFetchedImageUrl(undefined); setServings(4); setTranslating(false);
-    setImportValue(''); setImportNotice(null); setSourceLabel(null); setProgress(null);
+    setImportValue(''); setImportNotice(null); setSourceLabel(null); setProgress(null); setCategories([]);
   };
 
   // Fills the form from a fetch-url-meta response. Returns false when nothing usable came back.
@@ -216,6 +221,7 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
       imageUrl: fetchedImageUrl,
       macros: fetchedMacros || undefined,
       servings: servings,
+      categories,
     });
 
     resetForm();
@@ -224,6 +230,36 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
   };
 
   const listRecipe = recipes.find((r) => r.id === listRecipeId) ?? null;
+
+  // A first guess at the category, from what has been filled in so far.
+  const suggestion = useMemo(() => {
+    const lines = ingredientText.split('\n').map((l) => l.trim()).filter(Boolean);
+    if (!name.trim() && lines.length === 0) return [];
+    return suggestCategories(name, lines);
+  }, [name, ingredientText]);
+
+  const applySuggestion = async () => {
+    const stored: string[] = [];
+    for (const label of suggestion) {
+      const preset = PRESETS.find((p) => sameName(p.name, label));
+      stored.push(await addRecipeCategory(label, preset?.color));
+    }
+    setCategories((prev) => [...prev, ...stored.filter((label) => !prev.some((p) => sameName(p, label)))]);
+  };
+
+  const counts = useMemo(() => countPerCategory(recipes), [recipes]);
+  // Everything you can filter on: the categories you made, plus labels still on a recipe.
+  const filterNames = useMemo(() => {
+    const names = recipeCategories.map((c) => c.name);
+    for (const label of usedCategories(recipes)) {
+      if (!names.some((known) => sameName(known, label))) names.push(label);
+    }
+    return names;
+  }, [recipeCategories, recipes]);
+
+  const visibleRecipes = filter
+    ? recipes.filter((recipe) => (recipe.categories ?? []).some((label) => sameName(label, filter)))
+    : recipes;
 
   return (
     <div className="space-y-4">
@@ -316,6 +352,18 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
                 <Input type="number" min={1} max={100} value={servings} onChange={(e) => setServings(parseInt(e.target.value) || 4)} />
               </div>
               <div>
+                <CategoryPicker value={categories} onChange={setCategories} />
+                {categories.length === 0 && suggestion.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={applySuggestion}
+                    className="mt-2 min-h-11 text-sm text-primary hover:underline"
+                  >
+                    Voorstel: {suggestion.join(' · ')}
+                  </button>
+                )}
+              </div>
+              <div>
                 <label className="text-sm text-muted-foreground mb-1 block">Bereiding</label>
                 <Textarea placeholder={"1. Verwarm de oven voor op 180°C\n2. Kruid de kip...\n3. Bak 25 minuten..."} value={instructions} onChange={(e) => setInstructions(e.target.value)} rows={10} className="min-h-[200px]" />
               </div>
@@ -355,8 +403,52 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
         </div>
       )}
 
+      {!loading && recipes.length > 0 && filterNames.length > 0 && (
+        <div className="-mx-4 overflow-x-auto px-4 pb-1">
+          <div className="flex w-max items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setFilter(null)}
+              aria-pressed={filter === null}
+              className={`inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 font-display text-xs font-bold tracking-[-0.01em] transition-colors duration-150 ease-smooth ${
+                filter === null ? 'bg-primary text-primary-foreground' : 'border border-border text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Alles <span className="tabular-nums opacity-70">{recipes.length}</span>
+            </button>
+            {filterNames.map((label) => {
+              const category = findCategory(recipeCategories, label);
+              const active = filter !== null && sameName(filter, label);
+              const count = counts.get(label.trim().toLowerCase()) ?? 0;
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => setFilter(active ? null : label)}
+                  aria-pressed={active}
+                  className={`inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 font-display text-xs font-bold tracking-[-0.01em] transition-colors duration-150 ease-smooth ${
+                    active
+                      ? `${tintOf(category.color)} ring-1 ring-current`
+                      : 'border border-border text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <span className={`h-2 w-2 rounded-full ${dotOf(category.color)}`} />
+                  {category.name} <span className="tabular-nums opacity-70">{count}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {!loading && filter !== null && visibleRecipes.length === 0 && (
+        <p className="py-8 text-center text-sm text-muted-foreground">
+          Nog geen recept in “{filter}”. Open een recept en zet het label erbij.
+        </p>
+      )}
+
       <div className="grid gap-4">
-        {recipes.map((recipe) => (
+        {visibleRecipes.map((recipe) => (
           <div key={recipe.id} className="group relative overflow-hidden rounded-[14px] border border-border bg-card">
             {recipe.imageUrl && (
               <div className="aspect-video w-full overflow-hidden bg-muted">
@@ -372,6 +464,14 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
                 <span className="bg-background/80 rounded-full p-1.5"><X className="h-4 w-4" /></span>
               </button>
               <h3 className="font-display text-lg text-foreground">{recipe.name}</h3>
+              {(recipe.categories ?? []).length > 0 && (
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {(recipe.categories ?? []).map((label) => {
+                    const category = findCategory(recipeCategories, label);
+                    return <CategoryChip key={label} name={category.name} color={category.color} />;
+                  })}
+                </div>
+              )}
               <p className="text-sm text-muted-foreground mt-1">{recipe.description}</p>
               {recipe.sourceUrl && (
                 <a href={recipe.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline mt-1 flex items-center gap-1">

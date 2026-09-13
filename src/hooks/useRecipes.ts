@@ -32,6 +32,7 @@ export const useRecipes = ({ userId }: UseRecipesOptions = {}) => {
           sourceUrl: d.source_url || undefined,
           macros: d.macros as any || undefined,
           servings: (d as any).servings || 4,
+          categories: (d as any).categories || [],
         }))
       );
       setLoading(false);
@@ -55,6 +56,7 @@ export const useRecipes = ({ userId }: UseRecipesOptions = {}) => {
             ingredients: d.ingredients || [], instructions: d.instructions || undefined,
             imageUrl: d.image_url || undefined, sourceUrl: d.source_url || undefined,
             macros: d.macros || undefined, servings: d.servings || 4,
+            categories: d.categories || [],
           });
 
           if (payload.eventType === 'INSERT') {
@@ -88,6 +90,7 @@ export const useRecipes = ({ userId }: UseRecipesOptions = {}) => {
         source_url: recipe.sourceUrl || null,
         macros: (recipe.macros as any) || null,
         servings: recipe.servings || 4,
+        categories: recipe.categories ?? [],
       }])
       .select()
       .single();
@@ -104,6 +107,7 @@ export const useRecipes = ({ userId }: UseRecipesOptions = {}) => {
           ingredients: data.ingredients || [], instructions: data.instructions || undefined,
           imageUrl: data.image_url || undefined, sourceUrl: data.source_url || undefined,
           macros: data.macros as any || undefined, servings: data.servings || 4,
+          categories: (data as any).categories || [],
         }];
       });
     }
@@ -120,6 +124,7 @@ export const useRecipes = ({ userId }: UseRecipesOptions = {}) => {
     if (updates.sourceUrl !== undefined) dbUpdates.source_url = updates.sourceUrl || null;
     if (updates.macros !== undefined) dbUpdates.macros = updates.macros || null;
     if (updates.servings !== undefined) dbUpdates.servings = updates.servings;
+    if (updates.categories !== undefined) dbUpdates.categories = updates.categories;
     await supabase.from('recipes').update(dbUpdates).eq('id', id);
   }, []);
 
