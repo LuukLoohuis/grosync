@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Loader2, RefreshCw, Search, Star } from 'lucide-react';
+import { ArrowLeft, Cpu, Loader2, RefreshCw, Search, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,6 +45,21 @@ interface AdminUser {
 
 interface UsageRow { period: string; feature: string; acties: number; gebruikers: number }
 
+interface AiSettings { provider: string; text_model: string; scan_model: string }
+
+/** Wat je kunt kiezen. De sleutels zelf staan in Supabase, niet hier. */
+const TEXT_PROVIDERS: { value: string; label: string; hint: string }[] = [
+  { value: '', label: 'Automatisch', hint: 'DeepSeek als die sleutel er is, anders OpenAI' },
+  { value: 'openai', label: 'OpenAI', hint: 'gpt-4o-mini · betrouwbaar, iets duurder' },
+  { value: 'deepseek', label: 'DeepSeek', hint: 'deepseek-chat · fors goedkoper, servers in China' },
+];
+
+const SCAN_MODELS: { value: string; label: string; hint: string }[] = [
+  { value: '', label: 'Standaard', hint: 'gpt-4o · leest kleine etiketten het best' },
+  { value: 'gpt-4o', label: 'gpt-4o', hint: '± € 0,005 per foto' },
+  { value: 'gpt-4o-mini', label: 'gpt-4o-mini', hint: 'goedkoper, ziet minder' },
+];
+
 const euro = (value: number) => `€ ${value.toFixed(2).replace('.', ',')}`;
 const datum = (value: string | null) => (value ? new Date(value).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' }) : '—');
 
@@ -63,14 +78,18 @@ const Admin = () => {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [ai, setAi] = useState<AiSettings>({ provider: '', text_model: '', scan_model: '' });
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [kpi, months, people] = await Promise.all([
+    const [kpi, months, people, settings] = await Promise.all([
       supabase.rpc('admin_overview'),
       supabase.rpc('admin_usage', { _months: 6 }),
       supabase.rpc('admin_users', { _search: search.trim() || null, _limit: 50 }),
+      supabase.from('app_settings').select('value').eq('key', 'ai').maybeSingle(),
     ]);
+    const stored = settings.data?.value as unknown as AiSettings | undefined;
+    if (stored) setAi({ provider: stored.provider ?? '', text_model: stored.text_model ?? '', scan_model: stored.scan_model ?? '' });
     if (kpi.error) toast.error(kpi.error.message);
     setOverview((kpi.data as unknown as Overview) ?? null);
     setUsage((months.data as UsageRow[]) ?? []);
@@ -79,6 +98,16 @@ const Admin = () => {
   }, [search]);
 
   useEffect(() => { if (isAdmin) void load(); }, [isAdmin, load]);
+
+  const saveAi = async (changes: Partial<AiSettings>) => {
+    const next = { ...ai, ...changes };
+    setAi(next);
+    const { error } = await supabase
+      .from('app_settings')
+      .upsert({ key: 'ai', value: next, updated_at: new Date().toISOString() });
+    if (error) { toast.error(error.message); return; }
+    toast.success('Modelkeuze opgeslagen');
+  };
 
   const togglePlus = async (person: AdminUser) => {
     const { error } = await supabase.rpc('admin_set_plus', { _user: person.user_id, _on: !person.plus });
@@ -190,6 +219,62 @@ const Admin = () => {
             </div>
           </section>
         )}
+
+        <section>
+          <h2 className="mb-2 flex items-center gap-2 font-display text-[0.9375rem] font-bold text-foreground">
+            <Cpu className="h-4 w-4" /> Model
+          </h2>
+          <div className="space-y-3 rounded-[14px] border border-border bg-card p-3">
+            <div>
+              <p className="text-xs text-muted-foreground">Tekst: recepten ophalen, vertalen, suggesties, Bonuschef</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {TEXT_PROVIDERS.map((option) => (
+                  <button
+                    key={option.value || 'auto'}
+                    type="button"
+                    onClick={() => saveAi({ provider: option.value })}
+                    aria-pressed={ai.provider === option.value}
+                    className={`min-h-11 rounded-full px-3 font-display text-xs font-bold transition-colors duration-150 ease-smooth ${
+                      ai.provider === option.value ? 'bg-primary text-primary-foreground' : 'border border-border text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                {TEXT_PROVIDERS.find((option) => option.value === ai.provider)?.hint}
+              </p>
+            </div>
+
+            <div className="border-t border-border pt-3">
+              <p className="text-xs text-muted-foreground">Beeld: de kastscan. DeepSeek kan geen foto’s lezen.</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {SCAN_MODELS.map((option) => (
+                  <button
+                    key={option.value || 'auto'}
+                    type="button"
+                    onClick={() => saveAi({ scan_model: option.value })}
+                    aria-pressed={ai.scan_model === option.value}
+                    className={`min-h-11 rounded-full px-3 font-display text-xs font-bold transition-colors duration-150 ease-smooth ${
+                      ai.scan_model === option.value ? 'bg-primary text-primary-foreground' : 'border border-border text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                {SCAN_MODELS.find((option) => option.value === ai.scan_model)?.hint}
+              </p>
+            </div>
+
+            <p className="border-t border-border pt-3 text-xs text-muted-foreground">
+              De API-sleutels zelf horen in Supabase, niet hier: <span className="font-mono text-[0.6875rem]">DEEPSEEK_API_KEY</span> onder
+              Project Settings → Edge Functions → Secrets. Kies je DeepSeek zonder die sleutel, dan blijft OpenAI draaien.
+            </p>
+          </div>
+        </section>
 
         <section>
           <div className="mb-2 flex items-center gap-2">

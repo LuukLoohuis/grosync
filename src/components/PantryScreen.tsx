@@ -18,6 +18,12 @@ import PlusSheet from '@/components/PlusSheet';
 import { FREE_LIMIT } from '@/hooks/useEntitlements';
 import type { PantryItem } from '@/types';
 
+/** De eerste van de volgende maand, wanneer het tegoed weer vol staat. */
+const resetDatum = () => {
+  const nu = new Date();
+  return new Date(nu.getFullYear(), nu.getMonth() + 1, 1).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' });
+};
+
 interface PantryScreenProps {
   onNavigate?: (tab: 'list') => void;
 }
@@ -40,6 +46,7 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
   const departments = sortByStoreRoute(pantry.filter((item) => !isHerb(item.name)));
   const runningOut = pantry.filter((item) => item.low || item.quantity === 0);
   const herb = pantry.find((item) => item.id === herbId) ?? null;
+  const opGeraakt = !plus && remaining('kastfoto') === 0;
 
   // A cupboard rarely fits in one frame, so several photos land in one list.
   const takePhotos = async (files: FileList | null) => {
@@ -204,12 +211,21 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
         <p className="mt-1 text-sm text-muted-foreground">
           Maak een foto van een plank of van de koelkast. Je ziet eerst wat er herkend is, daarna gaat het pas de kast in.
         </p>
-        <Button className="mt-3 min-h-12 w-full gap-2" onClick={() => fileInput.current?.click()} disabled={scanning}>
-          {scanning ? <><Loader2 className="h-4 w-4 animate-spin" /> Foto lezen…</> : <><Camera className="h-4 w-4" /> Kast scannen</>}
+        {/* Op nul eerst uitleg, geen camera: anders maak je een foto voor niets. */}
+        <Button
+          className="mt-3 min-h-12 w-full gap-2"
+          onClick={() => (opGeraakt ? setOverLimit(true) : fileInput.current?.click())}
+          disabled={scanning}
+        >
+          {scanning
+            ? <><Loader2 className="h-4 w-4 animate-spin" /> Foto lezen…</>
+            : <><Camera className="h-4 w-4" /> {opGeraakt ? 'Je foto’s zijn op' : 'Kast scannen'}</>}
         </Button>
         {!plus && (
           <p className="mt-2 text-center text-xs text-muted-foreground">
-            Nog <span className="font-semibold tabular-nums text-foreground">{remaining('kastfoto')}</span> van {FREE_LIMIT} foto’s deze maand
+            {opGeraakt
+              ? `Op ${resetDatum()} staat je tegoed weer op ${FREE_LIMIT}. Zelf toevoegen kan altijd.`
+              : <>Nog <span className="font-semibold tabular-nums text-foreground">{remaining('kastfoto')}</span> van {FREE_LIMIT} foto’s deze maand</>}
           </p>
         )}
       </section>

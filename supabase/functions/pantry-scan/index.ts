@@ -25,6 +25,25 @@ async function signedInUser(req: Request): Promise<{ id: string } | null> {
   return user?.id ? { id: user.id } : null;
 }
 
+
+/** Instellingen uit de database; leeg betekent: val terug op de omgeving. */
+async function aiSettings(): Promise<{ scanModel: string }> {
+  const url = env('SUPABASE_URL');
+  const key = env('SUPABASE_SERVICE_ROLE_KEY');
+  if (!url || !key) return { scanModel: '' };
+  try {
+    const response = await fetch(`${url}/rest/v1/app_settings?key=eq.ai&select=value`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}` },
+    });
+    if (!response.ok) return { scanModel: '' };
+    const rows = await response.json();
+    return { scanModel: String(rows?.[0]?.value?.scan_model ?? '') };
+  } catch (error) {
+    console.error('Instellingen lezen mislukt:', error);
+    return { scanModel: '' };
+  }
+}
+
 type Quota = { allowed: boolean; used: number; quota: number; plus: boolean };
 
 /** Counts this use and says whether it was within the monthly allowance. */
@@ -78,6 +97,9 @@ Deno.serve(async (req) => {
     const user = await signedInUser(req);
     if (!user) return json({ error: 'Sign in required' }, 401);
 
+    const { scanModel: gekozen } = await aiSettings();
+    const scanModel = gekozen || env('SCAN_MODEL') || 'gpt-4o';
+
     const quota = await consumeAi(user.id, 'kastfoto', FREE_LIMIT);
     if (!quota.allowed) {
       return json({ error: 'limiet', feature: 'kastfoto', used: quota.used, quota: quota.quota }, 402);
@@ -96,7 +118,7 @@ Deno.serve(async (req) => {
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         // A cupboard photo is a cluttered scene; the small model skips things the big one reads.
-        model: env('SCAN_MODEL') || 'gpt-4o',
+        model: scanModel,
         response_format: { type: 'json_object' },
         max_tokens: 1200,
         messages: [{

@@ -58,6 +58,7 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
   const [editId, setEditId] = useState<string | null>(null);
   const [macrosId, setMacrosId] = useState<string | null>(null);
   const [overLimit, setOverLimit] = useState(false);
+  const importOp = !plus && remaining('recept') === 0;
   const [categories, setCategories] = useState<string[]>([]);
   const [filter, setFilter] = useState<string | null>(null);
 
@@ -351,14 +352,25 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
                     <ClipboardPaste className="h-4 w-4" /> Plak link
                   </Button>
                 )}
-                <Button type="button" className="flex-1 min-h-11 gap-2" onClick={() => runImport(importValue)} disabled={!importValue.trim() || fetchingMeta}>
-                  {fetchingMeta ? <><Loader2 className="h-4 w-4 animate-spin" /> Bezig…</> : 'Recept ophalen'}
+                <Button
+                  type="button"
+                  className="flex-1 min-h-11 gap-2"
+                  disabled={(!importValue.trim() && !importOp) || fetchingMeta}
+                  onClick={() => {
+                    // Tegoed op: eerst uitleggen, niet eerst laten wachten op een fout.
+                    if (importOp) { setOpen(false); setOverLimit(true); return; }
+                    void runImport(importValue);
+                  }}
+                >
+                  {fetchingMeta ? <><Loader2 className="h-4 w-4 animate-spin" /> Bezig…</> : importOp ? 'Tegoed op' : 'Recept ophalen'}
                 </Button>
               </div>
               <p className="min-h-5 text-sm text-muted-foreground" role="status" aria-live="polite">{progress}</p>
               {!plus && (
                 <p className="text-xs text-muted-foreground">
-                  Nog <span className="font-semibold tabular-nums text-foreground">{remaining('recept')}</span> van {FREE_LIMIT} recepten deze maand. Zelf invullen kan altijd.
+                  {importOp
+                    ? 'Je recepten van deze maand zijn op. Zelf invullen kan altijd.'
+                    : <>Nog <span className="font-semibold tabular-nums text-foreground">{remaining('recept')}</span> van {FREE_LIMIT} recepten deze maand. Zelf invullen kan altijd.</>}
                 </p>
               )}
               <button type="button" onClick={() => setManual(true)} className="min-h-11 text-sm text-primary hover:underline">

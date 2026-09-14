@@ -46,21 +46,49 @@ const FREE_LIMIT = 5;
 // Tekstmodel: standaard OpenAI, maar zet DEEPSEEK_API_KEY en alles wat tekst is
 // loopt via DeepSeek (dezelfde API-vorm, een stuk goedkoper). Beelden en video
 // kan DeepSeek niet lezen; die blijven bij OpenAI of Gemini.
-const textApi = () => {
+const textApi = (settings = { provider: '', textModel: '' }) => {
   const deepseek = Deno.env.get('DEEPSEEK_API_KEY') ?? '';
-  if (deepseek) {
+  const openai = Deno.env.get('OPENAI_API_KEY') ?? '';
+  // De keuze in Beheer wint; zonder keuze beslist de sleutel die er ligt.
+  const wantsDeepseek = settings.provider ? settings.provider === 'deepseek' : Boolean(deepseek);
+
+  if (wantsDeepseek && deepseek) {
     return {
       key: deepseek,
       endpoint: (Deno.env.get('TEXT_API_BASE') || 'https://api.deepseek.com/v1') + '/chat/completions',
-      model: Deno.env.get('TEXT_MODEL') || 'deepseek-chat',
+      model: settings.textModel || Deno.env.get('TEXT_MODEL') || 'deepseek-chat',
     };
   }
   return {
-    key: Deno.env.get('OPENAI_API_KEY') ?? '',
+    key: openai,
     endpoint: (Deno.env.get('TEXT_API_BASE') || 'https://api.openai.com/v1') + '/chat/completions',
-    model: Deno.env.get('TEXT_MODEL') || 'gpt-4o-mini',
+    model: settings.textModel || Deno.env.get('TEXT_MODEL') || 'gpt-4o-mini',
   };
 };
+
+/** Instellingen uit de database; leeg betekent: val terug op de omgeving. */
+async function aiSettings(): Promise<{ provider: string; textModel: string; scanModel: string }> {
+  const leeg = { provider: '', textModel: '', scanModel: '' };
+  const url = Deno.env.get('SUPABASE_URL') ?? '';
+  const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  if (!url || !key) return leeg;
+  try {
+    const response = await fetch(`${url}/rest/v1/app_settings?key=eq.ai&select=value`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}` },
+    });
+    if (!response.ok) return leeg;
+    const rows = await response.json();
+    const value = rows?.[0]?.value ?? {};
+    return {
+      provider: String(value.provider ?? ''),
+      textModel: String(value.text_model ?? ''),
+      scanModel: String(value.scan_model ?? ''),
+    };
+  } catch (error) {
+    console.error('Instellingen lezen mislukt:', error);
+    return leeg;
+  }
+}
 
 const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
@@ -134,7 +162,7 @@ function toRecipeData(parsed: any): RecipeData {
 }
 
 async function extractRecipeFromText(text: string): Promise<RecipeData> {
-  const ai = textApi();
+  const ai = textApi(await aiSettings());
   if (!ai.key || !text.trim()) return emptyRecipe();
 
   try {
