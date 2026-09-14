@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { callFunction } from '@/services/functions';
 // Recipe API service - Direct calls to Supabase Edge Functions
 const FUNCTIONS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
@@ -40,44 +41,11 @@ export interface FetchedRecipe {
 }
 
 export async function fetchRecipeFromUrl(url: string) {
-  try {
-    const response = await fetch(`${FUNCTIONS_URL}/fetch-url-meta`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ url }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to fetch recipe');
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('fetchRecipeFromUrl error:', error);
-    throw error;
-  }
+  return callFunction<FetchedRecipe>('fetch-url-meta', { url });
 }
 
 export async function fetchRecipeFromText(text: string) {
-  const response = await fetch(`${FUNCTIONS_URL}/fetch-url-meta`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ text }),
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new Error(error.error || 'Failed to read recipe text');
-  }
-
-  return await response.json();
+  return callFunction<FetchedRecipe>('fetch-url-meta', { text });
 }
 
 export async function translateRecipe(recipe: RecipeData) {

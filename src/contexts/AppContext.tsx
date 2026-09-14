@@ -5,6 +5,7 @@ import { useUsuals } from '@/hooks/useUsuals';
 import { usePantryStaples } from '@/hooks/usePantryStaples';
 import { useRecipeCategories } from '@/hooks/useRecipeCategories';
 import { usePantry } from '@/hooks/usePantry';
+import { useEntitlements, type MeteredFeature } from '@/hooks/useEntitlements';
 import { usePurchaseHistory } from '@/hooks/usePurchaseHistory';
 import type { AhMatch } from '@/services/ahApi';
 import { GroceryItem, PantryItem, Recipe, RecipeCategory, UsualItem } from '@/types';
@@ -49,6 +50,10 @@ interface AppContextType {
   setPantryLow: (id: string, low: boolean) => Promise<void>;
   renamePantryItem: (id: string, name: string) => Promise<void>;
   removePantryItem: (id: string) => Promise<void>;
+  plus: boolean;
+  isAdmin: boolean;
+  remaining: (feature: MeteredFeature) => number;
+  refreshEntitlements: () => Promise<void>;
   pantryStaples: string[];
   savePantryStaples: (staples: string[]) => Promise<void>;
 }
@@ -69,6 +74,7 @@ export const AppProvider = ({ children, userId }: { children: React.ReactNode; u
   const pantry = usePantryStaples(userId);
   const categoryHook = useRecipeCategories({ userId });
   const pantryHook = usePantry({ userId });
+  const entitlements = useEntitlements({ userId });
 
   const value: AppContextType = {
     userId,
@@ -105,6 +111,10 @@ export const AppProvider = ({ children, userId }: { children: React.ReactNode; u
     setPantryLow: pantryHook.setLow,
     renamePantryItem: pantryHook.renamePantryItem,
     removePantryItem: pantryHook.removePantryItem,
+    plus: entitlements.plus,
+    isAdmin: entitlements.isAdmin,
+    remaining: entitlements.remaining,
+    refreshEntitlements: entitlements.refreshEntitlements,
     pantryStaples: pantry.pantryStaples,
     savePantryStaples: pantry.savePantryStaples,
   };

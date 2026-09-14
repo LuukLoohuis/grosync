@@ -3,6 +3,46 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+const env = (name: string) => Deno.env.get(name) ?? '';
+
+/** The signed-in user, or null. The platform checked the token; this reads who it belongs to. */
+async function signedInUser(req: Request): Promise<{ id: string } | null> {
+  const token = req.headers.get('Authorization')?.replace(/^Bearer\s+/i, '');
+  if (!token) return null;
+  const response = await fetch(`${env('SUPABASE_URL')}/auth/v1/user`, {
+    headers: { apikey: env('SUPABASE_ANON_KEY'), Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) return null;
+  const user = await response.json().catch(() => null);
+  return user?.id ? { id: user.id } : null;
+}
+
+type Quota = { allowed: boolean; used: number; quota: number; plus: boolean };
+
+/** Counts this use and says whether it was within the monthly allowance. */
+async function consumeAi(userId: string, feature: string, limit: number): Promise<Quota> {
+  const response = await fetch(`${env('SUPABASE_URL')}/rest/v1/rpc/consume_ai`, {
+    method: 'POST',
+    headers: {
+      apikey: env('SUPABASE_SERVICE_ROLE_KEY'),
+      Authorization: `Bearer ${env('SUPABASE_SERVICE_ROLE_KEY')}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ _user: userId, _feature: feature, _limit: limit }),
+  });
+  if (!response.ok) {
+    console.error('consume_ai failed:', response.status, (await response.text()).slice(0, 200));
+    // A broken meter must not lock people out of what they paid for.
+    return { allowed: true, used: 0, quota: limit, plus: false };
+  }
+  const rows = await response.json();
+  const row = Array.isArray(rows) ? rows[0] : rows;
+  return { allowed: row?.allowed !== false, used: row?.used ?? 0, quota: row?.quota ?? limit, plus: row?.plus === true };
+}
+
+/** Free gets five a month of the two that cost real money; Plus gets everything. */
+const FREE_LIMIT = 5;
+
 const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
 // Supabase stops a request after 150s; keep a margin for building the response.
@@ -598,6 +638,20 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const user = await signedInUser(req);
+    if (!user) {
+      return new Response(JSON.stringify({ error: 'Sign in required' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const quota = await consumeAi(user.id, 'recept', FREE_LIMIT);
+    if (!quota.allowed) {
+      return new Response(JSON.stringify({ error: 'limiet', feature: 'recept', used: quota.used, quota: quota.quota }), {
+        status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const { url, text } = await req.json();
     if (!url && !text) {
       return new Response(JSON.stringify({ error: 'URL or text is required' }), {

@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Share2, Heart, LogOut, MoreVertical } from 'lucide-react';
+import { Share2, Heart, LogOut, MoreVertical, Gauge } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useAuth } from '@/hooks/useAuth';
+import { useAppContext } from '@/contexts/AppContext';
 import ShareListSheet from '@/components/ShareListSheet';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup,
@@ -17,6 +18,7 @@ const THEMES = [
 /** Share, theme menu and sign out. `onDark` styles them for the green plane on "Vandaag". */
 const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
   const { signOut } = useAuth();
+  const { isAdmin } = useAppContext();
   const { theme, setTheme } = useTheme();
   const [shareOpen, setShareOpen] = useState(false);
 
@@ -47,6 +49,11 @@ const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
             ))}
           </DropdownMenuRadioGroup>
           <DropdownMenuSeparator />
+          {isAdmin && (
+            <DropdownMenuItem asChild className="gap-2 min-h-11 cursor-pointer">
+              <a href="#/admin"><Gauge className="h-4 w-4" /> Beheer</a>
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem asChild className="gap-2 min-h-11 cursor-pointer">
             <a href="https://www.buymeacoffee.com/luukloohuis" target="_blank" rel="noopener noreferrer">
               <Heart className="h-4 w-4" /> Steun CoupleCart

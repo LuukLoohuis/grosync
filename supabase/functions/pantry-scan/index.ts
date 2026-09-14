@@ -13,14 +13,43 @@ const json = (body: unknown, status = 200) =>
 
 const env = (name: string) => Deno.env.get(name) ?? '';
 
-async function isSignedIn(req: Request): Promise<boolean> {
+/** The signed-in user, or null. The platform checked the token; this reads who it belongs to. */
+async function signedInUser(req: Request): Promise<{ id: string } | null> {
   const token = req.headers.get('Authorization')?.replace(/^Bearer\s+/i, '');
-  if (!token) return false;
+  if (!token) return null;
   const response = await fetch(`${env('SUPABASE_URL')}/auth/v1/user`, {
     headers: { apikey: env('SUPABASE_ANON_KEY'), Authorization: `Bearer ${token}` },
   });
-  return response.ok;
+  if (!response.ok) return null;
+  const user = await response.json().catch(() => null);
+  return user?.id ? { id: user.id } : null;
 }
+
+type Quota = { allowed: boolean; used: number; quota: number; plus: boolean };
+
+/** Counts this use and says whether it was within the monthly allowance. */
+async function consumeAi(userId: string, feature: string, limit: number): Promise<Quota> {
+  const response = await fetch(`${env('SUPABASE_URL')}/rest/v1/rpc/consume_ai`, {
+    method: 'POST',
+    headers: {
+      apikey: env('SUPABASE_SERVICE_ROLE_KEY'),
+      Authorization: `Bearer ${env('SUPABASE_SERVICE_ROLE_KEY')}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ _user: userId, _feature: feature, _limit: limit }),
+  });
+  if (!response.ok) {
+    console.error('consume_ai failed:', response.status, (await response.text()).slice(0, 200));
+    // A broken meter must not lock people out of what they paid for.
+    return { allowed: true, used: 0, quota: limit, plus: false };
+  }
+  const rows = await response.json();
+  const row = Array.isArray(rows) ? rows[0] : rows;
+  return { allowed: row?.allowed !== false, used: row?.used ?? 0, quota: row?.quota ?? limit, plus: row?.plus === true };
+}
+
+/** Free gets five a month of the two that cost real money; Plus gets everything. */
+const FREE_LIMIT = 5;
 
 const PROMPT = `Je kijkt naar een foto van een voorraadkast, koelkast of aanrecht in een Nederlands huishouden.
 Noem alles wat eetbaar is en wat je op de foto kunt aanwijzen. Kijk de hele foto af: elke plank van
@@ -46,7 +75,13 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
-    if (!(await isSignedIn(req))) return json({ error: 'Sign in required' }, 401);
+    const user = await signedInUser(req);
+    if (!user) return json({ error: 'Sign in required' }, 401);
+
+    const quota = await consumeAi(user.id, 'kastfoto', FREE_LIMIT);
+    if (!quota.allowed) {
+      return json({ error: 'limiet', feature: 'kastfoto', used: quota.used, quota: quota.quota }, 402);
+    }
 
     const key = env('OPENAI_API_KEY');
     if (!key) return json({ error: 'Scannen staat niet aan' }, 503);

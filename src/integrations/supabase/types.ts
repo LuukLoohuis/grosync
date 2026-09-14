@@ -170,6 +170,60 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_usage: {
+        Row: {
+          count: number
+          feature: string
+          period: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          count?: number
+          feature: string
+          period: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          count?: number
+          feature?: string
+          period?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      plus_members: {
+        Row: {
+          expires_at: string | null
+          note: string | null
+          source: string
+          started_at: string
+          user_id: string
+        }
+        Insert: {
+          expires_at?: string | null
+          note?: string | null
+          source?: string
+          started_at?: string
+          user_id: string
+        }
+        Update: {
+          expires_at?: string | null
+          note?: string | null
+          source?: string
+          started_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      admins: {
+        Row: { created_at: string; user_id: string }
+        Insert: { created_at?: string; user_id: string }
+        Update: { created_at?: string; user_id?: string }
+        Relationships: []
+      }
       purchase_history: {
         Row: {
           created_at: string
@@ -411,7 +465,30 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_overview: { Args: Record<string, never>; Returns: Json }
+      admin_set_plus: { Args: { _user: string; _on: boolean; _note?: string | null }; Returns: boolean }
+      admin_usage: {
+        Args: { _months?: number }
+        Returns: { acties: number; feature: string; gebruikers: number; period: string }[]
+      }
+      admin_users: {
+        Args: { _search?: string | null; _limit?: number }
+        Returns: {
+          aangemaakt: string
+          acties_deze_maand: number
+          email: string
+          is_gast: boolean
+          laatst_gezien: string | null
+          lijstitems: number
+          plus: boolean
+          recepten: number
+          user_id: string
+          voorraad: number
+        }[]
+      }
       has_shared_access: { Args: { _owner: string }; Returns: boolean }
+      is_admin: { Args: Record<string, never>; Returns: boolean }
+      is_plus: { Args: { _user: string }; Returns: boolean }
       is_valid_shared_list: { Args: { _list_id: string }; Returns: boolean }
       join_shared_list: { Args: { _share_code: string }; Returns: string }
       user_has_shared_list: { Args: { _user_id: string }; Returns: boolean }

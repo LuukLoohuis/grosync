@@ -9,6 +9,9 @@ import { toast } from 'sonner';
 import RecipeEditDialog from '@/components/RecipeEditDialog';
 import MacrosDialog from '@/components/MacrosDialog';
 import { fetchRecipeFromUrl, fetchRecipeFromText, translateRecipe, calculateMacros, type FetchedRecipe } from '@/services/recipeApi';
+import { QuotaError } from '@/services/functions';
+import PlusSheet from '@/components/PlusSheet';
+import { FREE_LIMIT } from '@/hooks/useEntitlements';
 import RecipeSuggestDialog from '@/components/RecipeSuggestDialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import EstimateBadge from '@/components/EstimateBadge';
@@ -28,7 +31,7 @@ interface RecipeListProps {
 }
 
 const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListProps) => {
-  const { loading, recipes, addRecipe, removeRecipe, updateRecipeImage, updateRecipe, recipeCategories, addRecipeCategory } = useAppContext();
+  const { loading, recipes, addRecipe, removeRecipe, updateRecipeImage, updateRecipe, recipeCategories, addRecipeCategory, plus, remaining, refreshEntitlements } = useAppContext();
   const [open, setOpen] = useState(false);
   const [manual, setManual] = useState(false);
   const [name, setName] = useState('');
@@ -53,6 +56,7 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
   const [detailId, setDetailId] = useState<string | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
   const [macrosId, setMacrosId] = useState<string | null>(null);
+  const [overLimit, setOverLimit] = useState(false);
   const [categories, setCategories] = useState<string[]>([]);
   const [filter, setFilter] = useState<string | null>(null);
 
@@ -124,9 +128,15 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
         setImportNotice('notfound');
       }
     } catch (e) {
-      console.error('Recipe import failed:', e);
-      toast.error('Recept ophalen lukte niet. Controleer je verbinding en probeer het opnieuw.');
+      if (e instanceof QuotaError) {
+        setOpen(false);
+        setOverLimit(true);
+      } else {
+        console.error('Recipe import failed:', e);
+        toast.error('Recept ophalen lukte niet. Controleer je verbinding en probeer het opnieuw.');
+      }
     } finally {
+      void refreshEntitlements();
       clearInterval(ticker);
       setProgress(null);
       setFetchingMeta(false);
@@ -345,6 +355,11 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
                 </Button>
               </div>
               <p className="min-h-5 text-sm text-muted-foreground" role="status" aria-live="polite">{progress}</p>
+              {!plus && (
+                <p className="text-xs text-muted-foreground">
+                  Nog <span className="font-semibold tabular-nums text-foreground">{remaining('recept')}</span> van {FREE_LIMIT} recepten deze maand. Zelf invullen kan altijd.
+                </p>
+              )}
               <button type="button" onClick={() => setManual(true)} className="min-h-11 text-sm text-primary hover:underline">
                 Liever zelf invullen
               </button>
@@ -420,6 +435,7 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
 
       <RecipeSuggestDialog />
       </div>
+      <PlusSheet feature={overLimit ? 'recept' : null} onClose={() => setOverLimit(false)} />
 
       <RecipeDetailSheet
         recipe={detailRecipe}

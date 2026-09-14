@@ -13,6 +13,9 @@ import { MAX_QUANTITY, isHerb, sameProduct } from '@/lib/pantry';
 import { toSmallDataUrl } from '@/lib/photo';
 import { sortByStoreRoute } from '@/lib/storeRouteSort';
 import { scanPantryPhoto, type ScanHit } from '@/services/pantryApi';
+import { QuotaError } from '@/services/functions';
+import PlusSheet from '@/components/PlusSheet';
+import { FREE_LIMIT } from '@/hooks/useEntitlements';
 import type { PantryItem } from '@/types';
 
 interface PantryScreenProps {
@@ -22,13 +25,14 @@ interface PantryScreenProps {
 const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
   const {
     pantry, pantryLoading, stockUp, setPantryQuantity, setPantryLow, renamePantryItem, removePantryItem,
-    addGroceryItem, groceryItems,
+    addGroceryItem, groceryItems, plus, remaining, refreshEntitlements,
   } = useAppContext();
   const [adding, setAdding] = useState('');
   const [scanning, setScanning] = useState(false);
   const [hits, setHits] = useState<ScanHit[] | null>(null);
   const [editing, setEditing] = useState<{ id: string; name: string } | null>(null);
   const [herbId, setHerbId] = useState<string | null>(null);
+  const [overLimit, setOverLimit] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const onList = new Set(groceryItems.filter((i) => !i.checked).map((i) => i.name.trim().toLowerCase()));
@@ -46,9 +50,15 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
         const image = await toSmallDataUrl(file);
         setHits(await scanPantryPhoto(image));
       }
+      void refreshEntitlements();
     } catch (error) {
-      console.error('Pantry scan failed:', error);
-      toast.error('De foto lezen lukte niet. Probeer het nog eens.');
+      if (error instanceof QuotaError) {
+        setOverLimit(true);
+        void refreshEntitlements();
+      } else {
+        console.error('Pantry scan failed:', error);
+        toast.error('De foto lezen lukte niet. Probeer het nog eens.');
+      }
     } finally {
       setScanning(false);
       if (fileInput.current) fileInput.current.value = '';
@@ -197,6 +207,11 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
         <Button className="mt-3 min-h-12 w-full gap-2" onClick={() => fileInput.current?.click()} disabled={scanning}>
           {scanning ? <><Loader2 className="h-4 w-4 animate-spin" /> Foto lezen…</> : <><Camera className="h-4 w-4" /> Kast scannen</>}
         </Button>
+        {!plus && (
+          <p className="mt-2 text-center text-xs text-muted-foreground">
+            Nog <span className="font-semibold tabular-nums text-foreground">{remaining('kastfoto')}</span> van {FREE_LIMIT} foto’s deze maand
+          </p>
+        )}
       </section>
 
       <div className="flex gap-2">
@@ -300,6 +315,7 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
         scanning={scanning}
       />
       <PantryItemSheet item={herb} onClose={() => setHerbId(null)} onAddToList={toList} />
+      <PlusSheet feature={overLimit ? 'kastfoto' : null} onClose={() => setOverLimit(false)} />
     </div>
   );
 };
