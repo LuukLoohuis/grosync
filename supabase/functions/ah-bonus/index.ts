@@ -185,6 +185,38 @@ const NON_FOOD_CATEGORY = /huishouden|drogisterij|baby|huisdier|koken|tafelen|vr
 const MEAL_CATEGORY = /maaltijd|salade|pizza/i;
 const MEAL_WORD = /\b(maaltijd|salade|pizza)\b/i;
 
+// Meat and fish, so a vegetarian dish never gets a steak skewer offered because
+// the product happens to say "black garlic". Dutch and English, because half the
+// recipes people paste in are English.
+const MEAT_FISH = /\b(kip|kipfilet|kippen\w*|gehakt|rund|rundvlees|biefstuk|biefstuk\w*|varken\w*|spek|spekjes|worst|rookworst|ham|bacon|lam|lams\w*|kalkoen|kalfs\w*|shoarma|speklap\w*|chorizo|salami|schnitzel|burger|hamburger|saucijs\w*|slavink|frikandel|kroket|spies\w*|vlees\w*|zalm|zalmfilet|tonijn|garnaal|garnalen|kabeljauw|mossel\w*|makreel|haring|forel|scampi|inktvis|ansjovis|vis|visfilet|beef|steak|chicken|pork|bacon|salmon|tuna|shrimp|prawn\w*|fish)\b/i;
+
+// Meal kits are a whole dinner, not an ingredient: "AH Groene curry verspakket"
+// is not the curry paste your recipe asks for.
+const KIT_WORD = /\b(verspakket\w*|maaltijdpakket\w*|maaltijdbox\w*|kookpakket\w*|maaltijdsalade\w*|wokpakket\w*)\b/i;
+
+// English ingredients against Dutch shelf labels. Only the words that actually
+// turn up in recipes; a wrong translation here costs a wrong match.
+const DUTCH: Record<string, string[]> = {
+  garlic: ['knoflook'], onion: ['ui', 'uien'], ginger: ['gember'], chicken: ['kip', 'kipfilet'],
+  beef: ['rundvlees'], pork: ['varkensvlees'], salmon: ['zalm'], tuna: ['tonijn'], shrimp: ['garnalen'],
+  rice: ['rijst'], noodles: ['noedels', 'mie'], pasta: ['pasta'], spaghetti: ['spaghetti'],
+  potato: ['aardappel', 'aardappelen'], potatoes: ['aardappelen'], tomato: ['tomaat', 'tomaten'],
+  tomatoes: ['tomaten'], mushroom: ['champignons'], mushrooms: ['champignons'], spinach: ['spinazie'],
+  carrot: ['wortel'], carrots: ['wortel'], broccoli: ['broccoli'], cauliflower: ['bloemkool'],
+  cucumber: ['komkommer'], lettuce: ['sla'], courgette: ['courgette'], zucchini: ['courgette'],
+  aubergine: ['aubergine'], eggplant: ['aubergine'], leek: ['prei'], cabbage: ['kool'],
+  cheese: ['kaas'], milk: ['melk'], butter: ['boter'], cream: ['room'], yoghurt: ['yoghurt'],
+  yogurt: ['yoghurt'], egg: ['eieren'], eggs: ['eieren'], bread: ['brood'], flour: ['bloem'],
+  honey: ['honing'], lemon: ['citroen'], lime: ['limoen'], orange: ['sinaasappel'], apple: ['appel'],
+  banana: ['banaan'], avocado: ['avocado'], beans: ['bonen'], chickpeas: ['kikkererwten'],
+  lentils: ['linzen'], tofu: ['tofu'], coconut: ['kokos'], 'coconut milk': ['kokosmelk'],
+  peanut: ['pinda'], 'peanut butter': ['pindakaas'], 'soy sauce': ['sojasaus'], soy: ['soja'],
+  'curry paste': ['currypasta'], curry: ['currypasta', 'kerrie'], 'sweet potato': ['zoete aardappel'],
+  'maple syrup': ['ahornsiroop'], 'rice vinegar': ['rijstazijn'], sesame: ['sesam'],
+  'spring onion': ['bosui'], scallion: ['bosui'], parsley: ['peterselie'], basil: ['basilicum'],
+  coriander: ['koriander'], cilantro: ['koriander'], pepper: [], pesto: ['pesto'], olives: ['olijven'],
+};
+
 // Salt, pepper and oil stand in almost every recipe, so they would match crisps ("Mini crackers zout")
 // or tuna in olive oil. Basics never drive a match; the ingredient only counts on its own words.
 const PANTRY = new Set([
@@ -199,6 +231,17 @@ const wordsOf = (text: string) =>
     text.toLowerCase().normalize('NFKD').replace(/[^\p{L}\p{N}\s]/gu, ' ').split(/\s+/)
       .filter((word) => word.length >= 4 && !STOP.has(word) && !/^\d+$/.test(word)),
   );
+
+/** The words to look for: what the recipe says, plus the Dutch for it. */
+const searchWords = (ingredient: string) => {
+  const lower = ingredient.toLowerCase();
+  const words = new Set(wordsOf(ingredient));
+  for (const [english, dutch] of Object.entries(DUTCH)) {
+    if (!new RegExp(`\\b${english}\\b`, 'i').test(lower)) continue;
+    for (const word of dutch) for (const part of word.split(' ')) if (part.length >= 4) words.add(part);
+  }
+  return words;
+};
 
 type Recipe = { id: string; name: string; ingredients: string[] };
 
@@ -224,9 +267,13 @@ Deno.serve(async (req) => {
     for (const product of bonus) {
       const words = [...wordsOf(product.title)];
       titleWordCount.set(product.product_id, words.length);
+      // Whatever follows "met" or "in" is a flavour, not the product: "Kruidenboter
+      // met knoflook" is butter, "Tonijnstukken in olijfolie" is tuna.
+      const head = product.title.split(/\s+\b(?:met|in)\b\s+/i)[0];
+      const headWords = [...wordsOf(head)];
       // What the product really is, stands at the end of an AH title: "AH Scharrel kipfilet".
       // "AH Pasta geraspte kaas" is cheese, not pasta, so only the last two words count.
-      tailWords.set(product.product_id, new Set(words.slice(-2)));
+      tailWords.set(product.product_id, new Set((headWords.length ? headWords : words).slice(-2)));
       for (const word of words) {
         const list = byWord.get(word) ?? [];
         list.push(product);
@@ -237,11 +284,16 @@ Deno.serve(async (req) => {
     const matches = recipes.map((recipe) => {
       const seen = new Set<number>();
       const hits: { ingredient: string; product: BonusRow }[] = [];
+      // A dish without meat or fish in it never gets meat or fish offered, whatever
+      // word a product title happens to share ("BBQ biefstukspies black garlic").
+      const wantsMeatFish = recipe.ingredients.some((line) => MEAT_FISH.test(line));
+
       for (const ingredient of recipe.ingredients) {
         const wantsTreat = TREAT_WORD.test(ingredient);
         const wantsMeal = MEAL_WORD.test(ingredient);
+        const thisIsMeatFish = MEAT_FISH.test(ingredient);
         let best: BonusRow | undefined;
-        for (const word of wordsOf(ingredient)) {
+        for (const word of searchWords(ingredient)) {
           if (PANTRY.has(word)) continue;
           const candidates = byWord.get(word);
           if (!candidates) continue;
@@ -252,6 +304,11 @@ Deno.serve(async (req) => {
             if (NON_FOOD_CATEGORY.test(category)) continue;
             if (!wantsTreat && TREAT_CATEGORY.test(category)) continue;
             if (!wantsMeal && MEAL_CATEGORY.test(category)) continue;
+            // A whole dinner in a box is not the ingredient you asked for.
+            if (!wantsMeal && KIT_WORD.test(candidate.title)) continue;
+            // Meat or fish only for a recipe that has meat or fish, and only on
+            // the line that asks for it: garlic never buys a steak skewer.
+            if (MEAT_FISH.test(candidate.title) && !(wantsMeatFish && thisIsMeatFish)) continue;
             const words = titleWordCount.get(candidate.product_id) ?? 9;
             // The word has to name the product, not describe what it goes with.
             if (!tailWords.get(candidate.product_id)?.has(word)) continue;
