@@ -131,7 +131,7 @@ const ShareListSheet = ({ open, onOpenChange }: ShareListSheetProps) => {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="mx-auto flex max-h-[90dvh] max-w-lg flex-col gap-0 rounded-t-[20px] p-0 shadow-sheet">
+      <SheetContent side="bottom" className="mx-auto flex max-h-[90vh] [@supports(height:100dvh)]:max-h-[90dvh] max-w-lg flex-col gap-0 rounded-t-[20px] p-0 shadow-sheet">
         <SheetHeader className="px-5 pb-3 pt-5 pr-14 text-left">
           <SheetTitle className="font-display text-xl">Deel je lijst</SheetTitle>
           <SheetDescription>Wie de link opent, kijkt en vinkt mee op je lijst.</SheetDescription>

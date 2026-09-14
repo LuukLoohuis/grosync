@@ -230,7 +230,7 @@ const TodayScreen = ({ onNavigate }: { onNavigate: (tab: TodayTarget) => void })
       <AddToListSheet recipe={addRecipe} onClose={() => setAddRecipe(null)} onNavigate={() => onNavigate('list')} />
 
       <Sheet open={pickerOpen} onOpenChange={setPickerOpen}>
-        <SheetContent side="bottom" className="mx-auto flex max-h-[85dvh] max-w-lg flex-col gap-0 rounded-t-[20px] p-0 shadow-sheet">
+        <SheetContent side="bottom" className="mx-auto flex max-h-[85vh] [@supports(height:100dvh)]:max-h-[85dvh] max-w-lg flex-col gap-0 rounded-t-[20px] p-0 shadow-sheet">
           <SheetHeader className="px-5 pb-3 pr-14 pt-5 text-left">
             <SheetTitle className="font-display text-xl">Wat eten we vanavond?</SheetTitle>
             <SheetDescription>Kies een recept uit je eigen lijst.</SheetDescription>

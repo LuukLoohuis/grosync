@@ -37,7 +37,7 @@ const RecipeDetailSheet = ({ recipe, onClose, onAddToList, onEdit, onMacros, onC
 
   return (
     <Sheet open={open} onOpenChange={(next) => { if (!next) onClose(); }}>
-      <SheetContent side="bottom" className="mx-auto flex max-h-[92dvh] max-w-lg flex-col gap-0 rounded-t-[20px] p-0">
+      <SheetContent side="bottom" className="mx-auto flex max-h-[92vh] [@supports(height:100dvh)]:max-h-[92dvh] max-w-lg flex-col gap-0 rounded-t-[20px] p-0">
         {shown?.imageUrl && (
           <div className="aspect-[16/9] w-full shrink-0 overflow-hidden rounded-t-[20px] bg-muted">
             <img src={shown.imageUrl} alt="" className="h-full w-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
@@ -49,7 +49,7 @@ const RecipeDetailSheet = ({ recipe, onClose, onAddToList, onEdit, onMacros, onC
           {shown?.description && <SheetDescription>{shown.description}</SheetDescription>}
         </SheetHeader>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-4">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-4">
           <div className="flex flex-wrap items-center gap-1.5">
             {(shown?.categories ?? []).map((label) => {
               const category = findCategory(recipeCategories, label);
@@ -126,7 +126,7 @@ const RecipeDetailSheet = ({ recipe, onClose, onAddToList, onEdit, onMacros, onC
           </div>
         </div>
 
-        <div className="shrink-0 border-t border-border p-4">
+        <div className="shrink-0 border-t border-border p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           <Button className="min-h-12 w-full gap-2" onClick={() => act(onAddToList)}>
             <ShoppingCart className="h-4 w-4" /> Zet op je lijst
           </Button>

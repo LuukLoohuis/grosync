@@ -41,7 +41,7 @@ const RecipeCategorySheet = ({ recipe, open, onClose }: RecipeCategorySheetProps
 
   return (
     <Sheet open={open} onOpenChange={(next) => { if (!next) onClose(); }}>
-      <SheetContent side="bottom" className="mx-auto max-h-[85dvh] max-w-lg overflow-y-auto rounded-t-[20px]">
+      <SheetContent side="bottom" className="mx-auto max-h-[85vh] [@supports(height:100dvh)]:max-h-[85dvh] max-w-lg overflow-y-auto rounded-t-[20px]">
         <SheetHeader className="pr-10 text-left">
           <SheetTitle className="font-display text-xl">
             {managing ? 'Je categorieën' : 'Waar hoort dit bij?'}

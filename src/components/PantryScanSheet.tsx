@@ -56,7 +56,7 @@ const PantryScanSheet = ({ hits, onClose, onConfirm, onAnotherPhoto, scanning }:
 
   return (
     <Sheet open={Boolean(hits)} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <SheetContent side="bottom" className="mx-auto flex max-h-[85dvh] max-w-lg flex-col rounded-t-[20px]">
+      <SheetContent side="bottom" className="mx-auto flex max-h-[85vh] [@supports(height:100dvh)]:max-h-[85dvh] max-w-lg flex-col rounded-t-[20px]">
         <SheetHeader className="pr-10 text-left">
           <SheetTitle className="font-display text-xl">Dit zag ik staan</SheetTitle>
           <SheetDescription>
