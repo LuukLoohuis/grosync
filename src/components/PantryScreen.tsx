@@ -313,6 +313,7 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
         onConfirm={keep}
         onAnotherPhoto={() => fileInput.current?.click()}
         scanning={scanning}
+        known={pantry.map((item) => item.name)}
       />
       <PantryItemSheet item={herb} onClose={() => setHerbId(null)} onAddToList={toList} />
       <PlusSheet feature={overLimit ? 'kastfoto' : null} onClose={() => setOverLimit(false)} />

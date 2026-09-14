@@ -13,6 +13,25 @@ async function isSignedIn(req: Request): Promise<boolean> {
   return response.ok;
 }
 
+// Tekstmodel: standaard OpenAI, maar zet DEEPSEEK_API_KEY en alles wat tekst is
+// loopt via DeepSeek (dezelfde API-vorm, een stuk goedkoper). Beelden kan DeepSeek
+// niet lezen; die blijven bij OpenAI of Gemini.
+const textApi = () => {
+  const deepseek = Deno.env.get('DEEPSEEK_API_KEY') ?? '';
+  if (deepseek) {
+    return {
+      key: deepseek,
+      endpoint: (Deno.env.get('TEXT_API_BASE') || 'https://api.deepseek.com/v1') + '/chat/completions',
+      model: Deno.env.get('TEXT_MODEL') || 'deepseek-chat',
+    };
+  }
+  return {
+    key: Deno.env.get('OPENAI_API_KEY') ?? '',
+    endpoint: (Deno.env.get('TEXT_API_BASE') || 'https://api.openai.com/v1') + '/chat/completions',
+    model: Deno.env.get('TEXT_MODEL') || 'gpt-4o-mini',
+  };
+};
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -34,21 +53,21 @@ Deno.serve(async (req) => {
       });
     }
 
-    const apiKey = Deno.env.get('OPENAI_API_KEY');
-    if (!apiKey) {
+    const ai = textApi();
+    if (!ai.key) {
       return new Response(JSON.stringify({ error: 'API key not configured' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const endpoint = 'https://api.openai.com/v1/chat/completions';
-    const model = 'gpt-4o-mini';
+    const endpoint = ai.endpoint;
+    const model = ai.model;
 
     const response = await fetch(endpoint, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        'Authorization': `Bearer ${ai.key}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({

@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import AddToListSheet from '@/components/AddToListSheet';
 import EmptyState from '@/components/EmptyState';
 import RecipeViewDialog from '@/components/RecipeViewDialog';
+import BonusOfferCard from '@/components/BonusOfferCard';
 import { useAppContext } from '@/contexts/AppContext';
 import { normalizeSteps, splitSteps } from '@/lib/recipeSteps';
 import { fetchBonusMatches, fetchBonusRecipes, type BonusRecipe, type BonusResult } from '@/services/bonusApi';
@@ -17,12 +18,15 @@ const untilLabel = (endDate: string | null) => {
   if (!endDate) return null;
   const date = new Date(endDate);
   if (Number.isNaN(date.getTime())) return null;
-  return `Geldig t/m ${date.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' })}`;
+  const dagen = Math.ceil((date.getTime() - Date.now()) / 86_400_000);
+  const tot = `t/m ${date.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' })}`;
+  if (dagen <= 0) return tot;
+  return `${tot} · nog ${dagen === 1 ? '1 dag' : `${dagen} dagen`}`;
 };
 
 /** Bonuschef: which of your own recipes are in the bonus at Albert Heijn this week. */
 const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => void }) => {
-  const { recipes, addRecipe, pantryStaples } = useAppContext();
+  const { recipes, addRecipe, pantryStaples, addGroceryItem } = useAppContext();
   const [result, setResult] = useState<BonusResult | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [listRecipe, setListRecipe] = useState<Recipe | null>(null);
@@ -74,17 +78,25 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
     toast.success(`"${idea.name}" staat bij je recepten`);
   };
 
-  const matches = result?.matches ?? [];
+  // Het meeste voordeel bovenaan; daarna wat het meest compleet in de bonus ligt.
+  const matches = [...(result?.matches ?? [])].sort((a, b) =>
+    b.saving - a.saving || b.hits.length / b.ingredientCount - a.hits.length / a.ingredientCount);
   const until = untilLabel(result?.endDate ?? null);
 
   return (
     <div className="space-y-4">
       <header className="space-y-1">
-        <h1 className="font-display text-2xl font-bold tracking-[-0.02em] text-foreground">Bonuschef</h1>
+        <div className="flex items-baseline gap-2">
+          <h1 className="flex-1 font-display text-2xl font-bold tracking-[-0.02em] text-foreground">Bonuschef</h1>
+          {until && (
+            <span className="shrink-0 rounded-full bg-[hsl(var(--ah-bonus))]/12 px-2 py-0.5 font-display text-[0.6875rem] font-bold text-accent-ink">
+              {until}
+            </span>
+          )}
+        </div>
         <p className="text-sm text-muted-foreground">
           Welke van jouw recepten deze week goedkoper zijn bij Albert Heijn.
           {result && result.bonusCount > 0 && ` ${result.bonusCount} aanbiedingen bekeken.`}
-          {until && ` ${until}.`}
         </p>
       </header>
 
@@ -179,50 +191,89 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
       {matches.map((match) => {
         const recipe = recipes.find((r) => r.id === match.recipeId);
         if (!recipe) return null;
+        const deel = Math.round((match.hits.length / Math.max(1, match.ingredientCount)) * 100);
         return (
-          <article key={match.recipeId} className="space-y-3 rounded-[14px] border border-border bg-card p-3.5">
-            <div className="flex items-start gap-3">
+          <article key={match.recipeId} className="overflow-hidden rounded-[14px] border border-border bg-card">
+            <div className="flex items-start gap-3 p-3.5 pb-3">
               {recipe.imageUrl ? (
-                <img src={recipe.imageUrl} alt="" loading="lazy" className="h-12 w-12 shrink-0 rounded-[10px] object-cover" />
+                <img src={recipe.imageUrl} alt="" loading="lazy" className="h-14 w-14 shrink-0 rounded-[10px] object-cover" />
               ) : (
-                <span aria-hidden="true" className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[10px] bg-primary-soft text-primary">
-                  <ChefHat className="h-5 w-5" strokeWidth={1.8} />
+                <span aria-hidden="true" className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[10px] bg-primary-soft text-primary">
+                  <ChefHat className="h-6 w-6" strokeWidth={1.8} />
                 </span>
               )}
               <div className="min-w-0 flex-1">
                 <h2 className="font-display text-[1.0625rem] font-semibold leading-tight text-foreground">{match.name}</h2>
-                <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
+                <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
                   {match.hits.length} van {match.ingredientCount} ingrediënten in de bonus
-                  {match.saving > 0 && ` · ± ${euro.format(match.saving)} voordeel`}
                 </p>
+                {/* Hoeveel van het recept deze week in de aanbieding ligt. */}
+                <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-muted" role="presentation">
+                  <div className="h-full rounded-full bg-[hsl(var(--ah-bonus))]" style={{ width: `${deel}%` }} />
+                </div>
               </div>
+              {match.saving > 0 && (
+                <div className="shrink-0 text-right">
+                  <p className="font-display text-lg font-bold leading-none tabular-nums text-accent-ink">
+                    {euro.format(match.saving)}
+                  </p>
+                  <p className="text-[0.625rem] text-muted-foreground">voordeel</p>
+                </div>
+              )}
             </div>
 
-            <ul className="space-y-1.5">
+            {/* De aanbiedingen zelf, zoals ze in de winkel liggen. */}
+            <div className="-mx-0 flex gap-2 overflow-x-auto px-3.5 pb-3">
               {match.hits.map((hit) => (
-                <li key={hit.productId} className="flex items-center gap-2 text-xs">
-                  <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-ah-bonus/15 px-1.5 py-0.5 font-semibold text-accent-ink">
-                    <Tag className="h-3 w-3" aria-hidden="true" /> Bonus
-                  </span>
-                  <span className="min-w-0 flex-1 truncate text-foreground">{hit.title}</span>
-                  <span className="shrink-0 text-muted-foreground">
-                    {hit.mechanism ?? (hit.price != null ? euro.format(hit.price) : '')}
-                  </span>
-                </li>
+                <BonusOfferCard
+                  key={hit.productId}
+                  title={hit.title}
+                  mechanism={hit.mechanism}
+                  price={hit.price}
+                  priceBefore={hit.priceBefore}
+                  imageUrl={hit.imageUrl}
+                  unitSize={hit.unitSize}
+                  because={hit.ingredient}
+                />
               ))}
-            </ul>
+            </div>
 
-            <div className="flex gap-2">
-              <Button className="flex-1" onClick={() => setListRecipe(recipe)}>Zet op je lijst</Button>
+            <div className="flex gap-2 border-t border-border p-3.5">
+              <Button className="min-h-11 flex-1" onClick={() => setListRecipe(recipe)}>Zet op je lijst</Button>
               <RecipeViewDialog
                 recipe={recipe}
                 onAddToList={() => setListRecipe(recipe)}
-                trigger={<Button variant="outline" className="px-3.5">Bekijken</Button>}
+                trigger={<Button variant="outline" className="min-h-11 px-3.5">Bekijken</Button>}
               />
             </div>
           </article>
         );
       })}
+
+      {status === 'ready' && (result?.sample?.length ?? 0) > 0 && (
+        <section className="space-y-2">
+          <div className="flex items-baseline gap-2">
+            <h2 className="flex-1 font-display text-[1.0625rem] font-semibold text-foreground">Deze week in de bonus</h2>
+            <span className="text-xs text-muted-foreground">tik om op je lijst te zetten</span>
+          </div>
+          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
+            {(result?.sample ?? []).slice(0, 20).map((offer) => (
+              <BonusOfferCard
+                key={offer.title}
+                title={offer.title}
+                mechanism={offer.mechanism}
+                price={offer.price}
+                priceBefore={offer.price_before}
+                imageUrl={offer.image_url}
+                onAdd={() => {
+                  addGroceryItem(offer.title);
+                  toast.success(`"${offer.title}" op je lijst gezet`);
+                }}
+              />
+            ))}
+          </div>
+        </section>
+      )}
 
       {status === 'ready' && matches.length > 0 && (
         <p className="flex items-center gap-2 text-xs text-muted-foreground">

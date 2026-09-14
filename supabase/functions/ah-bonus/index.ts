@@ -172,6 +172,7 @@ function sampleOffers(bonus: BonusRow[]) {
     price: row.price,
     price_before: row.price_before,
     mechanism: row.mechanism,
+    image_url: row.image_url,
   }));
 }
 
@@ -255,8 +256,14 @@ Deno.serve(async (req) => {
             // The word has to name the product, not describe what it goes with.
             if (!tailWords.get(candidate.product_id)?.has(word)) continue;
             // The plainest product wins: "AH Pasta" over "AH Pasta geraspte kaas".
+            // Between equals, the biggest discount wins: "1 + 1 gratis" beats "2% volume voordeel".
             const bestWords = best ? titleWordCount.get(best.product_id) ?? 9 : 99;
-            if (!best || words < bestWords || (words === bestWords && (candidate.price ?? 99) < (best.price ?? 99))) best = candidate;
+            const cut = (row: BonusRow) => {
+              const { price, price_before } = row;
+              if (price == null || price_before == null || price_before <= 0) return 0;
+              return Math.max(0, (price_before - price) / price_before);
+            };
+            if (!best || words < bestWords || (words === bestWords && cut(candidate) > cut(best))) best = candidate;
           }
         }
         if (best) {
@@ -279,6 +286,8 @@ Deno.serve(async (req) => {
           price: hit.product.price,
           priceBefore: hit.product.price_before,
           productId: hit.product.product_id,
+          imageUrl: hit.product.image_url,
+          unitSize: hit.product.unit_size,
         })),
         saving: Math.round(saving * 100) / 100,
       };

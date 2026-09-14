@@ -3,16 +3,36 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Tekstmodel: standaard OpenAI, maar zet DEEPSEEK_API_KEY en alles wat tekst is
+// loopt via DeepSeek (dezelfde API-vorm, een stuk goedkoper). Beelden kan DeepSeek
+// niet lezen; die blijven bij OpenAI of Gemini.
+const textApi = () => {
+  const deepseek = Deno.env.get('DEEPSEEK_API_KEY') ?? '';
+  if (deepseek) {
+    return {
+      key: deepseek,
+      endpoint: (Deno.env.get('TEXT_API_BASE') || 'https://api.deepseek.com/v1') + '/chat/completions',
+      model: Deno.env.get('TEXT_MODEL') || 'deepseek-chat',
+    };
+  }
+  return {
+    key: Deno.env.get('OPENAI_API_KEY') ?? '',
+    endpoint: (Deno.env.get('TEXT_API_BASE') || 'https://api.openai.com/v1') + '/chat/completions',
+    model: Deno.env.get('TEXT_MODEL') || 'gpt-4o-mini',
+  };
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const { name, description, ingredients, instructions } = await req.json();
-    const apiKey = Deno.env.get("OPENAI_API_KEY");
+    const ai = textApi();
+    const apiKey = ai.key;
     if (!apiKey) throw new Error("API key is not configured");
 
-    const endpoint = "https://api.openai.com/v1/chat/completions";
-    const model = "gpt-4o-mini";
+    const endpoint = ai.endpoint;
+    const model = ai.model;
 
     const prompt = `Vertaal het volgende recept naar het Nederlands. Geef het resultaat terug als JSON met exact deze velden: name, description, ingredients (array van strings), instructions (string).
 

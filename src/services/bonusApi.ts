@@ -8,6 +8,8 @@ export interface BonusHit {
   price: number | null;
   priceBefore: number | null;
   productId: number;
+  imageUrl: string | null;
+  unitSize: string | null;
 }
 
 export interface BonusMatch {
@@ -24,6 +26,7 @@ export interface BonusOffer {
   price: number | null;
   price_before: number | null;
   mechanism: string | null;
+  image_url?: string | null;
 }
 
 export interface BonusResult {

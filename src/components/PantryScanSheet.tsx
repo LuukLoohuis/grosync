@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Camera, Plus } from 'lucide-react';
+import { Camera, Pencil, Plus } from 'lucide-react';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -13,13 +13,16 @@ interface PantryScanSheetProps {
   /** Opens the camera again; what it finds is added to this list. */
   onAnotherPhoto: () => void;
   scanning: boolean;
+  /** What is already in the cupboard, so a second scan says so instead of adding twice. */
+  known: string[];
 }
 
 /** Nothing is stored before you have seen it: the photo proposes, you decide. */
-const PantryScanSheet = ({ hits, onClose, onConfirm, onAnotherPhoto, scanning }: PantryScanSheetProps) => {
+const PantryScanSheet = ({ hits, onClose, onConfirm, onAnotherPhoto, scanning, known }: PantryScanSheetProps) => {
   const [chosen, setChosen] = useState<Set<string>>(new Set());
   const [shown, setShown] = useState<ScanHit[]>([]);
   const [extra, setExtra] = useState('');
+  const [editing, setEditing] = useState<{ was: string; name: string } | null>(null);
 
   useEffect(() => {
     if (!hits) return;
@@ -44,6 +47,18 @@ const PantryScanSheet = ({ hits, onClose, onConfirm, onAnotherPhoto, scanning }:
     // What the camera missed, you type in here instead of afterwards.
     setShown((prev) => (prev.some((hit) => hit.name === clean) ? prev : [...prev, { name: clean, sure: 1 }]));
     setChosen((prev) => new Set([...prev, clean]));
+  };
+
+  const rename = (was: string, typed: string) => {
+    const clean = typed.trim().toLowerCase();
+    setEditing(null);
+    if (!clean || clean === was) return;
+    setShown((prev) => prev.map((hit) => (hit.name === was ? { ...hit, name: clean } : hit)));
+    setChosen((prev) => {
+      const next = new Set(prev);
+      if (next.delete(was)) next.add(clean);
+      return next;
+    });
   };
 
   const toggle = (name: string) => {
@@ -75,13 +90,39 @@ const PantryScanSheet = ({ hits, onClose, onConfirm, onAnotherPhoto, scanning }:
           <ul className="space-y-1">
             {shown.map((hit) => {
               const on = chosen.has(hit.name);
+              const alReeds = known.some((name) => name.trim().toLowerCase() === hit.name);
+              if (editing?.was === hit.name) {
+                return (
+                  <li key={hit.name} className="flex min-h-12 items-center gap-2 px-2">
+                    <Input
+                      autoFocus
+                      value={editing.name}
+                      maxLength={40}
+                      aria-label={`Naam van ${hit.name}`}
+                      onChange={(e) => setEditing({ was: hit.name, name: e.target.value })}
+                      onBlur={() => rename(hit.name, editing.name)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                    />
+                  </li>
+                );
+              }
               return (
-                <li key={hit.name}>
-                  <label className="flex min-h-12 cursor-pointer items-center gap-3 rounded-[12px] px-2 hover:bg-muted/60">
+                <li key={hit.name} className="flex items-center gap-1">
+                  <label className="flex min-h-12 flex-1 cursor-pointer items-center gap-3 rounded-[12px] px-2 hover:bg-muted/60">
                     <Checkbox checked={on} onCheckedChange={() => toggle(hit.name)} aria-label={hit.name} />
                     <span className="flex-1 text-[0.9375rem] text-foreground first-letter:uppercase">{hit.name}</span>
-                    {hit.sure < 0.6 && <span className="text-xs text-muted-foreground">twijfel</span>}
+                    {alReeds && <span className="text-xs text-muted-foreground">staat er al</span>}
+                    {!alReeds && hit.sure < 0.6 && <span className="text-xs text-muted-foreground">twijfel</span>}
                   </label>
+                  {/* Verkeerd gelezen? Verbeter het hier, niet straks in de kast. */}
+                  <button
+                    type="button"
+                    onClick={() => setEditing({ was: hit.name, name: hit.name })}
+                    aria-label={`${hit.name} aanpassen`}
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
                 </li>
               );
             })}

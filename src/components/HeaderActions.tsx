@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Share2, Heart, LogOut, MoreVertical, Gauge } from 'lucide-react';
+import { Share2, Heart, LogOut, MoreVertical, Gauge, PieChart } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppContext } from '@/contexts/AppContext';
 import ShareListSheet from '@/components/ShareListSheet';
+import UsageSheet from '@/components/UsageSheet';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup,
   DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -21,6 +22,7 @@ const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
   const { isAdmin } = useAppContext();
   const { theme, setTheme } = useTheme();
   const [shareOpen, setShareOpen] = useState(false);
+  const [usageOpen, setUsageOpen] = useState(false);
 
   const iconButton = `h-11 w-11 shrink-0 flex items-center justify-center rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 ${
     onDark
@@ -49,6 +51,9 @@ const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
             ))}
           </DropdownMenuRadioGroup>
           <DropdownMenuSeparator />
+          <DropdownMenuItem className="gap-2 min-h-11 cursor-pointer" onSelect={() => setUsageOpen(true)}>
+            <PieChart className="h-4 w-4" /> Je tegoed
+          </DropdownMenuItem>
           {isAdmin && (
             <DropdownMenuItem asChild className="gap-2 min-h-11 cursor-pointer">
               <a href="#/admin"><Gauge className="h-4 w-4" /> Beheer</a>
@@ -65,6 +70,7 @@ const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
         <LogOut className="h-5 w-5" strokeWidth={1.9} />
       </button>
       <ShareListSheet open={shareOpen} onOpenChange={setShareOpen} />
+      <UsageSheet open={usageOpen} onOpenChange={setUsageOpen} />
     </div>
   );
 };

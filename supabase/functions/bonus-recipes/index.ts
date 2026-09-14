@@ -8,6 +8,25 @@ const MAX_OFFERS = 70;
 const NON_FOOD_CATEGORY = /huishouden|drogisterij|baby|huisdier|koken|tafelen|vrije tijd|bloem, plant/i;
 const TREAT_CATEGORY = /borrel|chips|snack|snoep|chocolade|koek|tussendoortje|bier|wijn|aperitie|frisdrank|koffie|thee/i;
 
+// Tekstmodel: standaard OpenAI, maar zet DEEPSEEK_API_KEY en alles wat tekst is
+// loopt via DeepSeek (dezelfde API-vorm, een stuk goedkoper). Beelden kan DeepSeek
+// niet lezen; die blijven bij OpenAI of Gemini.
+const textApi = () => {
+  const deepseek = Deno.env.get('DEEPSEEK_API_KEY') ?? '';
+  if (deepseek) {
+    return {
+      key: deepseek,
+      endpoint: (Deno.env.get('TEXT_API_BASE') || 'https://api.deepseek.com/v1') + '/chat/completions',
+      model: Deno.env.get('TEXT_MODEL') || 'deepseek-chat',
+    };
+  }
+  return {
+    key: Deno.env.get('OPENAI_API_KEY') ?? '',
+    endpoint: (Deno.env.get('TEXT_API_BASE') || 'https://api.openai.com/v1') + '/chat/completions',
+    model: Deno.env.get('TEXT_MODEL') || 'gpt-4o-mini',
+  };
+};
+
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
@@ -71,8 +90,8 @@ Deno.serve(async (req) => {
   try {
     if (!(await isSignedIn(req))) return json({ error: 'Sign in required' }, 401);
 
-    const apiKey = env('OPENAI_API_KEY');
-    if (!apiKey) return json({ error: 'OPENAI_API_KEY not set' }, 500);
+    const ai = textApi();
+    if (!ai.key) return json({ error: 'Geen sleutel voor het taalmodel ingesteld' }, 500);
 
     const body = await req.json().catch(() => ({}));
     const staples: string[] = Array.isArray(body?.staples) ? body.staples.slice(0, 20) : [];
@@ -90,11 +109,11 @@ Deno.serve(async (req) => {
       return `${offer.title} (${offer.category}${price ? `, ${price}` : ''}${offer.mechanism && offer.price != null ? `, ${offer.mechanism}` : ''})`;
     });
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(ai.endpoint, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      headers: { Authorization: `Bearer ${ai.key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: ai.model,
         response_format: { type: 'json_object' },
         temperature: 0.6,
         messages: [

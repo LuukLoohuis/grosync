@@ -43,6 +43,25 @@ async function consumeAi(userId: string, feature: string, limit: number): Promis
 /** Free gets five a month of the two that cost real money; Plus gets everything. */
 const FREE_LIMIT = 5;
 
+// Tekstmodel: standaard OpenAI, maar zet DEEPSEEK_API_KEY en alles wat tekst is
+// loopt via DeepSeek (dezelfde API-vorm, een stuk goedkoper). Beelden en video
+// kan DeepSeek niet lezen; die blijven bij OpenAI of Gemini.
+const textApi = () => {
+  const deepseek = Deno.env.get('DEEPSEEK_API_KEY') ?? '';
+  if (deepseek) {
+    return {
+      key: deepseek,
+      endpoint: (Deno.env.get('TEXT_API_BASE') || 'https://api.deepseek.com/v1') + '/chat/completions',
+      model: Deno.env.get('TEXT_MODEL') || 'deepseek-chat',
+    };
+  }
+  return {
+    key: Deno.env.get('OPENAI_API_KEY') ?? '',
+    endpoint: (Deno.env.get('TEXT_API_BASE') || 'https://api.openai.com/v1') + '/chat/completions',
+    model: Deno.env.get('TEXT_MODEL') || 'gpt-4o-mini',
+  };
+};
+
 const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
 // Supabase stops a request after 150s; keep a margin for building the response.
@@ -115,15 +134,15 @@ function toRecipeData(parsed: any): RecipeData {
 }
 
 async function extractRecipeFromText(text: string): Promise<RecipeData> {
-  const apiKey = Deno.env.get('OPENAI_API_KEY');
-  if (!apiKey || !text.trim()) return emptyRecipe();
+  const ai = textApi();
+  if (!ai.key || !text.trim()) return emptyRecipe();
 
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(ai.endpoint, {
       method: 'POST',
-      headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      headers: { 'Authorization': `Bearer ${ai.key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: ai.model,
         messages: [
           { role: 'system', content: `You extract recipe data from web page text. Only list ingredients that are written in the text itself; never reconstruct a recipe from a title, hashtags or general knowledge. ${RECIPE_RULES}` },
           { role: 'user', content: `Extract the recipe from this page content:\n\n${text.substring(0, 20000)}` },
