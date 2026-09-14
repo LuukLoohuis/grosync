@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Share2, Heart, LogOut, MoreVertical, Gauge, PieChart } from 'lucide-react';
+import { Share2, Heart, LogOut, MoreVertical, Gauge, PieChart, LifeBuoy } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppContext } from '@/contexts/AppContext';
@@ -59,6 +59,11 @@ const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
               <a href="#/admin"><Gauge className="h-4 w-4" /> Beheer</a>
             </DropdownMenuItem>
           )}
+          <DropdownMenuItem asChild className="gap-2 min-h-11 cursor-pointer">
+            <a href="mailto:couplecart@gmail.com?subject=Hulp%20bij%20CoupleCart">
+              <LifeBuoy className="h-4 w-4" /> Hulp nodig?
+            </a>
+          </DropdownMenuItem>
           <DropdownMenuItem asChild className="gap-2 min-h-11 cursor-pointer">
             <a href="https://www.buymeacoffee.com/luukloohuis" target="_blank" rel="noopener noreferrer">
               <Heart className="h-4 w-4" /> Steun CoupleCart

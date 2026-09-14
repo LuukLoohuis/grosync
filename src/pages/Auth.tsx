@@ -169,6 +169,13 @@ const handleGoogleLogin = async () => {
         >
           {loading ? 'Even geduld…' : 'Doorgaan zonder account'}
         </button>
+
+        <p className="mt-6 text-center text-xs text-muted-foreground">
+          Hulp nodig?{' '}
+          <a className="font-medium text-primary hover:underline" href="mailto:couplecart@gmail.com?subject=Hulp%20bij%20CoupleCart">
+            couplecart@gmail.com
+          </a>
+        </p>
       </div>
     </div>
   );

@@ -51,7 +51,14 @@ const PlusSheet = ({ feature, onClose }: PlusSheetProps) => (
         </p>
       </div>
 
-      <Button className="mt-5 min-h-12 w-full" onClick={onClose}>Begrepen</Button>
+      <p className="mt-4 text-center text-xs text-muted-foreground">
+        Hulp nodig?{' '}
+        <a className="font-medium text-primary hover:underline" href="mailto:couplecart@gmail.com?subject=Hulp%20bij%20CoupleCart">
+          couplecart@gmail.com
+        </a>
+      </p>
+
+      <Button className="mt-3 min-h-12 w-full" onClick={onClose}>Begrepen</Button>
     </SheetContent>
   </Sheet>
 );
