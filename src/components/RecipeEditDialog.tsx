@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { useAppContext } from '@/contexts/AppContext';
 import { supabase } from '@/integrations/supabase/client';
 import { Recipe } from '@/types';
+import { normalizeSteps } from '@/lib/recipeSteps';
 import CategoryPicker from '@/components/CategoryPicker';
 
 interface RecipeEditDialogProps {
@@ -36,7 +37,8 @@ const RecipeEditDialog = ({ recipe, open: openProp, onOpenChange }: RecipeEditDi
       setName(recipe.name);
       setDescription(recipe.description);
       setIngredientText(recipe.ingredients.join('\n'));
-      setInstructions(recipe.instructions || '');
+      // Oude recepten staan als één lap tekst opgeslagen; zo zie je de stappen.
+      setInstructions(normalizeSteps(recipe.instructions));
       setSourceUrl(recipe.sourceUrl || '');
       setServings(recipe.servings || 4);
       setCategories(recipe.categories ?? []);
@@ -52,7 +54,7 @@ const RecipeEditDialog = ({ recipe, open: openProp, onOpenChange }: RecipeEditDi
       name: name.trim(),
       description: description.trim(),
       ingredients: ingredientText.split('\n').map((l) => l.trim()).filter(Boolean),
-      instructions: instructions.trim() || undefined,
+      instructions: normalizeSteps(instructions) || undefined,
       sourceUrl: trimmedUrl,
       servings: servings,
       categories,

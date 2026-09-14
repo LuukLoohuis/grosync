@@ -7,6 +7,7 @@ import AddToListSheet from '@/components/AddToListSheet';
 import EmptyState from '@/components/EmptyState';
 import RecipeViewDialog from '@/components/RecipeViewDialog';
 import { useAppContext } from '@/contexts/AppContext';
+import { normalizeSteps, splitSteps } from '@/lib/recipeSteps';
 import { fetchBonusMatches, fetchBonusRecipes, type BonusRecipe, type BonusResult } from '@/services/bonusApi';
 import type { Recipe } from '@/types';
 
@@ -66,7 +67,7 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
       name: idea.name,
       description: idea.description,
       ingredients: idea.ingredients,
-      instructions: idea.instructions,
+      instructions: normalizeSteps(idea.instructions),
       servings: idea.servings,
     });
     setSaved((previous) => [...previous, idea.name]);
@@ -128,7 +129,14 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
                 <ul className="mt-1.5 space-y-0.5">
                   {idea.ingredients.map((ingredient) => <li key={ingredient}>• {ingredient}</li>)}
                 </ul>
-                <p className="mt-2 whitespace-pre-line">{idea.instructions}</p>
+                <ol className="mt-2 space-y-1.5">
+                  {splitSteps(idea.instructions).map((step, index) => (
+                    <li key={index} className="flex gap-2">
+                      <span className="font-semibold tabular-nums text-primary">{index + 1}.</span>
+                      <span>{step}</span>
+                    </li>
+                  ))}
+                </ol>
               </details>
             </article>
           ))}

@@ -3,6 +3,7 @@ import { Lightbulb, Loader2, Plus, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useAppContext } from '@/contexts/AppContext';
+import { normalizeSteps, splitSteps } from '@/lib/recipeSteps';
 import { suggestRecipes, RecipeSuggestion } from '@/services/recipeApi';
 import { toast } from 'sonner';
 
@@ -43,7 +44,7 @@ const RecipeSuggestDialog = () => {
       name: suggestion.name,
       description: suggestion.description,
       ingredients: suggestion.ingredients,
-      instructions: suggestion.instructions,
+      instructions: normalizeSteps(suggestion.instructions),
       servings: suggestion.servings,
     });
     toast.success(`"${suggestion.name}" toegevoegd aan je recepten!`);
@@ -106,7 +107,14 @@ const RecipeSuggestDialog = () => {
                       <li key={i} className="text-xs text-foreground/80">• {ing}</li>
                     ))}
                   </ul>
-                  <p className="text-xs text-foreground/80 whitespace-pre-line">{recipe.instructions}</p>
+                  <ol className="space-y-1.5 text-xs text-foreground/80">
+                    {splitSteps(recipe.instructions).map((step, index) => (
+                      <li key={index} className="flex gap-2">
+                        <span className="font-semibold tabular-nums text-primary">{index + 1}.</span>
+                        <span>{step}</span>
+                      </li>
+                    ))}
+                  </ol>
                 </details>
               </div>
             ))}

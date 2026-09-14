@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { Recipe } from '@/types';
 import EstimateBadge from '@/components/EstimateBadge';
 import { isEstimated, withoutEstimate } from '@/lib/recipeImport';
+import { splitSteps } from '@/lib/recipeSteps';
 
 interface RecipeViewDialogProps {
   recipe: Recipe;
@@ -91,9 +92,16 @@ const RecipeViewDialog = ({ recipe, onAddToList, trigger }: RecipeViewDialogProp
                 <Separator />
                 <div>
                   <h3 className="font-display text-lg mb-3">Bereiding</h3>
-                  <div className="text-foreground/90 whitespace-pre-line leading-relaxed">
-                    {recipe.instructions}
-                  </div>
+                  <ol className="space-y-3">
+                    {splitSteps(recipe.instructions).map((step, index) => (
+                      <li key={index} className="flex gap-3">
+                        <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-soft font-display text-xs font-bold tabular-nums text-primary" aria-hidden="true">
+                          {index + 1}
+                        </span>
+                        <span className="leading-relaxed text-foreground/90">{step}</span>
+                      </li>
+                    ))}
+                  </ol>
                 </div>
               </>
             )}

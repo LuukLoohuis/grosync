@@ -6,6 +6,7 @@ import CategoryChip from '@/components/CategoryChip';
 import EstimateBadge from '@/components/EstimateBadge';
 import { useAppContext } from '@/contexts/AppContext';
 import { findCategory } from '@/lib/recipeCategories';
+import { splitSteps } from '@/lib/recipeSteps';
 import { isEstimated, withoutEstimate } from '@/lib/recipeImport';
 import type { Recipe } from '@/types';
 
@@ -26,6 +27,7 @@ const RecipeDetailSheet = ({ recipe, onClose, onAddToList, onEdit, onMacros, onC
   if (recipe && recipe !== shown) setShown(recipe);
   const open = Boolean(recipe);
   const servings = shown?.servings || 4;
+  const steps = splitSteps(shown?.instructions);
 
   const act = (run: (recipe: Recipe) => void) => {
     if (!shown) return;
@@ -77,10 +79,22 @@ const RecipeDetailSheet = ({ recipe, onClose, onAddToList, onEdit, onMacros, onC
             ))}
           </ul>
 
-          {shown?.instructions && (
+          {steps.length > 0 && (
             <>
               <h3 className="mt-5 font-display text-[0.9375rem] font-bold text-foreground">Bereiding</h3>
-              <p className="mt-2 whitespace-pre-line text-[0.9375rem] leading-relaxed text-foreground/90">{shown.instructions}</p>
+              <ol className="mt-2 space-y-3">
+                {steps.map((step, index) => (
+                  <li key={index} className="flex gap-3">
+                    <span
+                      className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary-soft font-display text-xs font-bold tabular-nums text-primary"
+                      aria-hidden="true"
+                    >
+                      {index + 1}
+                    </span>
+                    <span className="text-[0.9375rem] leading-relaxed text-foreground/90">{step}</span>
+                  </li>
+                ))}
+              </ol>
             </>
           )}
 

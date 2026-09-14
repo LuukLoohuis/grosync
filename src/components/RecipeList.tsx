@@ -10,6 +10,7 @@ import RecipeEditDialog from '@/components/RecipeEditDialog';
 import MacrosDialog from '@/components/MacrosDialog';
 import { fetchRecipeFromUrl, fetchRecipeFromText, translateRecipe, calculateMacros, type FetchedRecipe } from '@/services/recipeApi';
 import { QuotaError } from '@/services/functions';
+import { normalizeSteps } from '@/lib/recipeSteps';
 import PlusSheet from '@/components/PlusSheet';
 import { FREE_LIMIT } from '@/hooks/useEntitlements';
 import RecipeSuggestDialog from '@/components/RecipeSuggestDialog';
@@ -83,7 +84,7 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
           .join('\n')
       );
     }
-    if (data?.instructions) setInstructions(data.instructions);
+    if (data?.instructions) setInstructions(normalizeSteps(data.instructions));
     if (data?.servings) setServings(data.servings);
     // Extract macros from response
     const macros = {
@@ -199,7 +200,7 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
             .join('\n')
         );
       }
-      if (data?.instructions) setInstructions(data.instructions);
+      if (data?.instructions) setInstructions(normalizeSteps(data.instructions));
       toast.success('Recept vertaald naar Nederlands!');
     } catch (e) {
       console.error('Translation failed:', e);
@@ -233,7 +234,7 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
       name: name.trim(),
       description: description.trim(),
       ingredients: ingredientText.split('\n').map((l) => l.trim()).filter(Boolean),
-      instructions: instructions.trim() || undefined,
+      instructions: normalizeSteps(instructions) || undefined,
       sourceUrl: trimmedUrl,
       imageUrl: fetchedImageUrl,
       macros: fetchedMacros || undefined,
