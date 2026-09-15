@@ -314,6 +314,16 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
     }
   }, [userId, groceryItems]);
 
+  /** Naam wijzigen. De AH-koppeling gaat eraf: die hoorde bij de oude naam. */
+  const renameGroceryItem = useCallback(async (id: string, name: string) => {
+    const clean = name.trim();
+    if (!clean) return;
+    setGroceryItems((prev) => prev.map((i) => (
+      i.id === id ? { ...i, name: clean, price: null, ahProduct: null, priceCheckedAt: undefined } : i
+    )));
+    await saveGroceryChange({ kind: 'update', ids: [id], patch: { name: clean, ...CLEARED_AH_MATCH } });
+  }, []);
+
   const updateGroceryItemPrice = useCallback(async (id: string, price: number | null) => {
     setGroceryItems((prev) => prev.map((i) => (i.id === id ? { ...i, price } : i)));
     await supabase.from('grocery_items').update({ price }).eq('id', id);
@@ -373,6 +383,7 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
     setGroceryItemChecked,
     addRecipeToGroceryList,
     mergeDuplicateItems,
+    renameGroceryItem,
     updateGroceryItemPrice,
     applyAhMatches,
   };
