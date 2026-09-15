@@ -23,6 +23,21 @@ const DEPARTMENTS: Record<HeadingCategory, { icon: LucideIcon; tint: string }> =
   diepvries: { icon: Snowflake, tint: 'bg-[hsl(var(--dept-diepvries)/0.15)] text-[hsl(var(--dept-diepvries))] dark:bg-[hsl(var(--dept-diepvries)/0.22)]' },
 };
 
+/** The same hue as the heading, for the dot on a chip that belongs to this shelf. */
+export const DEPARTMENT_DOT: Record<HeadingCategory, string> = {
+  kruiden: 'bg-[hsl(var(--cat-olijf))]',
+  groente_fruit: 'bg-[hsl(var(--dept-groente))]',
+  brood: 'bg-[hsl(var(--dept-brood))]',
+  vlees_vis: 'bg-[hsl(var(--dept-vlees))]',
+  zuivel: 'bg-[hsl(var(--dept-zuivel))]',
+  maaltijden: 'bg-[hsl(var(--dept-maaltijden))]',
+  pasta_rijst: 'bg-[hsl(var(--dept-pasta))]',
+  houdbaar: 'bg-[hsl(var(--dept-houdbaar))]',
+  drinken: 'bg-[hsl(var(--dept-drinken))]',
+  huishouden: 'bg-[hsl(var(--dept-huishouden))]',
+  diepvries: 'bg-[hsl(var(--dept-diepvries))]',
+};
+
 interface DepartmentHeadingProps {
   category: HeadingCategory;
   label: string;
