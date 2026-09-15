@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import DepartmentHeading, { DEPARTMENT_DOT } from '@/components/DepartmentHeading';
+import DepartmentHeading from '@/components/DepartmentHeading';
 import PantryChip from '@/components/PantryChip';
 import PantryScanSheet from '@/components/PantryScanSheet';
 import PantryItemSheet from '@/components/PantryItemSheet';
@@ -106,29 +106,36 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
         onChange={(e) => takePhotos(e.target.files)}
       />
 
-      <section className="rounded-[14px] border border-border bg-accent-soft p-4">
-        <h2 className="font-display text-lg font-bold tracking-[-0.01em] text-foreground">Wat staat er in huis?</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Maak een foto van een plank of van de koelkast. Je ziet eerst wat er herkend is, daarna gaat het pas de kast in.
-        </p>
-        {/* Op nul eerst uitleg, geen camera: anders maak je een foto voor niets. */}
-        <Button
-          className="mt-3 min-h-12 w-full gap-2"
-          onClick={() => (opGeraakt ? setOverLimit(true) : fileInput.current?.click())}
-          disabled={scanning}
-        >
-          {scanning
-            ? <><Loader2 className="h-4 w-4 animate-spin" /> Foto lezen…</>
-            : <><Camera className="h-4 w-4" /> {opGeraakt ? 'Je foto’s zijn op' : 'Kast scannen'}</>}
-        </Button>
-        {!plus && (
-          <p className="mt-2 text-center text-xs text-muted-foreground">
-            {opGeraakt
-              ? `Op ${resetDatum()} staat je tegoed weer op ${FREE_LIMIT}. Zelf toevoegen kan altijd.`
-              : <>Nog <span className="font-semibold tabular-nums text-foreground">{remaining('kastfoto')}</span> van {FREE_LIMIT} foto’s deze maand</>}
+      {/* Een volle kast heeft geen uitleg meer nodig; dan is scannen gewoon een knop. */}
+      {pantry.length === 0 ? (
+        <section className="rounded-[14px] border border-border bg-accent-soft p-4">
+          <h2 className="font-display text-lg font-bold tracking-[-0.01em] text-foreground">Wat staat er in huis?</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Maak een foto van een plank of van de koelkast. Je ziet eerst wat er herkend is, daarna gaat het pas de kast in.
           </p>
-        )}
-      </section>
+          <Button
+            className="mt-3 min-h-12 w-full gap-2"
+            onClick={() => (opGeraakt ? setOverLimit(true) : fileInput.current?.click())}
+            disabled={scanning}
+          >
+            {scanning
+              ? <><Loader2 className="h-4 w-4 animate-spin" /> Foto lezen…</>
+              : <><Camera className="h-4 w-4" /> {opGeraakt ? 'Je foto’s zijn op' : 'Kast scannen'}</>}
+          </Button>
+        </section>
+      ) : (
+        <div className="flex items-baseline gap-2">
+          <p className="flex-1 text-sm text-muted-foreground">
+            <span className="font-display font-bold tabular-nums text-foreground">{pantry.length}</span> in huis
+            {runningOut.length > 0 && (
+              <>
+                {' · '}
+                <span className="font-display font-bold tabular-nums text-accent-ink">{runningOut.length}</span> bijna op
+              </>
+            )}
+          </p>
+        </div>
+      )}
 
       <div className="flex gap-2">
         <Input
@@ -142,10 +149,30 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
         <Button onClick={addByHand} size="icon" className="h-11 w-11 shrink-0" aria-label="Toevoegen aan de kast">
           <Plus className="h-4 w-4" />
         </Button>
+        {pantry.length > 0 && (
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-11 w-11 shrink-0"
+            aria-label={opGeraakt ? 'Je foto’s zijn op' : 'Kast scannen'}
+            disabled={scanning}
+            onClick={() => (opGeraakt ? setOverLimit(true) : fileInput.current?.click())}
+          >
+            {scanning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+          </Button>
+        )}
       </div>
 
+      {!plus && (
+        <p className="-mt-3 text-xs text-muted-foreground">
+          {opGeraakt
+            ? `Kastfoto’s zijn op, op ${resetDatum()} staat je tegoed weer op ${FREE_LIMIT}.`
+            : <>Nog <span className="font-semibold tabular-nums text-foreground">{remaining('kastfoto')}</span> van {FREE_LIMIT} kastfoto’s deze maand</>}
+        </p>
+      )}
+
       {runningOut.length > 0 && (
-        <section className="rounded-[14px] border border-border bg-card p-4">
+        <section className="rounded-[14px] border border-accent/25 bg-accent-soft p-4">
           <h2 className="font-display text-[0.9375rem] font-bold tracking-[-0.01em] text-foreground">Bijna op</h2>
           <div className="mt-2 flex flex-wrap gap-2">
             {runningOut.map((item) => (
@@ -154,7 +181,7 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
                 type="button"
                 onClick={() => toList(item.name)}
                 disabled={onList.has(item.name.trim().toLowerCase())}
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-border-strong px-3 text-sm text-foreground transition-colors duration-150 ease-smooth hover:bg-muted disabled:opacity-50"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-accent/30 bg-card px-3.5 text-sm text-foreground transition-colors duration-150 ease-smooth hover:border-accent disabled:opacity-50"
               >
                 <ShoppingCart className="h-3.5 w-3.5" />
                 <span className="first-letter:uppercase">{item.name}</span>
@@ -184,7 +211,7 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
           {/* A spice rack, not a stack of rows: nobody counts jars of oregano. */}
           <div className="flex flex-wrap gap-2">
             {herbs.map((item) => (
-              <PantryChip key={item.id} item={item} dot={DEPARTMENT_DOT.kruiden} onOpen={() => setOpenItemId(item.id)} />
+              <PantryChip key={item.id} item={item} shelf="kruiden" onOpen={() => setOpenItemId(item.id)} />
             ))}
           </div>
         </section>
@@ -195,7 +222,7 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
           <DepartmentHeading category={category} label={label} count={items.length} />
           <div className="flex flex-wrap gap-2">
             {items.map((item) => (
-              <PantryChip key={item.id} item={item} dot={DEPARTMENT_DOT[category]} onOpen={() => setOpenItemId(item.id)} />
+              <PantryChip key={item.id} item={item} shelf={category} onOpen={() => setOpenItemId(item.id)} />
             ))}
           </div>
         </section>
