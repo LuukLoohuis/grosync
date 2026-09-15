@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Camera, Loader2, Plus, ShoppingCart } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,17 @@ import { scanPantryPhoto, type ScanHit } from '@/services/pantryApi';
 import { QuotaError } from '@/services/functions';
 import PlusSheet from '@/components/PlusSheet';
 import { FREE_LIMIT } from '@/hooks/useEntitlements';
+
+const HINT_KEY = 'couplecart-veeg-hint';
+
+/** Hoe vaak het potje al even opzij is gewipt; na drie keer weet je het wel. */
+const hintStand = () => {
+  try { return Number(window.localStorage.getItem(HINT_KEY) ?? 0); } catch { return 99; }
+};
+
+const hintOnthouden = (waarde: number) => {
+  try { window.localStorage.setItem(HINT_KEY, String(waarde)); } catch { /* privémodus: dan maar geen hint */ }
+};
 
 /** De eerste van de volgende maand, wanneer het tegoed weer vol staat. */
 const resetDatum = () => {
@@ -42,12 +53,33 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
 
   const onList = new Set(groceryItems.filter((i) => !i.checked).map((i) => i.name.trim().toLowerCase()));
   const herbs = pantry.filter((item) => isHerb(item.name));
+  // Het eerste potje op het scherm doet het voor.
+  const eersteId = (herbs[0] ?? pantry.find((item) => !isHerb(item.name)))?.id;
   const departments = sortByStoreRoute(pantry.filter((item) => !isHerb(item.name)));
   const runningOut = pantry.filter((item) => item.low || item.quantity === 0);
   const openItem = pantry.find((item) => item.id === openItemId) ?? null;
   const opGeraakt = !plus && remaining('kastfoto') === 0;
 
-  // A cupboard rarely fits in one frame, so several photos land in one list.
+  // Eén keer per bezoek tellen, hoogstens drie bezoeken lang voordoen.
+  const [toonHint, setToonHint] = useState(false);
+  const geteld = useRef(false);
+
+  useEffect(() => {
+    if (geteld.current || pantry.length === 0) return;
+    geteld.current = true;
+    const stand = hintStand();
+    if (stand >= 3) return;
+    hintOnthouden(stand + 1);
+    setToonHint(true);
+  }, [pantry.length]);
+
+  /** Wie één keer geveegd heeft, hoeft het nooit meer voorgedaan te krijgen. */
+  const weggooien = (id: string) => {
+    hintOnthouden(3);
+    setToonHint(false);
+    void removePantryItem(id);
+  };
+
   const takePhotos = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     setScanning(true);
@@ -212,7 +244,7 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
           {/* A spice rack, not a stack of rows: nobody counts jars of oregano. */}
           <div className="flex flex-wrap gap-2">
             {herbs.map((item) => (
-              <SwipeToRemove key={item.id} label={item.name} onRemove={() => removePantryItem(item.id)}>
+              <SwipeToRemove key={item.id} label={item.name} onRemove={() => weggooien(item.id)} nudge={toonHint && item.id === eersteId}>
                 <PantryChip item={item} shelf="kruiden" onOpen={() => setOpenItemId(item.id)} />
               </SwipeToRemove>
             ))}
@@ -225,7 +257,7 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
           <DepartmentHeading category={category} label={label} count={items.length} />
           <div className="flex flex-wrap gap-2">
             {items.map((item) => (
-              <SwipeToRemove key={item.id} label={item.name} onRemove={() => removePantryItem(item.id)}>
+              <SwipeToRemove key={item.id} label={item.name} onRemove={() => weggooien(item.id)} nudge={toonHint && item.id === eersteId}>
                 <PantryChip item={item} shelf={category} onOpen={() => setOpenItemId(item.id)} />
               </SwipeToRemove>
             ))}
@@ -233,8 +265,8 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
         </section>
       ))}
 
-      {pantry.length > 0 && (
-        <p className="text-xs text-muted-foreground">Tik op een potje om het te wijzigen, veeg naar links om het weg te gooien.</p>
+      {toonHint && (
+        <p className="text-xs text-muted-foreground">Veeg een potje naar links om het weg te gooien.</p>
       )}
 
       <section>

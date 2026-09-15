@@ -1,4 +1,4 @@
-import { useRef, useState, type MouseEvent, type PointerEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type MouseEvent, type PointerEvent, type ReactNode } from 'react';
 import { Trash2 } from 'lucide-react';
 
 // How far a chip must travel to the left before letting go throws it away.
@@ -9,14 +9,18 @@ const SLOP = 10;
 interface SwipeToRemoveProps {
   onRemove: () => void;
   label: string;
+  /** Laat dit potje één keer even opzij wippen, zodat je ziet dat vegen kan. */
+  nudge?: boolean;
   children: ReactNode;
 }
+
+const NUDGE_OFFSET = -26;
 
 /**
  * Swipe a chip to the left to throw it away. Touch and pen only, so a mouse
  * keeps tapping; the delete button inside the sheet stays the main control.
  */
-const SwipeToRemove = ({ onRemove, label, children }: SwipeToRemoveProps) => {
+const SwipeToRemove = ({ onRemove, label, nudge = false, children }: SwipeToRemoveProps) => {
   const [offset, setOffset] = useState(0);
   const [dragging, setDragging] = useState(false);
   const gesture = useRef<{ id: number; x: number; y: number; dragging: boolean } | null>(null);
@@ -27,6 +31,16 @@ const SwipeToRemove = ({ onRemove, label, children }: SwipeToRemoveProps) => {
     offsetRef.current = value;
     setOffset(value);
   };
+
+  // Eén keer een tipje van de prullenbak laten zien; wie minder beweging wil
+  // ziet niets bewegen en houdt de zin eronder.
+  useEffect(() => {
+    if (!nudge) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const heen = window.setTimeout(() => move(NUDGE_OFFSET), 700);
+    const terug = window.setTimeout(() => move(0), 1450);
+    return () => { window.clearTimeout(heen); window.clearTimeout(terug); };
+  }, [nudge]);
 
   const onPointerDown = (e: PointerEvent<HTMLSpanElement>) => {
     swallowClick.current = false;
