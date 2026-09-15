@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import type { PantryItem } from '@/types';
 import { MAX_QUANTITY, sameProduct } from '@/lib/pantry';
+import { deleteWithUndo } from '@/lib/undoableDelete';
 
 interface UsePantryOptions {
   userId?: string | null;
@@ -98,10 +99,23 @@ export const usePantry = ({ userId }: UsePantryOptions = {}) => {
     await patch(id, { name: clean });
   }, [pantry, patch]);
 
+  /** Een veeg is zo gebeurd: weg gaat pas echt weg na het ongedaan-maken-venster. */
   const removePantryItem = useCallback(async (id: string) => {
-    setPantry((prev) => prev.filter((item) => item.id !== id));
-    await supabase.from('pantry_items').delete().eq('id', id);
-  }, []);
+    const index = pantry.findIndex((item) => item.id === id);
+    const item = pantry[index];
+    if (!item) return;
+    deleteWithUndo({
+      message: `“${item.name}” uit je kast gehaald`,
+      remove: () => setPantry((prev) => prev.filter((row) => row.id !== id)),
+      restore: () => setPantry((prev) => (
+        prev.some((row) => row.id === id) ? prev : [...prev.slice(0, index), item, ...prev.slice(index)]
+      )),
+      commit: async () => {
+        const { error } = await supabase.from('pantry_items').delete().eq('id', id);
+        if (error) throw error;
+      },
+    });
+  }, [pantry]);
 
   return { pantry, pantryLoading: loading, stockUp, setQuantity, setLow, renamePantryItem, removePantryItem };
 };

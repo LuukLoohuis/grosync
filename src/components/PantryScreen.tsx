@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import DepartmentHeading from '@/components/DepartmentHeading';
 import PantryChip from '@/components/PantryChip';
+import SwipeToRemove from '@/components/SwipeToRemove';
 import PantryScanSheet from '@/components/PantryScanSheet';
 import PantryItemSheet from '@/components/PantryItemSheet';
 import UsualsList from '@/components/UsualsList';
@@ -30,7 +31,7 @@ interface PantryScreenProps {
 
 const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
   const {
-    pantry, pantryLoading, stockUp, addGroceryItem, groceryItems, plus, remaining, refreshEntitlements,
+    pantry, pantryLoading, stockUp, removePantryItem, addGroceryItem, groceryItems, plus, remaining, refreshEntitlements,
   } = useAppContext();
   const [adding, setAdding] = useState('');
   const [scanning, setScanning] = useState(false);
@@ -211,7 +212,9 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
           {/* A spice rack, not a stack of rows: nobody counts jars of oregano. */}
           <div className="flex flex-wrap gap-2">
             {herbs.map((item) => (
-              <PantryChip key={item.id} item={item} shelf="kruiden" onOpen={() => setOpenItemId(item.id)} />
+              <SwipeToRemove key={item.id} label={item.name} onRemove={() => removePantryItem(item.id)}>
+                <PantryChip item={item} shelf="kruiden" onOpen={() => setOpenItemId(item.id)} />
+              </SwipeToRemove>
             ))}
           </div>
         </section>
@@ -222,11 +225,17 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
           <DepartmentHeading category={category} label={label} count={items.length} />
           <div className="flex flex-wrap gap-2">
             {items.map((item) => (
-              <PantryChip key={item.id} item={item} shelf={category} onOpen={() => setOpenItemId(item.id)} />
+              <SwipeToRemove key={item.id} label={item.name} onRemove={() => removePantryItem(item.id)}>
+                <PantryChip item={item} shelf={category} onOpen={() => setOpenItemId(item.id)} />
+              </SwipeToRemove>
             ))}
           </div>
         </section>
       ))}
+
+      {pantry.length > 0 && (
+        <p className="text-xs text-muted-foreground">Tik op een potje om het te wijzigen, veeg naar links om het weg te gooien.</p>
+      )}
 
       <section>
         <h2 className="mb-2 font-display text-[0.9375rem] font-bold tracking-[-0.01em] text-foreground">Vaak gekocht</h2>
