@@ -50,6 +50,22 @@ async function userIdVanKlant(customerId: string): Promise<string | null> {
 const tot = (seconden: number | null | undefined) =>
   typeof seconden === 'number' ? new Date(seconden * 1000).toISOString() : null;
 
+/**
+ * Tot wanneer er betaald is. Stripe zette dit eerst op het abonnement zelf, en
+ * in nieuwere versies op de regels eronder; we kijken op allebei de plekken.
+ */
+function betaaldTot(subscription: Stripe.Subscription | null | undefined): string | null {
+  if (!subscription) return null;
+  const opAbonnement = (subscription as { current_period_end?: number }).current_period_end;
+  if (typeof opAbonnement === 'number') return tot(opAbonnement);
+
+  const einden = (subscription.items?.data ?? [])
+    .map((regel) => (regel as { current_period_end?: number }).current_period_end)
+    .filter((waarde): waarde is number => typeof waarde === 'number');
+  // De regel die het verst vooruit loopt bepaalt tot wanneer je Plus houdt.
+  return einden.length > 0 ? tot(Math.max(...einden)) : null;
+}
+
 Deno.serve(async (req) => {
   const key = env('STRIPE_SECRET_KEY');
   const secret = env('STRIPE_WEBHOOK_SECRET');
@@ -86,7 +102,7 @@ Deno.serve(async (req) => {
           stripe_customer_id: customerId,
           stripe_subscription_id: subscriptionId,
           status: subscription?.status ?? 'active',
-          expires_at: tot(subscription?.current_period_end),
+          expires_at: betaaldTot(subscription),
           cancel_at_period_end: subscription?.cancel_at_period_end ?? false,
         });
       }
@@ -107,7 +123,7 @@ Deno.serve(async (req) => {
           stripe_subscription_id: subscription.id,
           status: subscription.status,
           // Opzeggen haalt Plus niet meteen weg: je hebt de periode betaald.
-          expires_at: afgelopen ? new Date().toISOString() : tot(subscription.current_period_end),
+          expires_at: afgelopen ? new Date().toISOString() : betaaldTot(subscription),
           cancel_at_period_end: subscription.cancel_at_period_end ?? false,
         });
       }
