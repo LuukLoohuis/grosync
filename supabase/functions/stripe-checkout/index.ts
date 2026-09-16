@@ -10,6 +10,11 @@ const json = (body: unknown, status = 200) =>
 
 const env = (name: string) => Deno.env.get(name) ?? '';
 
+/** Een sleutel of prijs-id die er nog niet echt is: leeg, of nog de invulwaarde. */
+const echt = (waarde: string, prefix: string) =>
+  waarde.startsWith(prefix) && !waarde.includes('...') && waarde.length > prefix.length + 8;
+
+
 /** De ingelogde gebruiker, met e-mail als die er is. */
 async function signedInUser(req: Request): Promise<{ id: string; email: string | null } | null> {
   const token = req.headers.get('Authorization')?.replace(/^Bearer\s+/i, '');
@@ -38,8 +43,8 @@ Deno.serve(async (req) => {
 
   try {
     const key = env('STRIPE_SECRET_KEY');
-    // Zonder sleutel staat betalen simpelweg nog niet aan; dat is geen fout.
-    if (!key) return json({ error: 'betalen-uit' }, 503);
+    // Zonder echte sleutel staat betalen nog niet aan; dat is geen fout.
+    if (!echt(key, 'sk_')) return json({ error: 'betalen-uit' }, 503);
 
     const user = await signedInUser(req);
     if (!user) return json({ error: 'Sign in required' }, 401);
@@ -47,7 +52,7 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const plan = body?.plan === 'jaar' ? 'jaar' : 'maand';
     const price = plan === 'jaar' ? env('STRIPE_PRICE_YEAR') : env('STRIPE_PRICE_MONTH');
-    if (!price) return json({ error: 'betalen-uit' }, 503);
+    if (!echt(price, 'price_')) return json({ error: 'betalen-uit' }, 503);
 
     const site = env('SITE_URL') || 'https://www.couplecart.nl';
     const stripe = new Stripe(key, { apiVersion: '2024-06-20', httpClient: Stripe.createFetchHttpClient() });

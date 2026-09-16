@@ -10,6 +10,11 @@ const json = (body: unknown, status = 200) =>
 
 const env = (name: string) => Deno.env.get(name) ?? '';
 
+/** Een sleutel of prijs-id die er nog niet echt is: leeg, of nog de invulwaarde. */
+const echt = (waarde: string, prefix: string) =>
+  waarde.startsWith(prefix) && !waarde.includes('...') && waarde.length > prefix.length + 8;
+
+
 async function signedInUserId(req: Request): Promise<string | null> {
   const token = req.headers.get('Authorization')?.replace(/^Bearer\s+/i, '');
   if (!token) return null;
@@ -30,7 +35,7 @@ Deno.serve(async (req) => {
 
   try {
     const key = env('STRIPE_SECRET_KEY');
-    if (!key) return json({ error: 'betalen-uit' }, 503);
+    if (!echt(key, 'sk_')) return json({ error: 'betalen-uit' }, 503);
 
     const userId = await signedInUserId(req);
     if (!userId) return json({ error: 'Sign in required' }, 401);
