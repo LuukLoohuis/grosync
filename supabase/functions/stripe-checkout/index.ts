@@ -10,9 +10,12 @@ const json = (body: unknown, status = 200) =>
 
 const env = (name: string) => Deno.env.get(name) ?? '';
 
-/** Een sleutel of prijs-id die er nog niet echt is: leeg, of nog de invulwaarde. */
-const echt = (waarde: string, prefix: string) =>
-  waarde.startsWith(prefix) && !waarde.includes('...') && waarde.length > prefix.length + 8;
+/**
+ * Een sleutel of prijs-id die er echt is. Stripe geeft lange codes; alles wat
+ * korter is komt uit een voorbeeld ("sk_test_JOUW") en telt niet mee.
+ */
+const echt = (waarde: string, prefix: string, minimaal: number) =>
+  waarde.startsWith(prefix) && !waarde.includes('...') && waarde.length >= minimaal;
 
 
 /** De ingelogde gebruiker, met e-mail als die er is. */
@@ -44,7 +47,7 @@ Deno.serve(async (req) => {
   try {
     const key = env('STRIPE_SECRET_KEY');
     // Zonder echte sleutel staat betalen nog niet aan; dat is geen fout.
-    if (!echt(key, 'sk_')) return json({ error: 'betalen-uit' }, 503);
+    if (!echt(key, 'sk_', 30)) return json({ error: 'betalen-uit' }, 503);
 
     const user = await signedInUser(req);
     if (!user) return json({ error: 'Sign in required' }, 401);
@@ -52,7 +55,7 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const plan = body?.plan === 'jaar' ? 'jaar' : 'maand';
     const price = plan === 'jaar' ? env('STRIPE_PRICE_YEAR') : env('STRIPE_PRICE_MONTH');
-    if (!echt(price, 'price_')) return json({ error: 'betalen-uit' }, 503);
+    if (!echt(price, 'price_', 20)) return json({ error: 'betalen-uit' }, 503);
 
     const site = env('SITE_URL') || 'https://www.couplecart.nl';
     const stripe = new Stripe(key, { apiVersion: '2024-06-20', httpClient: Stripe.createFetchHttpClient() });

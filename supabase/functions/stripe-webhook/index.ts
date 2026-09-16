@@ -3,9 +3,12 @@ import Stripe from 'https://esm.sh/stripe@14.25.0?target=deno';
 // Stripe roept dit aan, niet de app: geen CORS, wel een handtekening.
 const env = (name: string) => Deno.env.get(name) ?? '';
 
-/** Een sleutel of prijs-id die er nog niet echt is: leeg, of nog de invulwaarde. */
-const echt = (waarde: string, prefix: string) =>
-  waarde.startsWith(prefix) && !waarde.includes('...') && waarde.length > prefix.length + 8;
+/**
+ * Een sleutel of prijs-id die er echt is. Stripe geeft lange codes; alles wat
+ * korter is komt uit een voorbeeld ("sk_test_JOUW") en telt niet mee.
+ */
+const echt = (waarde: string, prefix: string, minimaal: number) =>
+  waarde.startsWith(prefix) && !waarde.includes('...') && waarde.length >= minimaal;
 
 
 const rest = (pad: string, init: RequestInit = {}) =>
@@ -69,7 +72,7 @@ function betaaldTot(subscription: Stripe.Subscription | null | undefined): strin
 Deno.serve(async (req) => {
   const key = env('STRIPE_SECRET_KEY');
   const secret = env('STRIPE_WEBHOOK_SECRET');
-  if (!echt(key, 'sk_') || !echt(secret, 'whsec_')) return new Response('Betalen staat uit', { status: 503 });
+  if (!echt(key, 'sk_', 30) || !echt(secret, 'whsec_', 25)) return new Response('Betalen staat uit', { status: 503 });
 
   const signature = req.headers.get('stripe-signature');
   if (!signature) return new Response('Geen handtekening', { status: 400 });
