@@ -676,3 +676,5 @@ CREATE POLICY "Beheerder zet instellingen" ON public.app_settings
 INSERT INTO public.app_settings (key, value)
 VALUES ('ai', '{"provider": "", "text_model": "", "scan_model": ""}'::jsonb)
 ON CONFLICT (key) DO NOTHING;
+
+ALTER TABLE public.grocery_items ADD COLUMN IF NOT EXISTS price_before NUMERIC;

@@ -10,6 +10,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import SharedList from "./pages/SharedList";
 import Admin from "./pages/Admin";
+import Legal from "./pages/Legal";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,6 +51,8 @@ const App = () => (
             <Route path="/shared/:shareCode" element={<SharedList />} />
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+            <Route path="/info/:deel" element={<Legal />} />
+            <Route path="/info" element={<Legal />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </HashRouter>

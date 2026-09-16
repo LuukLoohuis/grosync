@@ -54,6 +54,7 @@ export type Database = {
           id: string
           name: string
           price: number | null
+          price_before: number | null
           price_checked_at: string | null
           user_id: string
         }
@@ -71,6 +72,7 @@ export type Database = {
           id?: string
           name: string
           price?: number | null
+          price_before?: number | null
           price_checked_at?: string | null
           user_id: string
         }
@@ -88,6 +90,7 @@ export type Database = {
           id?: string
           name?: string
           price?: number | null
+          price_before?: number | null
           price_checked_at?: string | null
           user_id?: string
         }

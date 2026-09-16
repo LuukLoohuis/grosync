@@ -8,6 +8,7 @@ export interface AhMatch {
   unitPrice: number;
   quantity: number;
   price: number;
+  priceBefore: number | null;
   isBonus: boolean;
   bonusMechanism: string | null;
   imageUrl: string | null;
@@ -20,6 +21,7 @@ export interface AhAlternative {
   title: string;
   unitSize: string;
   price: number;
+  priceBefore: number | null;
   isBonus: boolean;
   bonusMechanism: string | null;
   imageUrl: string | null;

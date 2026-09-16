@@ -171,6 +171,13 @@ const handleGoogleLogin = async () => {
         </button>
 
         <p className="mt-6 text-center text-xs text-muted-foreground">
+          <a className="hover:underline" href="#/info/voorwaarden">Voorwaarden</a>
+          {' · '}
+          <a className="hover:underline" href="#/info/privacy">Privacy</a>
+          {' · '}
+          <a className="hover:underline" href="#/info/cookies">Cookies</a>
+        </p>
+        <p className="mt-1 text-center text-xs text-muted-foreground">
           Hulp nodig?{' '}
           <a className="font-medium text-primary hover:underline" href="mailto:couplecart@gmail.com?subject=Hulp%20bij%20CoupleCart">
             couplecart@gmail.com

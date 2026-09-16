@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Check, ChevronDown, ChevronRight, Plus, Trash2, X, Merge, TrendingUp, ExternalLink, Loader2, ShoppingBasket, ShoppingCart, Tag, MoreVertical, RefreshCw } from 'lucide-react';
+import { Check, ChevronDown, Plus, Trash2, X, Merge, TrendingUp, Loader2, ShoppingBasket, ShoppingCart, Tag, MoreVertical, RefreshCw, Store } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppContext } from '@/contexts/AppContext';
 import { AH_MAX_ITEMS, ahBasketUrl, matchAhProducts } from '@/services/ahApi';
@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import SwipeToCheck from '@/components/SwipeToCheck';
 import GroceryItemSheet from '@/components/GroceryItemSheet';
+import ShoppingMode from '@/components/ShoppingMode';
 import EmptyState from '@/components/EmptyState';
 import DepartmentHeading, { DEPARTMENT_CHIP, DEPARTMENT_DOT } from '@/components/DepartmentHeading';
 import AhProductSheet from '@/components/AhProductSheet';
@@ -58,6 +59,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
   const [sheetItemId, setSheetItemId] = useState<string | null>(null);
   const [deptFilter, setDeptFilter] = useState<Department | null>(null);
   const [clearOpen, setClearOpen] = useState(false);
+  const [shopping, setShopping] = useState(false);
   const [pricing, setPricing] = useState(false);
   const [showChecked, setShowChecked] = useState(false);
   const barRef = useRef<HTMLDivElement>(null);
@@ -89,6 +91,10 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
   const showBar = !loading && unchecked.length > 0;
   const hasPrices = pricedItems.length > 0;
   const bonusCount = pricedItems.filter((i) => i.ahProduct?.isBonus).length;
+  // Alleen echt voordeel telt mee: wat AH zelf als prijs-vóór-bonus opgeeft.
+  const saving = pricedItems.reduce((sum, i) => (
+    i.priceBefore != null && i.price != null && i.priceBefore > i.price ? sum + (i.priceBefore - i.price) : sum
+  ), 0);
 
   const fetchAhPrices = async () => {
     const batch = unchecked.slice(0, AH_MAX_ITEMS);
@@ -193,6 +199,11 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
                   <span className="block font-display text-[0.9375rem] font-bold tabular-nums text-foreground">
                     {euro.format(item.price)}
                   </span>
+                  {item.priceBefore != null && item.priceBefore > item.price && (
+                    <span className="block text-[0.6875rem] tabular-nums text-muted-foreground line-through">
+                      {euro.format(item.priceBefore)}
+                    </span>
+                  )}
                   {bonus && (
                     <span className="mt-0.5 inline-block rounded-md bg-[hsl(var(--ah-bonus))] px-1.5 py-px font-display text-[0.625rem] font-bold uppercase tracking-wide text-white">
                       Bonus
@@ -295,6 +306,13 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
             {order === 'department' ? 'Op afdeling' : 'Op volgorde'}
           </button>
 
+          <div className="flex items-center gap-1">
+            {unchecked.length > 0 && (
+              <Button variant="outline" className="min-h-11 gap-2" onClick={() => setShopping(true)}>
+                <Store className="h-4 w-4" /> Winkelmodus
+              </Button>
+            )}
+
           {/* Wat je zelden doet, zit in een menu in plaats van in beeld. */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -318,6 +336,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          </div>
 
           <AlertDialog open={clearOpen} onOpenChange={setClearOpen}>
             <AlertDialogContent>
@@ -436,6 +455,10 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
         </div>
       )}
 
+      {shopping && (
+        <ShoppingMode items={groceryItems} onCheck={checkOff} onClose={() => setShopping(false)} />
+      )}
+
       <GroceryItemSheet
         item={sheetItem}
         department={sheetDepartment}
@@ -463,7 +486,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
                 <div className="flex items-center gap-3 rounded-[14px] bg-primary px-3.5 py-2.5">
                   <div className="min-w-0 flex-1 leading-tight">
                     <p className="text-[0.6875rem] text-primary-muted">
-                      Totaal bij AH{bonusCount > 0 ? ` · ${bonusCount} in de bonus` : ''}
+                      Totaal bij AH{saving > 0.004 ? ` · je bespaart ${euro.format(saving)}` : bonusCount > 0 ? ` · ${bonusCount} in de bonus` : ''}
                     </p>
                     <p className="font-display text-xl font-bold tabular-nums text-primary-foreground">{euro.format(ahTotal)}</p>
                   </div>

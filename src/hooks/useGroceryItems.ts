@@ -17,6 +17,7 @@ const toGroceryItem = (row: GroceryRow): GroceryItem => ({
   fromRecipe: row.from_recipe || undefined,
   price: row.price ?? null,
   priceCheckedAt: row.price_checked_at,
+  priceBefore: row.price_before ?? null,
   ahProduct: row.ah_product_id
     ? {
         id: row.ah_product_id,
@@ -33,6 +34,7 @@ const toGroceryItem = (row: GroceryRow): GroceryItem => ({
 // A renamed item (e.g. after merging duplicates) no longer matches its AH product.
 const CLEARED_AH_MATCH = {
   price: null,
+  price_before: null,
   ah_product_id: null,
   ah_product_title: null,
   ah_unit_size: null,
@@ -319,7 +321,7 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
     const clean = name.trim();
     if (!clean) return;
     setGroceryItems((prev) => prev.map((i) => (
-      i.id === id ? { ...i, name: clean, price: null, ahProduct: null, priceCheckedAt: undefined } : i
+      i.id === id ? { ...i, name: clean, price: null, priceBefore: null, ahProduct: null, priceCheckedAt: undefined } : i
     )));
     await saveGroceryChange({ kind: 'update', ids: [id], patch: { name: clean, ...CLEARED_AH_MATCH } });
   }, []);
@@ -336,12 +338,13 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
     const checkedAt = new Date().toISOString();
     setGroceryItems((prev) => prev.map((i) => {
       // Marked as searched, so the list can say "Kies zelf · Zoek bij AH".
-      if (unmatched.has(i.id)) return { ...i, price: null, ahProduct: null, priceCheckedAt: checkedAt };
+      if (unmatched.has(i.id)) return { ...i, price: null, priceBefore: null, ahProduct: null, priceCheckedAt: checkedAt };
       const match = byItem.get(i.id);
       if (!match) return i;
       return {
         ...i,
         price: match.price,
+        priceBefore: match.priceBefore ?? null,
         priceCheckedAt: checkedAt,
         ahProduct: {
           id: match.productId,
@@ -357,6 +360,7 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
     await Promise.all([
       ...matches.map((m) => supabase.from('grocery_items').update({
       price: m.price,
+      price_before: m.priceBefore ?? null,
       ah_product_id: m.productId,
       ah_product_title: m.title,
       ah_unit_size: m.unitSize,

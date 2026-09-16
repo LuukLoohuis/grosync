@@ -6,6 +6,8 @@ export interface GroceryItem {
   fromRecipe?: string;
   price?: number | null;
   ahProduct?: AhProduct | null;
+  /** Wat deze boodschap zonder bonus zou kosten; leeg als er geen bonus op zit. */
+  priceBefore?: number | null;
   /** When AH was last searched for this item, also when nothing matched. */
   priceCheckedAt?: string | null;
 }

@@ -17,6 +17,8 @@ type Candidate = {
   title: string;
   unitSize: string;
   price: number;
+  /** Prijs zonder bonus, alleen als die hoger is dan wat je nu betaalt. */
+  priceBefore: number | null;
   isBonus: boolean;
   bonusMechanism: string | null;
   imageUrl: string | null;
@@ -31,6 +33,7 @@ type Match = {
   unitPrice: number;
   quantity: number;
   price: number;
+  priceBefore: number | null;
   isBonus: boolean;
   bonusMechanism: string | null;
   imageUrl: string | null;
@@ -75,6 +78,10 @@ function toCandidates(products: any[], keep = 10): Candidate[] {
       title: p.title || '',
       unitSize: p.salesUnitSize || '',
       price: p.currentPrice ?? p.priceBeforeBonus,
+      // Wat het zonder bonus zou kosten; alleen ingevuld als dat echt hoger ligt.
+      priceBefore: typeof p.priceBeforeBonus === 'number' && p.priceBeforeBonus > (p.currentPrice ?? p.priceBeforeBonus)
+        ? p.priceBeforeBonus
+        : null,
       isBonus: Boolean(p.isBonus),
       bonusMechanism: p.bonusMechanism || null,
       imageUrl: p.images?.[0]?.url || null,
@@ -238,6 +245,9 @@ function toMatch(itemId: string, candidate: Candidate, quantity: number): Match 
     unitPrice: candidate.price,
     quantity,
     price: Math.round(candidate.price * quantity * 100) / 100,
+    priceBefore: candidate.priceBefore != null
+      ? Math.round(candidate.priceBefore * quantity * 100) / 100
+      : null,
     isBonus: candidate.isBonus,
     bonusMechanism: candidate.bonusMechanism,
     imageUrl: candidate.imageUrl,
@@ -252,6 +262,7 @@ function toAlternative(candidate: Candidate) {
     title: candidate.title,
     unitSize: candidate.unitSize,
     price: candidate.price,
+    priceBefore: candidate.priceBefore,
     isBonus: candidate.isBonus,
     bonusMechanism: candidate.bonusMechanism,
     imageUrl: candidate.imageUrl,
