@@ -4,8 +4,9 @@ export type PlusPlan = 'maand' | 'jaar';
 
 /** Prijzen zoals ze in Stripe staan; alleen de weergave, de echte prijs komt van Stripe. */
 export const PLUS_PRIJS: Record<PlusPlan, { label: string; bedrag: string; bij: string }> = {
-  maand: { label: 'Per maand', bedrag: '€ 2,49', bij: 'maandelijks opzegbaar' },
-  jaar: { label: 'Per jaar', bedrag: '€ 19,99', bij: 'twee maanden gratis' },
+  maand: { label: 'Per maand', bedrag: '€ 1,99', bij: 'maandelijks opzegbaar' },
+  // 12 × 1,99 is 23,88; op een jaar scheelt dat 8,89, oftewel ruim vier maanden.
+  jaar: { label: 'Per jaar', bedrag: '€ 14,99', bij: '4 maanden gratis' },
 };
 
 /** Wordt gegooid zolang er nog geen Stripe-sleutels staan. */
