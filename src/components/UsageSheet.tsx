@@ -1,8 +1,11 @@
-import { Camera, Link2, Sparkles } from 'lucide-react';
+import { useState } from 'react';
+import { Camera, ExternalLink, Link2, Loader2, Sparkles } from 'lucide-react';
+import { toast } from 'sonner';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { useAppContext } from '@/contexts/AppContext';
 import { FREE_LIMIT, type MeteredFeature } from '@/hooks/useEntitlements';
+import { BetalenUitError, openPortal } from '@/services/plusApi';
 
 interface UsageSheetProps {
   open: boolean;
@@ -23,6 +26,22 @@ const resetDate = () => {
 /** What you have used this month, and what is left. */
 const UsageSheet = ({ open, onOpenChange }: UsageSheetProps) => {
   const { plus, remaining } = useAppContext();
+  const [bezig, setBezig] = useState(false);
+
+  const beheren = async () => {
+    setBezig(true);
+    try {
+      await openPortal();
+    } catch (error) {
+      if (error instanceof BetalenUitError) {
+        toast('Je Plus is met de hand gegeven', { description: 'Er staat geen abonnement bij Stripe om te beheren.' });
+      } else {
+        console.error('Klantportaal mislukt:', error);
+        toast.error('Het klantportaal openen lukte niet.');
+      }
+      setBezig(false);
+    }
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -71,6 +90,13 @@ const UsageSheet = ({ open, onOpenChange }: UsageSheetProps) => {
               Onbeperkt recepten ophalen en scannen, voor het hele huishouden. Binnenkort te koop.
             </p>
           </div>
+        )}
+
+        {plus && (
+          <Button variant="outline" className="mt-4 min-h-12 w-full gap-2" onClick={beheren} disabled={bezig}>
+            {bezig ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
+            Beheer je abonnement
+          </Button>
         )}
 
         <p className="mt-4 text-center text-xs text-muted-foreground">

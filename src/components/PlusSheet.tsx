@@ -1,7 +1,10 @@
-import { Camera, Check, Link2, Sparkles, Tag } from 'lucide-react';
+import { useState } from 'react';
+import { Camera, Check, Link2, Loader2, Sparkles, Tag } from 'lucide-react';
+import { toast } from 'sonner';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { FEATURE_LABEL, FREE_LIMIT, type MeteredFeature } from '@/hooks/useEntitlements';
+import { BetalenUitError, PLUS_PRIJS, startCheckout, type PlusPlan } from '@/services/plusApi';
 
 interface PlusSheetProps {
   /** The feature that ran out, or null when the sheet is closed. */
@@ -23,7 +26,25 @@ const PERKS = [
   { icon: Tag, text: 'Eén keer voor jullie samen, ook voor je partner' },
 ];
 
-const PlusSheet = ({ feature, onClose }: PlusSheetProps) => (
+const PlusSheet = ({ feature, onClose }: PlusSheetProps) => {
+  const [bezig, setBezig] = useState<PlusPlan | null>(null);
+
+  const afrekenen = async (plan: PlusPlan) => {
+    setBezig(plan);
+    try {
+      await startCheckout(plan);
+    } catch (error) {
+      if (error instanceof BetalenUitError) {
+        toast('Plus is er bijna', { description: 'Betalen staat nog niet aan. Mail couplecart@gmail.com als je het eerder wil.' });
+      } else {
+        console.error('Afrekenen mislukt:', error);
+        toast.error('Afrekenen lukte niet. Probeer het zo nog eens.');
+      }
+      setBezig(null);
+    }
+  };
+
+  return (
   <Sheet open={Boolean(feature)} onOpenChange={(open) => { if (!open) onClose(); }}>
     <SheetContent side="bottom" className="mx-auto max-w-lg rounded-t-[20px]">
       <SheetHeader className="pr-10 text-left">
@@ -46,8 +67,33 @@ const PlusSheet = ({ feature, onClose }: PlusSheetProps) => (
             </li>
           ))}
         </ul>
-        <p className="mt-3 flex items-center gap-1.5 text-sm text-muted-foreground">
-          <Check className="h-4 w-4" /> Binnenkort te koop
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          {(['maand', 'jaar'] as PlusPlan[]).map((plan) => (
+            <button
+              key={plan}
+              type="button"
+              onClick={() => afrekenen(plan)}
+              disabled={bezig !== null}
+              className={`flex min-h-[4.5rem] flex-col items-center justify-center rounded-[12px] px-2 text-center transition-transform duration-150 ease-smooth active:scale-[.98] disabled:opacity-60 ${
+                plan === 'jaar' ? 'bg-primary text-primary-foreground' : 'border-[1.5px] border-border-strong bg-card text-foreground'
+              }`}
+            >
+              {bezig === plan ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <>
+                  <span className="font-display text-lg font-bold tabular-nums">{PLUS_PRIJS[plan].bedrag}</span>
+                  <span className="text-[0.6875rem] opacity-80">{PLUS_PRIJS[plan].label.toLowerCase()}</span>
+                  <span className={`mt-0.5 text-[0.625rem] ${plan === 'jaar' ? 'text-primary-muted' : 'text-muted-foreground'}`}>
+                    {PLUS_PRIJS[plan].bij}
+                  </span>
+                </>
+              )}
+            </button>
+          ))}
+        </div>
+        <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Check className="h-3.5 w-3.5" /> Opzeggen wanneer je wil, bij Stripe zelf
         </p>
       </div>
 
@@ -58,9 +104,10 @@ const PlusSheet = ({ feature, onClose }: PlusSheetProps) => (
         </a>
       </p>
 
-      <Button className="mt-3 min-h-12 w-full" onClick={onClose}>Begrepen</Button>
+      <Button variant="outline" className="mt-3 min-h-12 w-full" onClick={onClose}>Nu even niet</Button>
     </SheetContent>
   </Sheet>
-);
+  );
+};
 
 export default PlusSheet;

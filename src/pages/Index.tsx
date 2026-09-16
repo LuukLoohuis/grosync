@@ -9,6 +9,7 @@ import BonusChef from '@/components/BonusChef';
 import HeaderActions from '@/components/HeaderActions';
 import OfflineBanner from '@/components/OfflineBanner';
 import { useAppContext } from '@/contexts/AppContext';
+import { toast } from 'sonner';
 import { useIdleTabBar } from '@/hooks/useIdleTabBar';
 import { PENDING_IMPORT_KEY } from '@/lib/recipeImport';
 
@@ -24,12 +25,26 @@ const TABS: { key: AppTab; label: string; icon: LucideIcon }[] = [
 
 const Index = () => {
   const [tab, setTab] = useState<AppTab>('today');
-  const { groceryItems } = useAppContext();
+  const { groceryItems, refreshEntitlements } = useAppContext();
   const uncheckedCount = groceryItems.filter((i) => !i.checked).length;
   const [searchParams, setSearchParams] = useSearchParams();
   const [pendingImport, setPendingImport] = useState<string | null>(null);
   const onToday = tab === 'today';
   const barVisible = useIdleTabBar();
+
+  // Terug van Stripe: #/?plus=gelukt of ?plus=afgebroken.
+  useEffect(() => {
+    const plus = searchParams.get('plus');
+    if (!plus) return;
+    setSearchParams({}, { replace: true });
+    if (plus === 'gelukt') {
+      toast.success('Welkom bij Plus', { description: 'Alles staat voor jullie allebei open.' });
+      // Stripe meldt het via de webhook; even later staat het er.
+      window.setTimeout(() => { void refreshEntitlements(); }, 2500);
+    } else {
+      toast('Betaling afgebroken', { description: 'Er is niets afgeschreven.' });
+    }
+  }, [searchParams, setSearchParams, refreshEntitlements]);
 
   // A link shared into CoupleCart arrives as #/?import=… (iOS shortcut, Android share target).
   useEffect(() => {
