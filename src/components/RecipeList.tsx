@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowUpDown, ChefHat, Plus, Search, Settings2, Link, X, Loader2, Languages, ClipboardPaste } from 'lucide-react';
+import { ArrowUpDown, Plus, Search, Settings2, Link, X, Loader2, Languages, ClipboardPaste } from 'lucide-react';
 import { useAppContext } from '@/contexts/AppContext';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import RecipeEditDialog from '@/components/RecipeEditDialog';
 import MacrosDialog from '@/components/MacrosDialog';
@@ -23,6 +23,8 @@ import RecipeTile from '@/components/RecipeTile';
 import RecipeDetailSheet from '@/components/RecipeDetailSheet';
 import RecipeCategorySheet from '@/components/RecipeCategorySheet';
 import { PRESETS, countPerCategory, dotOf, findCategory, sameName, suggestCategories, tintOf, usedCategories } from '@/lib/recipeCategories';
+import { useCookCounts } from '@/hooks/useCookCounts';
+import type { Recipe } from '@/types';
 
 interface RecipeListProps {
   /** A link or text shared into the app; opens the import dialog and starts fetching. */
@@ -32,7 +34,7 @@ interface RecipeListProps {
 }
 
 const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListProps) => {
-  const { loading, recipes, addRecipe, removeRecipe, updateRecipeImage, updateRecipe, recipeCategories, addRecipeCategory, plus, remaining, refreshEntitlements } = useAppContext();
+  const { loading, recipes, addRecipe, removeRecipe, updateRecipeImage, updateRecipe, recipeCategories, addRecipeCategory, plus, remaining, refreshEntitlements, userId, pantry } = useAppContext();
   const [open, setOpen] = useState(false);
   const [manual, setManual] = useState(false);
   const [name, setName] = useState('');
@@ -301,6 +303,39 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
       : [...found].reverse();
   }, [recipes, filter, search, sort]);
 
+  const cookCounts = useCookCounts(userId);
+  // Het gerecht dat jullie het vaakst maakten; pas noemenswaardig vanaf twee keer.
+  const favoriet = useMemo(() => {
+    let beste: { recipe: Recipe; count: number } | null = null;
+    for (const recipe of recipes) {
+      const count = cookCounts.get(recipe.id) ?? 0;
+      if (count >= 2 && (!beste || count > beste.count)) beste = { recipe, count };
+    }
+    return beste;
+  }, [recipes, cookCounts]);
+
+  // Het gerecht dat jullie het vaakst maken ligt vooraan, en dus breed: het
+  // overzicht krijgt zijn ritme van wat jullie echt koken.
+  const mosaicRecipes = useMemo(() => {
+    if (search.trim() || filter || !favoriet) return visibleRecipes;
+    return [favoriet.recipe, ...visibleRecipes.filter((recipe) => recipe.id !== favoriet.recipe.id)];
+  }, [visibleRecipes, favoriet, search, filter]);
+
+  // Staat het woord niet in de naam, dan laat de regel zien waar het wel in stond.
+  const reasonFor = (recipe: Recipe) => {
+    const needle = search.trim().toLowerCase();
+    if (!needle) return null;
+    if (recipe.name.toLowerCase().includes(needle)) return 'in de titel';
+    return recipe.ingredients.find((line) => line.toLowerCase().includes(needle))?.trim() ?? null;
+  };
+
+  // Zoek je op een ingrediënt dat in je kast staat, dan hoef je het niet te kopen.
+  const inHuis = useMemo(() => {
+    const needle = search.trim().toLowerCase();
+    if (needle.length < 3) return null;
+    return pantry.find((item) => item.quantity > 0 && item.name.toLowerCase().includes(needle)) ?? null;
+  }, [pantry, search]);
+
   return (
     <div className="space-y-4">
       <AddToListSheet recipe={listRecipe} onClose={() => setListRecipeId(null)} onNavigate={onNavigate} />
@@ -309,13 +344,7 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
         open={Boolean(categoryRecipe) || managing}
         onClose={() => { setCategoryRecipeId(null); setManaging(false); }}
       />
-      <div className="grid grid-cols-2 gap-2">
       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
-        <DialogTrigger asChild>
-          <Button className="min-h-11 w-full gap-2">
-            <Plus className="h-4 w-4" /> Recept
-          </Button>
-        </DialogTrigger>
         <DialogContent className="bg-background max-h-[90vh] overflow-y-auto sm:max-w-xl">
           <DialogHeader>
             <DialogTitle className="font-display text-xl">Nieuw recept</DialogTitle>
@@ -446,8 +475,6 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
         </DialogContent>
       </Dialog>
 
-      <RecipeSuggestDialog />
-      </div>
       <PlusSheet feature={overLimit ? 'recept' : null} onClose={() => setOverLimit(false)} />
 
       <RecipeDetailSheet
@@ -477,22 +504,58 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
       )}
 
       {!loading && recipes.length === 0 && (
-        <div className="py-12 text-center text-muted-foreground">
-          <ChefHat className="mx-auto mb-2 h-10 w-10 opacity-40" />
-          <p className="font-display text-lg text-foreground">Nog geen recepten</p>
-          <p className="mt-1 text-sm">Plak een link van TikTok, Instagram, YouTube of een receptsite.</p>
-          <Button className="mt-4 min-h-11 gap-2" onClick={() => setOpen(true)}>
-            <Plus className="h-4 w-4" /> Recept toevoegen
-          </Button>
-        </div>
+        <section className="space-y-4">
+          <div className="grid grid-cols-2 gap-2" aria-hidden="true">
+            <div className={`col-span-2 flex h-[4.5rem] items-end rounded-[14px] px-3 py-2.5 ${tintOf('groen')}`}>
+              <span className="font-display text-[0.9375rem] font-semibold">courgette · pesto · penne</span>
+            </div>
+            <div className={`flex h-[4.5rem] items-end rounded-[14px] px-3 py-2.5 ${tintOf('blauw')}`}>
+              <span className="font-display text-[0.84375rem] font-semibold">kip · broccoli</span>
+            </div>
+            <div className={`flex h-[4.5rem] items-end rounded-[14px] px-3 py-2.5 ${tintOf('paars')}`}>
+              <span className="font-display text-[0.84375rem] font-semibold">zalm · citroen</span>
+            </div>
+          </div>
+          <div>
+            <h1 className="font-display text-2xl font-bold tracking-[-0.01em] text-foreground">Zo gaat jouw kookboek eruitzien</h1>
+            <p className="mt-1.5 text-sm text-muted-foreground">
+              Plak een link van TikTok, Instagram, YouTube of een receptsite. Ook zonder foto krijgt elk recept een eigen gezicht.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Button variant="accent" className="min-h-[50px] w-full" onClick={() => setOpen(true)}>Link plakken</Button>
+            <Button variant="outline" className="min-h-[50px] w-full" onClick={() => { setManual(true); setOpen(true); }}>
+              Zelf invullen
+            </Button>
+          </div>
+          {!plus && (
+            <p className="text-center text-xs text-muted-foreground">
+              Vijf per maand gratis · zelf typen kan altijd
+            </p>
+          )}
+        </section>
       )}
 
       {!loading && recipes.length > 0 && (
         <>
+          <header className="px-1">
+            <h1 className="font-display text-[1.75rem] font-bold tracking-[-0.02em] text-foreground">
+              {filter ? findCategory(recipeCategories, filter).name : 'Wat eten we?'}
+            </h1>
+            <p className="mt-0.5 text-[0.8125rem] text-muted-foreground">
+              {filter
+                ? `${visibleRecipes.length} van je ${recipes.length} recepten`
+                : search.trim()
+                  ? `${visibleRecipes.length} ${visibleRecipes.length === 1 ? 'recept' : 'recepten'} met “${search.trim()}”`
+                  : `${recipes.length} ${recipes.length === 1 ? 'recept' : 'recepten'}${favoriet ? ` · ${favoriet.recipe.name} maak je het vaakst` : ''}`}
+            </p>
+          </header>
+
           {/* Sticks under the header, so searching and filtering stay within reach
               however far you have scrolled. */}
           <div className="sticky top-14 z-10 -mx-4 space-y-2 bg-background/95 px-4 pb-2 pt-2 backdrop-blur-md">
-          <div className="relative">
+          <div className="flex items-center gap-2">
+          <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={search}
@@ -511,6 +574,15 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
                 <X className="h-4 w-4" />
               </button>
             )}
+          </div>
+          <button
+            type="button"
+            onClick={() => setSort((prev) => (prev === 'nieuw' ? 'naam' : 'nieuw'))}
+            aria-label={sort === 'nieuw' ? 'Nu nieuwste eerst, sorteer op naam' : 'Nu op naam, sorteer op nieuwste'}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] border border-border bg-card text-muted-foreground transition-colors duration-150 ease-smooth hover:text-foreground"
+          >
+            <ArrowUpDown className="h-4 w-4" />
+          </button>
           </div>
 
           {filterNames.length > 0 && (
@@ -558,21 +630,6 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
           )}
           </div>
 
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">
-              <span className="tabular-nums">{visibleRecipes.length}</span>
-              {visibleRecipes.length === 1 ? ' recept' : ' recepten'}
-            </p>
-            <button
-              type="button"
-              onClick={() => setSort((prev) => (prev === 'nieuw' ? 'naam' : 'nieuw'))}
-              className="inline-flex min-h-11 items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground"
-            >
-              <ArrowUpDown className="h-3.5 w-3.5" />
-              {sort === 'nieuw' ? 'Nieuwste eerst' : 'Op naam'}
-            </button>
-          </div>
-
           {visibleRecipes.length === 0 && (
             <p className="py-8 text-center text-sm text-muted-foreground">
               {search.trim()
@@ -581,16 +638,47 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
             </p>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
-            {visibleRecipes.map((recipe) => (
-              <RecipeTile
-                key={recipe.id}
-                recipe={recipe}
-                categories={recipeCategories}
-                onOpen={() => setDetailId(recipe.id)}
-                onAddToList={() => setListRecipeId(recipe.id)}
-              />
-            ))}
+          {inHuis && visibleRecipes.length > 0 && (
+            <p className="rounded-[12px] border border-border bg-primary-soft px-3 py-2 text-xs text-primary-deep">
+              Je hebt <span className="font-semibold tabular-nums">{inHuis.quantity}</span> {inHuis.name.toLowerCase()} in huis.
+            </p>
+          )}
+
+          <div className="grid grid-cols-2 gap-2">
+            {mosaicRecipes.map((recipe, index) => {
+              // Zoekresultaten liggen allemaal breed; anders krijgt het overzicht
+              // ritme doordat elk vijfde vlak de hele breedte pakt.
+              const wide = Boolean(search.trim()) || index % 5 === 0;
+              return (
+                <div key={recipe.id} className={wide ? 'col-span-2' : ''}>
+                  <RecipeTile
+                    recipe={recipe}
+                    categories={recipeCategories}
+                    cookCount={cookCounts.get(recipe.id) ?? 0}
+                    reason={reasonFor(recipe)}
+                    wide={wide}
+                    onOpen={() => setDetailId(recipe.id)}
+                    onAddToList={() => setListRecipeId(recipe.id)}
+                  />
+                </div>
+              );
+            })}
+          </div>
+
+          {recipes.length < 3 && !filter && !search.trim() && (
+            <section className="rounded-[14px] border border-border bg-primary-soft p-3.5">
+              <h2 className="font-display text-[1.0625rem] font-semibold text-foreground">Bonuschef kijkt elke woensdag mee</h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Hoe meer recepten hier staan, hoe vaker er iets van jullie in de bonus ligt.
+              </p>
+            </section>
+          )}
+
+          <div className="space-y-2 pt-1">
+            <Button variant="accent" className="min-h-[50px] w-full gap-2" onClick={() => setOpen(true)}>
+              <Plus className="h-4 w-4" /> Recept ophalen uit een link
+            </Button>
+            <RecipeSuggestDialog />
           </div>
         </>
       )}

@@ -59,7 +59,9 @@ export const sameName = (a: string, b: string) => a.trim().toLowerCase() === b.t
 
 /** The category as it is known, or a plain fallback for a label without a row. */
 export const findCategory = (categories: RecipeCategory[], name: string): RecipeCategory =>
-  categories.find((c) => sameName(c.name, name)) ?? { id: name, name, color: 'groen' };
+  categories.find((c) => sameName(c.name, name))
+  // Een label dat nog geen eigen categorie is, houdt wel de kleur die erbij hoort.
+  ?? { id: name, name, color: PRESETS.find((preset) => sameName(preset.name, name))?.color ?? 'groen' };
 
 const MEAT = /\b(kip|kipfilet|gehakt|rund|rundvlees|varken|varkens\w*|spek|spekjes|worst|rookworst|biefstuk|ham|bacon|lam|lams\w*|kalkoen|shoarma|speklap|chorizo|salami|beef|chicken|pork)\b/i;
 const FISH = /\b(vis|zalm|zalmfilet|tonijn|garnalen|garnaal|kabeljauw|mossel|mosselen|makreel|haring|forel|scampi|inktvis|ansjovis|salmon|shrimp|tuna)\b/i;
