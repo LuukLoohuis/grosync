@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { DEFAULT_PANTRY_STAPLES } from '@/lib/pantryStaples';
+import { t } from '@/lib/i18n';
 
 /** What this account always has at home. Without a saved row the defaults apply. */
 export const usePantryStaples = (userId: string | null) => {
@@ -35,7 +36,7 @@ export const usePantryStaples = (userId: string | null) => {
     if (error) {
       console.error('Saving settings failed:', error);
       setPantryStaples(previous);
-      toast.error('Opslaan lukte niet. Probeer het opnieuw.');
+      toast.error(t("Opslaan lukte niet. Probeer het opnieuw."));
     }
   }, [userId, pantryStaples]);
 

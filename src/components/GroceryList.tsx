@@ -23,8 +23,9 @@ import { sortByStoreRoute, type Department } from '@/lib/storeRouteSort';
 import { splitAmount } from '@/lib/itemAmount';
 import { translateForSearch } from '@/lib/groceryTranslations';
 import type { GroceryItem } from '@/types';
+import { locale, t } from '@/lib/i18n';
 
-const euro = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' });
+const euro = new Intl.NumberFormat(locale(), { style: 'currency', currency: 'EUR' });
 
 // Strip quantity prefix and translate for AH search
 const toSearchQuery = (name: string) => {
@@ -79,8 +80,8 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
     // Wat in het mandje gaat, staat straks in de kast.
     void stockUp(item.name, 'lijst');
     void setGroceryItemChecked(item.id, true);
-    toast(`“${item.name}” afgevinkt`, {
-      action: { label: 'Ongedaan maken', onClick: () => { void setGroceryItemChecked(item.id, false); } },
+    toast(t("“{0}” afgevinkt", [item.name]), {
+      action: { label: t("Ongedaan maken"), onClick: () => { void setGroceryItemChecked(item.id, false); } },
     });
   };
 
@@ -104,12 +105,12 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
       const { matches, unmatched } = await matchAhProducts(batch.map(({ id, name }) => ({ id, name })));
       await applyAhMatches(matches, unmatched ?? []);
       toast.success(matches.length === batch.length
-        ? `Alle ${matches.length} boodschappen gevonden bij AH`
-        : `${matches.length} van ${batch.length} boodschappen gevonden bij AH`);
+        ? t("Alle {0} boodschappen gevonden bij AH", [matches.length])
+        : t('{0} van {1} boodschappen gevonden bij AH', [matches.length, batch.length]));
     } catch (e) {
       console.error('AH prices failed:', e);
-      toast.error('AH-prijzen ophalen lukte niet. Controleer je verbinding en probeer het opnieuw.', {
-        action: { label: 'Opnieuw proberen', onClick: () => { void fetchAhPrices(); } },
+      toast.error(t("AH-prijzen ophalen lukte niet. Controleer je verbinding en probeer het opnieuw."), {
+        action: { label: t("Opnieuw proberen"), onClick: () => { void fetchAhPrices(); } },
       });
     } finally {
       setPricing(false);
@@ -167,7 +168,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
         <div className="flex min-h-[3.5rem] items-center gap-1 rounded-[14px] border border-border bg-card pl-1 pr-3">
           <button
             onClick={() => checkOff(item)}
-            aria-label={`Vink ${item.name} af`}
+            aria-label={t("Vink {0} af", [item.name])}
             className="group/check flex h-11 w-11 shrink-0 items-center justify-center"
           >
             <span className="h-6 w-6 rounded-full border-2 border-border-strong transition-colors duration-150 ease-smooth group-hover/check:border-primary group-hover/check:bg-primary-soft" />
@@ -177,7 +178,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
           <button
             type="button"
             onClick={() => setSheetItemId(item.id)}
-            aria-label={`Opties voor ${item.name}`}
+            aria-label={t("Opties voor {0}", [item.name])}
             className="flex min-w-0 flex-1 items-center gap-2 py-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <span className="min-w-0 flex-1">
@@ -189,7 +190,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
                 <span className="block truncate text-xs text-muted-foreground">{item.ahProduct.title}</span>
               )}
               {!item.ahProduct && item.priceCheckedAt && (
-                <span className="block text-xs text-muted-foreground">niet gevonden bij AH</span>
+                <span className="block text-xs text-muted-foreground">{t("niet gevonden bij AH")}</span>
               )}
             </span>
 
@@ -206,7 +207,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
                   )}
                   {bonus && (
                     <span className="mt-0.5 inline-block rounded-md bg-[hsl(var(--ah-bonus))] px-1.5 py-px font-display text-[0.625rem] font-bold uppercase tracking-wide text-white">
-                      Bonus
+                      {t("Bonus")}
                     </span>
                   )}
                 </>
@@ -224,21 +225,21 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
     <div className="space-y-6">
       <header className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="font-display text-2xl font-bold tracking-[-0.02em] text-foreground">Samen boodschappen</h1>
+          <h1 className="font-display text-2xl font-bold tracking-[-0.02em] text-foreground">{t("Samen boodschappen")}</h1>
           <p className="mt-0.5 text-sm text-muted-foreground">
             {loading
-              ? 'Je lijst wordt opgehaald'
+              ? t("Je lijst wordt opgehaald")
               : unchecked.length === 0 && checked.length === 0
-                ? 'Nog niets op je lijst'
-                : `${unchecked.length} te halen · ${checked.length} in de kar`}
+                ? t("Nog niets op je lijst")
+                : t("{0} te halen · {1} in de kar", [unchecked.length, checked.length])}
           </p>
         </div>
         {groceryItems.length > 0 && (
           <button
             type="button"
             onClick={() => setClearOpen(true)}
-            aria-label="Lijst leegmaken"
-            title="Lijst leegmaken"
+            aria-label={t("Lijst leegmaken")}
+            title={t("Lijst leegmaken")}
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] border border-border bg-card text-muted-foreground transition-colors duration-150 ease-smooth hover:border-destructive/50 hover:text-destructive"
           >
             <Trash2 className="h-5 w-5" strokeWidth={1.9} />
@@ -248,13 +249,13 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
 
       <div className="flex gap-2">
         <Input
-          placeholder="Wat moet je halen?"
-          aria-label="Wat moet je halen?"
+          placeholder={t("Wat moet je halen?")}
+          aria-label={t("Wat moet je halen?")}
           value={newItem}
           onChange={(e) => setNewItem(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
           className="bg-card border-border font-body" />
-        <Button onClick={() => handleAdd()} size="icon" className="shrink-0 h-11 w-11" aria-label="Toevoegen">
+        <Button onClick={() => handleAdd()} size="icon" className="shrink-0 h-11 w-11" aria-label={t("Toevoegen")}>
           <Plus className="h-4 w-4" />
         </Button>
       </div>
@@ -286,7 +287,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
                 deptFilter === null ? 'bg-primary text-primary-foreground' : 'border border-border text-muted-foreground hover:text-foreground'
               }`}
             >
-              Alles
+              {t("Alles")}
             </button>
             {alleGroepen.map((group) => (
               <button
@@ -316,13 +317,13 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
             onClick={() => changeOrder(order === 'department' ? 'added' : 'department')}
             className="min-h-11 text-sm font-medium text-muted-foreground hover:text-foreground"
           >
-            {order === 'department' ? 'Op afdeling' : 'Op volgorde'}
+            {order === 'department' ? t("Op afdeling") : t("Op volgorde")}
           </button>
 
           <div className="flex items-center gap-1">
             {unchecked.length > 0 && (
               <Button variant="outline" className="min-h-11 gap-2" onClick={() => setShopping(true)}>
-                <Store className="h-4 w-4" /> Winkelmodus
+                <Store className="h-4 w-4" /> {t("Winkelmodus")}
               </Button>
             )}
 
@@ -330,7 +331,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                aria-label="Meer met deze lijst"
+                aria-label={t("Meer met deze lijst")}
                 className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
               >
                 <MoreVertical className="h-4 w-4" />
@@ -338,14 +339,14 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuItem className="min-h-11 cursor-pointer gap-2" onSelect={() => { void mergeDuplicateItems(); }}>
-                <Merge className="h-4 w-4" /> Dubbele samenvoegen
+                <Merge className="h-4 w-4" /> {t("Dubbele samenvoegen")}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="min-h-11 cursor-pointer gap-2 text-destructive focus:text-destructive"
                 onSelect={(e) => { e.preventDefault(); setClearOpen(true); }}
               >
-                <Trash2 className="h-4 w-4" /> Lijst leegmaken
+                <Trash2 className="h-4 w-4" /> {t("Lijst leegmaken")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -354,20 +355,20 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
           <AlertDialog open={clearOpen} onOpenChange={setClearOpen}>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Hele lijst leegmaken?</AlertDialogTitle>
+                <AlertDialogTitle>{t("Hele lijst leegmaken?")}</AlertDialogTitle>
                 <AlertDialogDescription>
                   {groceryItems.length === 1
-                    ? 'De boodschap verdwijnt, ook voor wie meekijkt.'
-                    : `Alle ${groceryItems.length} boodschappen verdwijnen, ook voor wie meekijkt.`}
+                    ? t("De boodschap verdwijnt, ook voor wie meekijkt.")
+                    : t("Alle {0} boodschappen verdwijnen, ook voor wie meekijkt.", [groceryItems.length])}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel className="min-h-11">Annuleren</AlertDialogCancel>
+                <AlertDialogCancel className="min-h-11">{t("Annuleren")}</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={clearAllItems}
                   className="min-h-11 bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
-                  Leegmaken
+                  {t("Leegmaken")}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </AlertDialogContent>
@@ -387,13 +388,13 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
           <span aria-hidden="true" className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary-soft text-primary">
             <ShoppingCart className="h-6 w-6" strokeWidth={1.8} />
           </span>
-          <h2 className="mt-3 font-display text-xl font-bold tracking-[-0.01em] text-foreground">Schone lei</h2>
+          <h2 className="mt-3 font-display text-xl font-bold tracking-[-0.01em] text-foreground">{t("Schone lei")}</h2>
           <p className="mx-auto mt-1 max-w-[18rem] text-sm text-muted-foreground">
-            Begin met typen, of haal een recept op. Jullie zien allebei direct hetzelfde.
+            {t("Begin met typen, of haal een recept op. Jullie zien allebei direct hetzelfde.")}
           </p>
           {onNavigate && (
             <Button variant="outline" className="mt-4 min-h-12 w-full" onClick={() => onNavigate('recipes')}>
-              Uit een recept
+              {t("Uit een recept")}
             </Button>
           )}
         </section>
@@ -430,7 +431,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
               aria-expanded={showChecked}
               className="flex min-h-12 min-w-0 flex-1 items-center gap-2 text-left text-sm text-muted-foreground"
             >
-              <span className="shrink-0 font-medium text-foreground">In de kar</span>
+              <span className="shrink-0 font-medium text-foreground">{t("In de kar")}</span>
               <span className="shrink-0 tabular-nums">· {checked.length} ·</span>
               <span className="min-w-0 flex-1 truncate">{checked.map((i) => i.name).join(', ')}</span>
               <ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-150 ease-smooth ${showChecked ? 'rotate-180' : ''}`} />
@@ -443,7 +444,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
                 <div key={item.id} className="group flex min-h-[3.5rem] items-center gap-1 rounded-[14px] border border-border/70 bg-background pl-1 pr-3">
                   <button
                     onClick={() => { void setGroceryItemChecked(item.id, false); }}
-                    aria-label={`Zet ${item.name} terug op je lijst`}
+                    aria-label={t("Zet {0} terug op je lijst", [item.name])}
                     className="flex h-11 w-11 shrink-0 items-center justify-center"
                   >
                     <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary">
@@ -453,7 +454,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
                   <span className="min-w-0 flex-1 truncate text-[0.9375rem] text-muted-foreground line-through">{item.name}</span>
                   <button
                     onClick={() => removeGroceryItem(item.id)}
-                    aria-label={`Verwijder ${item.name}`}
+                    aria-label={t("Verwijder {0}", [item.name])}
                     className="flex h-11 w-11 shrink-0 items-center justify-center text-destructive"
                   >
                     <X className="h-4 w-4" />
@@ -461,7 +462,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
                 </div>
               ))}
               <button onClick={clearCheckedItems} className="flex min-h-11 items-center gap-1 text-sm text-destructive hover:underline">
-                <Trash2 className="h-3.5 w-3.5" /> Alles uit de kar weghalen
+                <Trash2 className="h-3.5 w-3.5" /> {t("Alles uit de kar weghalen")}
               </button>
             </>
           )}
@@ -499,7 +500,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
                 <div className="flex items-center gap-3 rounded-[14px] bg-primary px-3.5 py-2.5">
                   <div className="min-w-0 flex-1 leading-tight">
                     <p className="text-[0.6875rem] text-primary-muted">
-                      Totaal bij AH{saving > 0.004 ? ` · je bespaart ${euro.format(saving)}` : bonusCount > 0 ? ` · ${bonusCount} in de bonus` : ''}
+                      {t("Totaal bij AH")}{saving > 0.004 ? t("· je bespaart {0}", [euro.format(saving)]) : bonusCount > 0 ? t("· {0} in de bonus", [bonusCount]) : ''}
                     </p>
                     <p className="font-display text-xl font-bold tabular-nums text-primary-foreground">{euro.format(ahTotal)}</p>
                   </div>
@@ -507,8 +508,8 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
                     type="button"
                     onClick={fetchAhPrices}
                     disabled={pricing}
-                    aria-label="AH-prijzen verversen"
-                    title="AH-prijzen verversen"
+                    aria-label={t("AH-prijzen verversen")}
+                    title={t("AH-prijzen verversen")}
                     className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-primary-muted hover:text-primary-foreground disabled:opacity-50"
                   >
                     <RefreshCw className={`h-4 w-4 ${pricing ? 'animate-spin' : ''}`} />
@@ -519,19 +520,19 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      <ShoppingBasket className="h-4 w-4" /> In mandje
+                      <ShoppingBasket className="h-4 w-4" /> {t("In mandje")}
                     </a>
                   </Button>
                 </div>
                 <p className="mt-1 text-[11px] text-muted-foreground">
-                  <span className="tabular-nums">{pricedItems.length} van {unchecked.length} gevonden</span> · Je bestelt bij AH, in de app of op ah.nl.
+                  <span className="tabular-nums">{t('{0} van {1} gevonden', [pricedItems.length, unchecked.length])}</span> {t("· Je bestelt bij AH, in de app of op ah.nl.")}
                 </p>
               </>
             ) : (
               <Button type="button" onClick={fetchAhPrices} disabled={pricing} className="min-h-11 w-full gap-2">
                 {pricing
-                  ? <><Loader2 className="h-4 w-4 animate-spin" /> Prijzen zoeken…</>
-                  : <><Tag className="h-4 w-4" /> Bekijk wat het kost bij AH</>}
+                  ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("Prijzen zoeken…")}</>
+                  : <><Tag className="h-4 w-4" /> {t("Bekijk wat het kost bij AH")}</>}
               </Button>
             )}
           </div>

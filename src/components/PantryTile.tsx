@@ -1,4 +1,5 @@
 import type { PantryItem } from '@/types';
+import { t } from '@/lib/i18n';
 
 interface PantryTileProps {
   item: PantryItem;
@@ -17,7 +18,7 @@ const PantryTile = ({ item, onOpen }: PantryTileProps) => {
     <button
       type="button"
       onClick={onOpen}
-      aria-label={`${item.name} openen`}
+      aria-label={t("{0} openen", [item.name])}
       className={`flex min-h-[46px] w-full items-center gap-2 rounded-[12px] border bg-card px-2.5 py-[7px] text-left transition-colors duration-150 ease-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
         op ? 'border-destructive/70' : item.low ? 'border-accent' : 'border-border hover:border-border-strong'
       }`}

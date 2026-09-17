@@ -5,6 +5,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { Button } from '@/components/ui/button';
 import { FEATURE_LABEL, FREE_LIMIT, type MeteredFeature } from '@/hooks/useEntitlements';
 import { BetalenUitError, PLUS_PRIJS, startCheckout, type PlusPlan } from '@/services/plusApi';
+import { locale, t } from '@/lib/i18n';
 
 interface PlusSheetProps {
   /** The feature that ran out, or null when the sheet is closed. */
@@ -16,14 +17,14 @@ interface PlusSheetProps {
 const resetDate = () => {
   const now = new Date();
   const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  return next.toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' });
+  return next.toLocaleDateString(locale(), { day: 'numeric', month: 'long' });
 };
 
 const PERKS = [
-  { icon: Link2, text: 'Onbeperkt recepten ophalen uit een link of video' },
-  { icon: Camera, text: 'Onbeperkt je kast scannen met een foto' },
-  { icon: Sparkles, text: 'Bonuschef, receptsuggesties en voedingswaarden' },
-  { icon: Tag, text: 'Eén keer voor jullie samen, ook voor je partner' },
+  { icon: Link2, text: t('Onbeperkt recepten ophalen uit een link of video') },
+  { icon: Camera, text: t('Onbeperkt je kast scannen met een foto') },
+  { icon: Sparkles, text: t('Bonuschef, receptsuggesties en voedingswaarden') },
+  { icon: Tag, text: t('Eén keer voor jullie samen, ook voor je partner') },
 ];
 
 const PlusSheet = ({ feature, onClose }: PlusSheetProps) => {
@@ -35,10 +36,10 @@ const PlusSheet = ({ feature, onClose }: PlusSheetProps) => {
       await startCheckout(plan);
     } catch (error) {
       if (error instanceof BetalenUitError) {
-        toast('Plus is er bijna', { description: 'Betalen staat nog niet aan. Mail couplecart@gmail.com als je het eerder wil.' });
+        toast(t("Plus is er bijna"), { description: t('Betalen staat nog niet aan. Mail couplecart@gmail.com als je het eerder wil.') });
       } else {
         console.error('Afrekenen mislukt:', error);
-        toast.error('Afrekenen lukte niet. Probeer het zo nog eens.');
+        toast.error(t("Afrekenen lukte niet. Probeer het zo nog eens."));
       }
       setBezig(null);
     }
@@ -49,16 +50,15 @@ const PlusSheet = ({ feature, onClose }: PlusSheetProps) => {
     <SheetContent side="bottom" className="mx-auto max-w-lg rounded-t-[20px]">
       <SheetHeader className="pr-10 text-left">
         <SheetTitle className="font-display text-xl">
-          Je {FREE_LIMIT} {feature ? FEATURE_LABEL[feature] : ''} van deze maand zijn op
+          {t('Je {0} {1} van deze maand zijn op', [FREE_LIMIT, feature ? FEATURE_LABEL[feature] : ''])}
         </SheetTitle>
         <SheetDescription>
-          Op {resetDate()} staat je tegoed weer op {FREE_LIMIT}. Je lijst, je recepten en je voorraad
-          blijven gewoon werken.
+          {t('Op {0} staat je tegoed weer op {1}. Je lijst, je recepten en je voorraad blijven gewoon werken.', [resetDate(), FREE_LIMIT])}
         </SheetDescription>
       </SheetHeader>
 
       <div className="mt-5 rounded-[14px] border border-border bg-accent-soft p-4">
-        <p className="font-display text-lg font-bold tracking-[-0.01em] text-foreground">CoupleCart Plus</p>
+        <p className="font-display text-lg font-bold tracking-[-0.01em] text-foreground">{t("CoupleCart Plus")}</p>
         <ul className="mt-3 space-y-2">
           {PERKS.map(({ icon: Icon, text }) => (
             <li key={text} className="flex items-start gap-2 text-sm text-foreground">
@@ -93,18 +93,18 @@ const PlusSheet = ({ feature, onClose }: PlusSheetProps) => {
           ))}
         </div>
         <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Check className="h-3.5 w-3.5" /> Opzeggen wanneer je wil, bij Stripe zelf
+          <Check className="h-3.5 w-3.5" /> {t("Opzeggen wanneer je wil, bij Stripe zelf")}
         </p>
       </div>
 
       <p className="mt-4 text-center text-xs text-muted-foreground">
-        Hulp nodig?{' '}
+        {t("Hulp nodig?")}{' '}
         <a className="font-medium text-primary hover:underline" href="mailto:couplecart@gmail.com?subject=Hulp%20bij%20CoupleCart">
           couplecart@gmail.com
         </a>
       </p>
 
-      <Button variant="outline" className="mt-3 min-h-12 w-full" onClick={onClose}>Nu even niet</Button>
+      <Button variant="outline" className="mt-3 min-h-12 w-full" onClick={onClose}>{t("Nu even niet")}</Button>
     </SheetContent>
   </Sheet>
   );

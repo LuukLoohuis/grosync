@@ -6,8 +6,9 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { useAppContext } from '@/contexts/AppContext';
 import { ahProductUrl, fetchAhAlternatives, type AhAlternative } from '@/services/ahApi';
 import type { GroceryItem } from '@/types';
+import { locale, t } from '@/lib/i18n';
 
-const euro = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' });
+const euro = new Intl.NumberFormat(locale(), { style: 'currency', currency: 'EUR' });
 
 interface AhProductSheetProps {
   item: GroceryItem | null;
@@ -99,12 +100,12 @@ const AhProductSheet = ({ item, onClose }: AhProductSheetProps) => {
         {shown && (
           <>
             <SheetHeader className="px-5 pb-3 pt-5 pr-14 text-left">
-              <SheetTitle className="font-display text-xl">Kies een ander product</SheetTitle>
-              <SheetDescription className="truncate">Voor {shown.name}</SheetDescription>
+              <SheetTitle className="font-display text-xl">{t("Kies een ander product")}</SheetTitle>
+              <SheetDescription className="truncate">{t('Voor {0}', [shown.name])}</SheetDescription>
             </SheetHeader>
 
             <div className="flex-1 overflow-y-auto px-5 pb-4">
-              <div role="group" aria-label="Producten bij AH" className="space-y-2">
+              <div role="group" aria-label={t("Producten bij AH")} className="space-y-2">
                 {choices.map((choice) => {
                   const isSelected = choice.productId === selectedId;
                   return (
@@ -124,11 +125,11 @@ const AhProductSheet = ({ item, onClose }: AhProductSheetProps) => {
                         <span className="block text-sm font-medium text-foreground">{choice.title}</span>
                         <span className="block text-xs text-muted-foreground tabular-nums">
                           {[choice.unitSize, euro.format(choice.price)].filter(Boolean).join(' · ')}
-                          {current && choice.productId === current.productId && ' · nu gekozen'}
+                          {current && choice.productId === current.productId && t(" · nu gekozen")}
                         </span>
                       </span>
                       {choice.isBonus && (
-                        <span className="shrink-0 rounded-md bg-ah-bonus/15 px-1.5 py-0.5 text-xs font-semibold text-accent-ink">Bonus</span>
+                        <span className="shrink-0 rounded-md bg-ah-bonus/15 px-1.5 py-0.5 text-xs font-semibold text-accent-ink">{t("Bonus")}</span>
                       )}
                     </button>
                   );
@@ -138,26 +139,26 @@ const AhProductSheet = ({ item, onClose }: AhProductSheetProps) => {
 
               {status === 'error' && (
                 <p className="mt-3 text-sm text-muted-foreground">
-                  Andere producten ophalen lukte niet.{' '}
+                  {t("Andere producten ophalen lukte niet.")}{' '}
                   <button type="button" onClick={() => setAttempt((n) => n + 1)} className="min-h-11 font-medium text-primary hover:underline">
-                    Opnieuw proberen
+                    {t("Opnieuw proberen")}
                   </button>
                 </p>
               )}
               {status === 'ready' && options.length === 0 && (
-                <p className="mt-3 text-sm text-muted-foreground">AH heeft geen andere producten voor deze boodschap.</p>
+                <p className="mt-3 text-sm text-muted-foreground">{t("AH heeft geen andere producten voor deze boodschap.")}</p>
               )}
 
               <div className="mt-4 flex items-center justify-between rounded-lg bg-muted pl-3">
                 <span className="text-sm font-medium text-foreground tabular-nums">
-                  Aantal: {quantity}{selected ? ` · ${euro.format(selected.price * quantity)}` : ''}
+                  {t("Aantal:")} {quantity}{selected ? ` · ${euro.format(selected.price * quantity)}` : ''}
                 </span>
                 <div className="flex items-center">
                   <button
                     type="button"
                     onClick={() => setQuantity((n) => Math.max(1, n - 1))}
                     disabled={quantity <= 1}
-                    aria-label="Minder"
+                    aria-label={t("Minder")}
                     className="flex h-11 w-11 items-center justify-center rounded-md hover:bg-background disabled:opacity-40"
                   >
                     <Minus className="h-4 w-4" />
@@ -166,7 +167,7 @@ const AhProductSheet = ({ item, onClose }: AhProductSheetProps) => {
                     type="button"
                     onClick={() => setQuantity((n) => Math.min(99, n + 1))}
                     disabled={quantity >= 99}
-                    aria-label="Meer"
+                    aria-label={t("Meer")}
                     className="flex h-11 w-11 items-center justify-center rounded-md hover:bg-background disabled:opacity-40"
                   >
                     <Plus className="h-4 w-4" />
@@ -181,7 +182,7 @@ const AhProductSheet = ({ item, onClose }: AhProductSheetProps) => {
                   rel="noopener noreferrer"
                   className="mt-2 inline-flex min-h-11 items-center gap-1.5 text-sm text-primary hover:underline"
                 >
-                  <ExternalLink className="h-4 w-4" /> Bekijk op ah.nl
+                  <ExternalLink className="h-4 w-4" /> {t("Bekijk op ah.nl")}
                 </a>
               )}
             </div>
@@ -189,7 +190,7 @@ const AhProductSheet = ({ item, onClose }: AhProductSheetProps) => {
             <div className="border-t border-border px-5 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
               <Button className="min-h-11 w-full gap-2" onClick={applyChoice} disabled={!selected || saving}>
                 {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-                Gebruik dit product
+                {t("Gebruik dit product")}
               </Button>
             </div>
           </>

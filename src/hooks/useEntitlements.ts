@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { t } from '@/lib/i18n';
 
 /** The two things that cost real money; the rest is free for everyone. */
 export type MeteredFeature = 'recept' | 'kastfoto';
@@ -7,8 +8,8 @@ export type MeteredFeature = 'recept' | 'kastfoto';
 export const FREE_LIMIT = 5;
 
 export const FEATURE_LABEL: Record<MeteredFeature, string> = {
-  recept: 'recepten ophalen',
-  kastfoto: 'kastfoto’s',
+  recept: t('recepten ophalen'),
+  kastfoto: t('kastfoto’s'),
 };
 
 /** The month the meter runs in, in Dutch time, as the database writes it. */

@@ -1,5 +1,6 @@
 import { useRef, useState, type MouseEvent, type PointerEvent, type ReactNode } from 'react';
 import { Check } from 'lucide-react';
+import { t } from '@/lib/i18n';
 
 // How far a row must travel before letting go checks it off.
 const THRESHOLD = 96;
@@ -77,7 +78,7 @@ const SwipeToCheck = ({ onSwipe, children }: SwipeToCheckProps) => {
         className="absolute inset-0 flex items-center gap-2 bg-primary pl-4 text-sm font-semibold text-primary-foreground"
         style={{ opacity: offset > 0 ? 0.4 + 0.6 * Math.min(offset / THRESHOLD, 1) : 0 }}
       >
-        <Check className="h-5 w-5" /> Afvinken
+        <Check className="h-5 w-5" /> {t("Afvinken")}
       </div>
       <div
         className={`relative touch-pan-y ${dragging ? '' : 'transition-transform duration-200'}`}

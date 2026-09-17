@@ -10,13 +10,14 @@ import GroceryList from '@/components/GroceryList';
 import RecipeList from '@/components/RecipeList';
 import UsualsList from '@/components/UsualsList';
 import OfflineBanner from '@/components/OfflineBanner';
+import { t } from '@/lib/i18n';
 
 const SharedListContent = () => {
   const [tab, setTab] = useState<'list' | 'usuals' | 'recipes'>('list');
 
   const copyLink = () => {
     navigator.clipboard.writeText(window.location.href);
-    toast.success('Link gekopieerd!');
+    toast.success(t("Link gekopieerd!"));
   };
 
   return (
@@ -24,13 +25,13 @@ const SharedListContent = () => {
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src={couplecartLogo} alt="CoupleCart" className="h-24 w-24" />
+            <img src={couplecartLogo} alt={t("CoupleCart")} className="h-24 w-24" />
             <div>
-              <h1 className="font-display text-xl text-foreground">CoupleCart</h1>
-              <p className="text-xs text-muted-foreground">Gedeeld lijstje 🛒</p>
+              <h1 className="font-display text-xl text-foreground">{t("CoupleCart")}</h1>
+              <p className="text-xs text-muted-foreground">{t("Gedeeld lijstje 🛒")}</p>
             </div>
           </div>
-          <Button variant="outline" size="icon" onClick={copyLink} title="Kopieer link">
+          <Button variant="outline" size="icon" onClick={copyLink} title={t("Kopieer link")}>
             <Link2 className="h-4 w-4" />
           </Button>
         </div>
@@ -45,7 +46,7 @@ const SharedListContent = () => {
               tab === 'list' ? 'bg-card shadow-flat text-foreground' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            <ShoppingCart className="h-4 w-4" /> Boodschappen
+            <ShoppingCart className="h-4 w-4" /> {t("Boodschappen")}
           </button>
           <button
             onClick={() => setTab('usuals')}
@@ -53,7 +54,7 @@ const SharedListContent = () => {
               tab === 'usuals' ? 'bg-card shadow-flat text-foreground' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            <Star className="h-4 w-4" /> Favorieten
+            <Star className="h-4 w-4" /> {t("Favorieten")}
           </button>
           <button
             onClick={() => setTab('recipes')}
@@ -61,7 +62,7 @@ const SharedListContent = () => {
               tab === 'recipes' ? 'bg-card shadow-flat text-foreground' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            <ChefHat className="h-4 w-4" /> Recepten
+            <ChefHat className="h-4 w-4" /> {t("Recepten")}
           </button>
         </div>
       </div>
@@ -118,7 +119,7 @@ const SharedList = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Laden...</p>
+        <p className="text-muted-foreground">{t("Laden...")}</p>
       </div>
     );
   }
@@ -127,8 +128,8 @@ const SharedList = () => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <p className="text-xl font-display text-foreground">Lijstje niet gevonden</p>
-          <p className="text-muted-foreground mt-2">Controleer de link en probeer opnieuw.</p>
+          <p className="text-xl font-display text-foreground">{t("Lijstje niet gevonden")}</p>
+          <p className="text-muted-foreground mt-2">{t("Controleer de link en probeer opnieuw.")}</p>
         </div>
       </div>
     );

@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { useAppContext } from '@/contexts/AppContext';
 import { CATEGORY_COLORS, dotOf, sameName } from '@/lib/recipeCategories';
 import type { RecipeCategory } from '@/types';
+import { t } from '@/lib/i18n';
 
 /** Renaming, recolouring and removing the categories you made. */
 const CategoryManager = () => {
@@ -23,21 +24,21 @@ const CategoryManager = () => {
     setNames((prev) => { const next = { ...prev }; delete next[category.id]; return next; });
     if (!typed || typed === category.name) return;
     if (recipeCategories.some((c) => c.id !== category.id && sameName(c.name, typed))) {
-      toast.error(`Je hebt “${typed}” al`);
+      toast.error(t("Je hebt “{0}” al", [typed]));
       return;
     }
     await renameRecipeCategory(category.id, typed);
-    toast.success(`“${category.name}” heet nu “${typed}”`);
+    toast.success(t("“{0}” heet nu “{1}”", [category.name, typed]));
   };
 
   const remove = async (category: RecipeCategory) => {
     setDoomed(null);
     await removeRecipeCategory(category.id);
-    toast.success(`“${category.name}” verwijderd`);
+    toast.success(t("“{0}” verwijderd", [category.name]));
   };
 
   if (recipeCategories.length === 0) {
-    return <p className="py-6 text-center text-sm text-muted-foreground">Je hebt nog geen categorieën gemaakt.</p>;
+    return <p className="py-6 text-center text-sm text-muted-foreground">{t("Je hebt nog geen categorieën gemaakt.")}</p>;
   }
 
   return (
@@ -51,7 +52,7 @@ const CategoryManager = () => {
               <Input
                 value={names[category.id] ?? category.name}
                 maxLength={24}
-                aria-label={`Naam van ${category.name}`}
+                aria-label={t("Naam van {0}", [category.name])}
                 onChange={(e) => setNames((prev) => ({ ...prev, [category.id]: e.target.value }))}
                 onBlur={() => save(category)}
                 onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
@@ -59,7 +60,7 @@ const CategoryManager = () => {
               <button
                 type="button"
                 onClick={() => setDoomed(category)}
-                aria-label={`${category.name} verwijderen`}
+                aria-label={t("{0} verwijderen", [category.name])}
                 className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-destructive transition-colors duration-150 ease-smooth hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <Trash2 className="h-4 w-4" />
@@ -81,7 +82,7 @@ const CategoryManager = () => {
                 </button>
               ))}
               <span className="ml-auto text-xs tabular-nums text-muted-foreground">
-                {count === 1 ? '1 recept' : `${count} recepten`}
+                {count === 1 ? t("1 recept") : t("{0} recepten", [count])}
               </span>
             </div>
           </div>
@@ -91,17 +92,17 @@ const CategoryManager = () => {
       <AlertDialog open={Boolean(doomed)} onOpenChange={(open) => { if (!open) setDoomed(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="font-display">“{doomed?.name}” verwijderen?</AlertDialogTitle>
+            <AlertDialogTitle className="font-display">{t('“{0}” verwijderen?', [doomed?.name])}</AlertDialogTitle>
             <AlertDialogDescription>
               {doomed && usedBy(doomed.name) > 0
-                ? `Het label verdwijnt van ${usedBy(doomed.name) === 1 ? '1 recept' : `${usedBy(doomed.name)} recepten`}. De recepten zelf blijven staan.`
-                : 'Deze categorie wordt nergens gebruikt.'}
+                ? t("Het label verdwijnt van {0}. De recepten zelf blijven staan.", [usedBy(doomed.name) === 1 ? t("1 recept") : t("{0} recepten", [usedBy(doomed.name)])])
+                : t("Deze categorie wordt nergens gebruikt.")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="min-h-11">Annuleren</AlertDialogCancel>
+            <AlertDialogCancel className="min-h-11">{t("Annuleren")}</AlertDialogCancel>
             <AlertDialogAction className="min-h-11 bg-destructive text-destructive-foreground hover:bg-destructive/90" onClick={() => doomed && remove(doomed)}>
-              Verwijderen
+              {t("Verwijderen")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

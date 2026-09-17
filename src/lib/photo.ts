@@ -1,3 +1,4 @@
+import { t } from '@/lib/i18n';
 /** Longest side of the photo that is sent; enough to read a label, small enough to send fast. */
 const MAX_SIDE = 1600;
 const QUALITY = 0.82;
@@ -14,10 +15,10 @@ export const toSmallDataUrl = (file: File): Promise<string> =>
       canvas.width = Math.round(image.width * scale);
       canvas.height = Math.round(image.height * scale);
       const context = canvas.getContext('2d');
-      if (!context) { reject(new Error('Canvas niet beschikbaar')); return; }
+      if (!context) { reject(new Error(t('Canvas niet beschikbaar'))); return; }
       context.drawImage(image, 0, 0, canvas.width, canvas.height);
       resolve(canvas.toDataURL('image/jpeg', QUALITY));
     };
-    image.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Foto lezen lukte niet')); };
+    image.onerror = () => { URL.revokeObjectURL(url); reject(new Error(t('Foto lezen lukte niet'))); };
     image.src = url;
   });

@@ -73,7 +73,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { ingredients, staples } = await req.json();
+    const { ingredients, staples, lang: gevraagd } = await req.json();
+    const lang = gevraagd === 'en' ? 'en' : 'nl';
     if (!ingredients || !Array.isArray(ingredients) || ingredients.length === 0) {
       return new Response(JSON.stringify({ error: 'Ingredients array is required' }), {
         status: 400,
@@ -103,7 +104,9 @@ Deno.serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: 'Je bent een creatieve kookassistent. Je suggereert recepten op basis van beschikbare ingrediënten. Antwoord ALLEEN via de tool call.',
+            content: lang === 'en'
+              ? 'You are a creative cooking assistant. You suggest recipes from the ingredients at hand. Write everything in English. Answer ONLY via the tool call.'
+              : 'Je bent een creatieve kookassistent. Je suggereert recepten op basis van beschikbare ingrediënten. Antwoord ALLEEN via de tool call.',
           },
           {
             role: 'user',
@@ -126,14 +129,14 @@ Deno.serve(async (req) => {
                     items: {
                       type: 'object',
                       properties: {
-                        name: { type: 'string', description: 'Naam van het recept in het Nederlands' },
-                        description: { type: 'string', description: 'Korte beschrijving (1-2 zinnen) in het Nederlands' },
+                        name: { type: 'string', description: lang === 'en' ? 'Recipe name in English' : 'Naam van het recept in het Nederlands' },
+                        description: { type: 'string', description: lang === 'en' ? 'Short description (1-2 sentences) in English' : 'Korte beschrijving (1-2 zinnen) in het Nederlands' },
                         ingredients: {
                           type: 'array',
                           items: { type: 'string' },
                           description: 'Lijst van alle ingrediënten met hoeveelheden',
                         },
-                        instructions: { type: 'string', description: 'Stap-voor-stap bereidingswijze in het Nederlands' },
+                        instructions: { type: 'string', description: lang === 'en' ? 'Step-by-step instructions in English' : 'Stap-voor-stap bereidingswijze in het Nederlands' },
                         servings: { type: 'number', description: 'Aantal personen' },
                         extra_needed: {
                           type: 'array',

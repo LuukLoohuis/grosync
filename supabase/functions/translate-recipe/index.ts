@@ -54,7 +54,8 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { name, description, ingredients, instructions } = await req.json();
+    const { name, description, ingredients, instructions, lang: gevraagd } = await req.json();
+    const doel = gevraagd === 'en' ? 'Engels' : 'Nederlands';
     const ai = textApi(await aiSettings());
     const apiKey = ai.key;
     if (!apiKey) throw new Error("API key is not configured");
@@ -62,10 +63,10 @@ Deno.serve(async (req) => {
     const endpoint = ai.endpoint;
     const model = ai.model;
 
-    const prompt = `Vertaal het volgende recept naar het Nederlands. Geef het resultaat terug als JSON met exact deze velden: name, description, ingredients (array van strings), instructions (string).
+    const prompt = `Vertaal het volgende recept naar het ${doel}. Geef het resultaat terug als JSON met exact deze velden: name, description, ingredients (array van strings), instructions (string).
 
 Belangrijk:
-- Vertaal alles naar correct Nederlands
+- Vertaal alles naar correct ${doel}
 - Zet eenheden in 'cups' om naar grammen of milliliters
 - Laat tablespoons en teaspoons in hun originele formaat staan
 - Behoud de structuur en nummering van instructies

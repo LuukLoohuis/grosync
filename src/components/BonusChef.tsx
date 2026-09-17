@@ -10,8 +10,9 @@ import { productName } from '@/lib/itemAmount';
 import { normalizeSteps, splitSteps } from '@/lib/recipeSteps';
 import { fetchBonusMatches, fetchBonusRecipes, type BonusHit, type BonusMatch, type BonusOffer, type BonusRecipe, type BonusResult } from '@/services/bonusApi';
 import type { Recipe } from '@/types';
+import { locale, t } from '@/lib/i18n';
 
-const euro = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' });
+const euro = new Intl.NumberFormat(locale(), { style: 'currency', currency: 'EUR' });
 
 
 // Zo lang doet het ophalen er meestal over; alleen voor de balk en een "nog ± ".
@@ -28,8 +29,8 @@ const geldigLabel = (endDate: string | null) => {
   const datum = new Date(endDate);
   if (Number.isNaN(datum.getTime())) return null;
   const dagen = Math.ceil((datum.getTime() - Date.now()) / 86_400_000);
-  const tot = `t/m ${datum.toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' })}`;
-  return dagen > 0 ? `${tot}, nog ${dagen === 1 ? '1 dag' : `${dagen} dagen`}` : tot;
+  const tot = t('t/m {0}', [datum.toLocaleDateString(locale(), { day: 'numeric', month: 'short' })]);
+  return dagen > 0 ? t('{0}, nog {1}', [tot, dagen === 1 ? t('1 dag') : t('{0} dagen', [dagen])]) : tot;
 };
 
 /** Hoeveel van dit recept in de bonus ligt bepaalt hoeveel gewicht het krijgt. */
@@ -109,7 +110,7 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
       setIdeas(await fetchBonusRecipes(offers, pantryStaples));
     } catch (error) {
       console.error('Bonus recipes failed:', error);
-      toast.error('Recepten bedenken lukte niet. Probeer het zo nog eens.');
+      toast.error(t("Recepten bedenken lukte niet. Probeer het zo nog eens."));
     } finally {
       setThinking(false);
     }
@@ -124,12 +125,12 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
       servings: idea.servings,
     });
     setSaved((previous) => [...previous, idea.name]);
-    toast.success(`“${idea.name}” staat bij je recepten`);
+    toast.success(t("“{0}” staat bij je recepten", [idea.name]));
   };
 
   const opLijst = (naam: string) => {
     addGroceryItem(naam);
-    toast.success(`“${naam}” op je lijst gezet`);
+    toast.success(t("“{0}” op je lijst gezet", [naam]));
   };
 
   // Het meeste voordeel bovenaan; daarna wat het meest compleet in de bonus ligt.
@@ -152,7 +153,7 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
 
   const ideeOpLijst = (idea: BonusRecipe) => {
     for (const regel of idea.ingredients) addGroceryItem(regel);
-    toast.success(`${idea.ingredients.length} boodschappen op je lijst`);
+    toast.success(t('{0} boodschappen op je lijst', [idea.ingredients.length]));
   };
   const aantalBekeken = result?.bonusCount ?? 0;
 
@@ -181,7 +182,7 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
     const recipe = recipes.find((r) => r.id === match.recipeId);
     if (!recipe) return null;
     const deel = dekking(match);
-    const label = `${match.hits.length} van ${match.ingredientCount} in de bonus`;
+    const label = t('{0} van {1} in de bonus', [match.hits.length, match.ingredientCount]);
 
     // Veel treffers: een vol groen vlak met de bedragen groot.
     if (deel >= 0.6) {
@@ -194,7 +195,7 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
           {match.saving > 0 && (
             <div className="mb-3.5 mt-2.5 flex items-end gap-2.5">
               <span className="font-display text-[2rem] font-bold leading-none tabular-nums text-primary-foreground">{euro.format(match.saving)}</span>
-              <span className="pb-1 text-[0.8125rem] text-primary-foreground/75">goedkoper deze week</span>
+              <span className="pb-1 text-[0.8125rem] text-primary-foreground/75">{t("goedkoper deze week")}</span>
             </div>
           )}
           <div className="overflow-hidden rounded-xl bg-card">
@@ -206,12 +207,12 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
               onAddToList={() => setListRecipe(recipe)}
               trigger={
                 <Button variant="outline" className="min-h-[46px] shrink-0 border-primary-foreground/30 bg-transparent px-4 text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground">
-                  Recept
+                  {t("Recept")}
                 </Button>
               }
             />
             <Button variant="secondary" className="min-h-[46px] flex-1" onClick={() => setListRecipe(recipe)}>
-              Op de lijst
+              {t("Op de lijst")}
             </Button>
           </div>
         </article>
@@ -248,9 +249,9 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
             <RecipeViewDialog
               recipe={recipe}
               onAddToList={() => setListRecipe(recipe)}
-              trigger={<Button variant="outline" className="min-h-11 shrink-0 px-4">Recept</Button>}
+              trigger={<Button variant="outline" className="min-h-11 shrink-0 px-4">{t("Recept")}</Button>}
             />
-            <Button className="min-h-11 flex-1" onClick={() => setListRecipe(recipe)}>Op de lijst</Button>
+            <Button className="min-h-11 flex-1" onClick={() => setListRecipe(recipe)}>{t("Op de lijst")}</Button>
           </div>
         </article>
       );
@@ -283,15 +284,15 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
   return (
     <div className="space-y-3">
       <header className="px-1">
-        <h1 className="font-display text-[1.75rem] font-bold tracking-[-0.02em] text-foreground">Deze week</h1>
+        <h1 className="font-display text-[1.75rem] font-bold tracking-[-0.02em] text-foreground">{t("Deze week")}</h1>
         <p className="mt-0.5 text-[0.8125rem] text-muted-foreground">
           {status === 'loading'
-            ? 'De bonus van deze week wordt opgehaald'
+            ? t("De bonus van deze week wordt opgehaald")
             : matches.length > 0
-              ? `${matches.length} van je ${recipes.length} recepten ${matches.length === 1 ? 'is' : 'zijn'} goedkoper${geldig ? ` · ${geldig}` : ''}`
+              ? (matches.length === 1 ? t('1 van je {0} recepten is goedkoper', [recipes.length]) : t('{0} van je {1} recepten zijn goedkoper', [matches.length, recipes.length])) + (geldig ? ` · ${geldig}` : '')
               : aantalBekeken > 0
-                ? `${aantalBekeken.toLocaleString('nl-NL')} aanbiedingen bekeken${geldig ? ` · ${geldig}` : ''}`
-                : 'Albert Heijn, elke woensdag nieuw'}
+                ? t('{0} aanbiedingen bekeken', [aantalBekeken.toLocaleString(locale())]) + (geldig ? ` · ${geldig}` : '')
+                : t("Albert Heijn, elke woensdag nieuw")}
         </p>
       </header>
 
@@ -299,14 +300,14 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
       {status === 'loading' && (
         <section className="rounded-[18px] bg-primary p-5">
           <p className="font-display text-[0.625rem] font-semibold uppercase tracking-[0.07em] text-primary-foreground/70">
-            Bonus van deze week ophalen
+            {t("Bonus van deze week ophalen")}
           </p>
           <p className="mt-1.5 font-display text-[1.375rem] font-bold leading-tight text-primary-foreground">
             {vorige
-              ? `${vorige.aanbiedingen.toLocaleString('nl-NL')} aanbiedingen langs je recepten`
+              ? t('{0} aanbiedingen langs je recepten', [vorige.aanbiedingen.toLocaleString(locale())])
               : recipes.length > 0
-                ? 'Alle aanbiedingen langs je recepten'
-                : 'Alle aanbiedingen van deze week'}
+                ? t("Alle aanbiedingen langs je recepten")
+                : t("Alle aanbiedingen van deze week")}
           </p>
           <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-primary-foreground/20">
             <div
@@ -315,14 +316,14 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
             />
           </div>
           <p className="mt-2 flex items-baseline justify-between gap-2 text-[0.8125rem] text-primary-foreground/75">
-            <span>Je hoeft niet te wachten — het staat er zo.</span>
+            <span>{t("Je hoeft niet te wachten — het staat er zo.")}</span>
             {wacht < DUURT_MS && (
-              <span className="shrink-0 tabular-nums">nog ± {Math.max(1, Math.ceil((DUURT_MS - wacht) / 1000))} sec</span>
+              <span className="shrink-0 tabular-nums">{t('nog ± {0} sec', [Math.max(1, Math.ceil((DUURT_MS - wacht) / 1000))])}</span>
             )}
           </p>
           {vorige && vorige.voordeel > 0 && (
             <p className="mt-3 border-t border-primary-foreground/15 pt-3 text-[0.8125rem] text-primary-foreground/75">
-              Vorige keer scheelde het jullie {euro.format(vorige.voordeel)}.
+              {t('Vorige keer scheelde het jullie {0}.', [euro.format(vorige.voordeel)])}
             </p>
           )}
         </section>
@@ -330,9 +331,9 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
 
       {status === 'error' && (
         <div className="rounded-[14px] border border-border bg-card p-4">
-          <p className="text-sm text-foreground">De bonus ophalen lukte niet.</p>
+          <p className="text-sm text-foreground">{t("De bonus ophalen lukte niet.")}</p>
           <Button variant="outline" className="mt-3 gap-2" onClick={() => void load()}>
-            <RefreshCw className="h-4 w-4" /> Opnieuw proberen
+            <RefreshCw className="h-4 w-4" /> {t("Opnieuw proberen")}
           </Button>
         </div>
       )}
@@ -342,20 +343,20 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
           {aantalBekeken > 0 && (
             <>
               <p className="font-display text-[2.75rem] font-bold leading-none tabular-nums text-primary">
-                {aantalBekeken.toLocaleString('nl-NL')}
+                {aantalBekeken.toLocaleString(locale())}
               </p>
               <p className="mt-1 text-sm text-muted-foreground">aanbiedingen keken we langs</p>
             </>
           )}
           <h2 className="mt-4 font-display text-2xl font-bold tracking-[-0.01em] text-foreground">
-            We weten nog niet wat jij kookt
+            {t("We weten nog niet wat jij kookt")}
           </h2>
           <p className="mx-auto mt-2 max-w-[20rem] text-sm text-muted-foreground">
-            Bewaar een recept, dan kijkt CoupleCart elke week welke ervan goedkoper zijn.
+            {t("Bewaar een recept, dan kijkt CoupleCart elke week welke ervan goedkoper zijn.")}
           </p>
           {onNavigate && (
             <Button variant="secondary" className="mt-4 min-h-[50px] w-full" onClick={() => onNavigate('recipes')}>
-              Eerste recept ophalen
+              {t("Eerste recept ophalen")}
             </Button>
           )}
         </section>
@@ -363,14 +364,14 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
 
       {status === 'ready' && recipes.length > 0 && matches.length === 0 && (
         <section className="rounded-[18px] border border-border bg-card p-5">
-          <h2 className="font-display text-2xl font-bold tracking-[-0.01em] text-foreground">Deze week niets van jou</h2>
+          <h2 className="font-display text-2xl font-bold tracking-[-0.01em] text-foreground">{t("Deze week niets van jou")}</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Geen van je {recipes.length} recepten zit er deze week in. De aanbiedingen wisselen woensdag.
+            {t('Geen van je {0} recepten zit er deze week in. De aanbiedingen wisselen woensdag.', [recipes.length])}
           </p>
           {aanbiedingen.length >= 10 && (
             <Button variant="secondary" className="mt-4 min-h-[50px] w-full gap-2" onClick={() => void think()} disabled={thinking}>
               {thinking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-              {thinking ? 'Even koken…' : 'Laat iets verzinnen uit de bonus'}
+              {thinking ? t("Even koken…") : t("Laat iets verzinnen uit de bonus")}
             </Button>
           )}
         </section>
@@ -380,11 +381,11 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
 
       {status === 'ready' && matches.length > 0 && aanbiedingen.length >= 10 && (
         <section className="rounded-[14px] border border-accent/25 bg-accent-soft p-3.5">
-          <h2 className="font-display text-[1.0625rem] font-semibold text-foreground">Drie avonden uit de bonus</h2>
-          <p className="mt-0.5 text-xs text-muted-foreground">Gemaakt met wat deze week in de aanbieding ligt.</p>
+          <h2 className="font-display text-[1.0625rem] font-semibold text-foreground">{t("Drie avonden uit de bonus")}</h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">{t("Gemaakt met wat deze week in de aanbieding ligt.")}</p>
           <Button variant="secondary" className="mt-3 min-h-11 w-full gap-2" onClick={() => void think()} disabled={thinking}>
             {thinking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-            {thinking ? 'Even koken…' : ideas.length > 0 ? 'Drie andere verzinnen' : 'Laat iets verzinnen'}
+            {thinking ? t("Even koken…") : ideas.length > 0 ? t("Drie andere verzinnen") : t("Laat iets verzinnen")}
           </Button>
         </section>
       )}
@@ -396,8 +397,8 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
           <article key={idea.name} className="rounded-[16px] border border-border bg-card p-3.5">
             <h3 className="font-display text-[1.1875rem] font-bold leading-tight text-foreground">{idea.name}</h3>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              {idea.minutes ? `${idea.minutes} min · ` : ''}voor {idea.servings}
-              {scheelt > 0 ? ` · ± ${euro.format(scheelt)} goedkoper` : ''}
+              {idea.minutes ? t("{0} min ·", [idea.minutes]) : ''}voor {idea.servings}
+              {scheelt > 0 ? t("· ± {0} goedkoper", [euro.format(scheelt)]) : ''}
             </p>
 
             {producten.length > 0 && (
@@ -423,15 +424,15 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
                 disabled={saved.includes(idea.name)}
                 onClick={() => void keep(idea)}
               >
-                <Plus className="h-3.5 w-3.5" /> {saved.includes(idea.name) ? 'Bewaard' : 'Bewaren'}
+                <Plus className="h-3.5 w-3.5" /> {saved.includes(idea.name) ? t("Bewaard") : t("Bewaren")}
               </Button>
               <Button variant="accent" className="min-h-11 flex-1" onClick={() => ideeOpLijst(idea)}>
-                Op de lijst
+                {t("Op de lijst")}
               </Button>
             </div>
 
             <details className="mt-2.5 text-xs text-muted-foreground">
-              <summary className="min-h-11 cursor-pointer font-medium text-primary">Ingrediënten en bereiding</summary>
+              <summary className="min-h-11 cursor-pointer font-medium text-primary">{t("Ingrediënten en bereiding")}</summary>
               <ul className="mt-1.5 space-y-0.5">
                 {idea.ingredients.map((ingredient) => <li key={ingredient}>• {ingredient}</li>)}
               </ul>
@@ -451,7 +452,7 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
       {status === 'ready' && aanbiedingen.length > 0 && (
         <section>
           <h2 className="px-1 font-display text-[0.625rem] font-semibold uppercase tracking-[0.07em] text-muted-foreground">
-            {matches.length > 0 ? 'Deze week in de bonus' : 'Wel in de bonus deze week'}
+            {matches.length > 0 ? t("Deze week in de bonus") : t("Wel in de bonus deze week")}
           </h2>
           <ul className="mt-1.5 space-y-1.5">
             {aanbiedingen.slice(0, toonAlles ? 24 : 6).map((offer) => (
@@ -474,7 +475,7 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
                 <button
                   type="button"
                   onClick={() => opLijst(offer.title)}
-                  aria-label={`Zet ${offer.title} op je lijst`}
+                  aria-label={t("Zet {0} op je lijst", [offer.title])}
                   className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-accent-soft text-accent-ink transition-colors duration-150 ease-smooth hover:bg-accent hover:text-accent-foreground"
                 >
                   <Plus className="h-4 w-4" />
@@ -488,7 +489,7 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
               onClick={() => setToonAlles((aan) => !aan)}
               className="mt-2 min-h-11 w-full text-center text-[0.8125rem] font-medium text-primary hover:underline"
             >
-              {toonAlles ? 'Minder tonen' : `Nog ${Math.min(aanbiedingen.length, 24) - 6} aanbiedingen`}
+              {toonAlles ? t("Minder tonen") : t("Nog {0} aanbiedingen", [Math.min(aanbiedingen.length, 24) - 6])}
             </button>
           )}
         </section>
@@ -497,13 +498,13 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
       {status === 'ready' && recipes.length === 0 && aanbiedingen.length >= 10 && (
         <Button variant="outline" className="min-h-[50px] w-full gap-2" onClick={() => void think()} disabled={thinking}>
           {thinking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-          Laat iets verzinnen uit de bonus
+          {t("Laat iets verzinnen uit de bonus")}
         </Button>
       )}
 
       {status === 'ready' && matches.length > 0 && (
         <p className="flex items-center gap-2 px-1 text-xs text-muted-foreground">
-          <ChefHat className="h-3 w-3" aria-hidden="true" /> Prijzen en acties komen van Albert Heijn.
+          <ChefHat className="h-3 w-3" aria-hidden="true" /> {t("Prijzen en acties komen van Albert Heijn.")}
         </p>
       )}
 

@@ -8,6 +8,7 @@ import { Recipe } from '@/types';
 import EstimateBadge from '@/components/EstimateBadge';
 import { isEstimated, withoutEstimate } from '@/lib/recipeImport';
 import { splitSteps } from '@/lib/recipeSteps';
+import { t } from '@/lib/i18n';
 
 interface RecipeViewDialogProps {
   recipe: Recipe;
@@ -32,7 +33,7 @@ const RecipeViewDialog = ({ recipe, onAddToList, trigger }: RecipeViewDialogProp
         {trigger ?? (
           <Button variant="outline" className="w-full h-auto min-h-11 flex-col gap-1 px-1 py-2 text-[11px] font-medium leading-tight whitespace-normal">
             <Eye className="h-4 w-4" />
-            Bekijken
+            {t("Bekijken")}
           </Button>
         )}
       </DialogTrigger>
@@ -63,7 +64,7 @@ const RecipeViewDialog = ({ recipe, onAddToList, trigger }: RecipeViewDialogProp
                   rel="noopener noreferrer"
                   className="text-sm text-primary hover:underline inline-flex items-center gap-1"
                 >
-                  <ExternalLink className="h-3.5 w-3.5" /> Origineel recept bekijken
+                  <ExternalLink className="h-3.5 w-3.5" /> {t("Origineel recept bekijken")}
                 </a>
               )}
             </DialogHeader>
@@ -72,9 +73,9 @@ const RecipeViewDialog = ({ recipe, onAddToList, trigger }: RecipeViewDialogProp
 
             <div>
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-display text-lg">Ingrediënten</h3>
+                <h3 className="font-display text-lg">{t("Ingrediënten")}</h3>
                 <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                  <Users className="h-4 w-4" /> Voor {servings} {servings === 1 ? 'persoon' : 'personen'}
+                  <Users className="h-4 w-4" /> {t('Voor {0} {1}', [servings, servings === 1 ? t('persoon') : t('personen')])}
                 </span>
               </div>
               <ul className="space-y-1.5">
@@ -91,7 +92,7 @@ const RecipeViewDialog = ({ recipe, onAddToList, trigger }: RecipeViewDialogProp
               <>
                 <Separator />
                 <div>
-                  <h3 className="font-display text-lg mb-3">Bereiding</h3>
+                  <h3 className="font-display text-lg mb-3">{t("Bereiding")}</h3>
                   <ol className="space-y-3">
                     {splitSteps(recipe.instructions).map((step, index) => (
                       <li key={index} className="flex gap-3">
@@ -110,7 +111,7 @@ const RecipeViewDialog = ({ recipe, onAddToList, trigger }: RecipeViewDialogProp
 
             <Button className="w-full min-h-11 gap-2" onClick={addToList}>
               <ShoppingCart className="h-4 w-4" />
-              Zet op je lijst
+              {t("Zet op je lijst")}
             </Button>
           </div>
         </ScrollArea>

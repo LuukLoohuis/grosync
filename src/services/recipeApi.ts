@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { taal } from '@/lib/i18n';
 import { callFunction } from '@/services/functions';
 // Recipe API service - Direct calls to Supabase Edge Functions
 const FUNCTIONS_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1`;
@@ -56,7 +57,7 @@ export async function translateRecipe(recipe: RecipeData) {
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(recipe),
+      body: JSON.stringify({ ...recipe, lang: taal() }),
     });
 
     if (!response.ok) {
@@ -105,7 +106,7 @@ export interface RecipeSuggestion {
 
 export async function suggestRecipes(ingredients: string[], staples: string[] = []): Promise<{ recipes: RecipeSuggestion[] }> {
   // Through invoke, so the call carries your own session and not just the public key.
-  const { data, error } = await supabase.functions.invoke('suggest-recipes', { body: { ingredients, staples } });
+  const { data, error } = await supabase.functions.invoke('suggest-recipes', { body: { ingredients, staples, lang: taal() } });
   if (error) throw error;
   if (data?.error) throw new Error(data.error);
   return data as { recipes: RecipeSuggestion[] };

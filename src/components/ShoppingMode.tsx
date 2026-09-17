@@ -6,6 +6,7 @@ import SwipeToCheck from '@/components/SwipeToCheck';
 import { splitAmount } from '@/lib/itemAmount';
 import { sortByStoreRoute } from '@/lib/storeRouteSort';
 import type { GroceryItem } from '@/types';
+import { t } from '@/lib/i18n';
 
 interface ShoppingModeProps {
   items: GroceryItem[];
@@ -56,18 +57,18 @@ const ShoppingMode = ({ items, onCheck, onClose }: ShoppingModeProps) => {
         <div className="mx-auto flex max-w-lg items-start gap-3">
           <div className="min-w-0 flex-1">
             <h1 className="font-display text-2xl font-bold tracking-[-0.02em]">
-              {klaar ? 'Alles gehaald' : groep?.label ?? 'Klaar met deze afdeling'}
+              {klaar ? t("Alles gehaald") : groep?.label ?? t("Klaar met deze afdeling")}
             </h1>
             <p className="mt-0.5 text-sm text-primary-muted">
               {klaar
-                ? 'Je kar is compleet.'
-                : `Afdeling ${Math.min(index + 1, route.length)} van ${route.length} · nog ${groep?.items.length ?? 0} hier`}
+                ? t("Je kar is compleet.")
+                : t("Afdeling {0} van {1} · nog {2} hier", [Math.min(index + 1, route.length), route.length, groep?.items.length ?? 0])}
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Winkelmodus sluiten"
+            aria-label={t("Winkelmodus sluiten")}
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-primary-muted hover:bg-primary-deep hover:text-primary-foreground"
           >
             <X className="h-5 w-5" />
@@ -82,15 +83,15 @@ const ShoppingMode = ({ items, onCheck, onClose }: ShoppingModeProps) => {
               <span aria-hidden="true" className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary-soft text-primary">
                 <Check className="h-6 w-6" strokeWidth={2.4} />
               </span>
-              <p className="mt-3 font-display text-lg font-bold text-foreground">Niets meer te halen</p>
-              <Button className="mt-4 min-h-12 w-full" onClick={onClose}>Terug naar je lijst</Button>
+              <p className="mt-3 font-display text-lg font-bold text-foreground">{t("Niets meer te halen")}</p>
+              <Button className="mt-4 min-h-12 w-full" onClick={onClose}>{t("Terug naar je lijst")}</Button>
             </div>
           )}
 
           {!klaar && (groep?.items.length ?? 0) === 0 && (
             <div className="rounded-[14px] border border-border bg-card p-6 text-center">
-              <p className="font-display text-lg font-bold text-foreground">Deze afdeling is klaar</p>
-              <p className="mt-1 text-sm text-muted-foreground">Nog {teGaan} op andere afdelingen.</p>
+              <p className="font-display text-lg font-bold text-foreground">{t("Deze afdeling is klaar")}</p>
+              <p className="mt-1 text-sm text-muted-foreground">{t('Nog {0} op andere afdelingen.', [teGaan])}</p>
             </div>
           )}
 
@@ -101,7 +102,7 @@ const ShoppingMode = ({ items, onCheck, onClose }: ShoppingModeProps) => {
                 <div className="flex min-h-[4.5rem] items-center gap-2 rounded-[14px] border border-border bg-card pl-1 pr-4">
                   <button
                     onClick={() => onCheck(item)}
-                    aria-label={`Vink ${item.name} af`}
+                    aria-label={t("Vink {0} af", [item.name])}
                     className="group/check flex h-14 w-14 shrink-0 items-center justify-center"
                   >
                     <span className="h-7 w-7 rounded-full border-2 border-border-strong transition-colors duration-150 ease-smooth group-hover/check:border-primary group-hover/check:bg-primary-soft" />
@@ -121,13 +122,13 @@ const ShoppingMode = ({ items, onCheck, onClose }: ShoppingModeProps) => {
       {!klaar && (
         <footer className="shrink-0 border-t border-border bg-background px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <div className="mx-auto flex max-w-lg items-center gap-3">
-            <p className="min-w-0 flex-1 text-xs text-muted-foreground">Veeg naar rechts om af te vinken</p>
+            <p className="min-w-0 flex-1 text-xs text-muted-foreground">{t("Veeg naar rechts om af te vinken")}</p>
             <Button
               variant="secondary"
               className="min-h-12 shrink-0 gap-2"
               onClick={laatste ? onClose : volgende}
             >
-              {laatste ? 'Afronden' : 'Volgende afdeling'} <ArrowRight className="h-4 w-4" />
+              {laatste ? t("Afronden") : t("Volgende afdeling")} <ArrowRight className="h-4 w-4" />
             </Button>
           </div>
         </footer>

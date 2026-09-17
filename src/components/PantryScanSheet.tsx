@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import type { ScanHit } from '@/services/pantryApi';
+import { t } from '@/lib/i18n';
 
 interface PantryScanSheetProps {
   hits: ScanHit[] | null;
@@ -98,7 +99,7 @@ const PantryScanSheet = ({ hits, onClose, onConfirm, onAnotherPhoto, scanning, k
             autoFocus
             value={editing.name}
             maxLength={40}
-            aria-label={`Naam van ${hit.name}`}
+            aria-label={t("Naam van {0}", [hit.name])}
             onChange={(e) => setEditing({ was: hit.name, name: e.target.value })}
             onBlur={() => rename(hit.name, editing.name)}
             onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
@@ -117,15 +118,15 @@ const PantryScanSheet = ({ hits, onClose, onConfirm, onAnotherPhoto, scanning, k
           <Checkbox checked={on} onCheckedChange={() => toggle(hit.name)} aria-label={hit.name} />
           <span className="min-w-0 flex-1">
             <span className="block truncate text-[0.9375rem] text-foreground first-letter:uppercase">{hit.name}</span>
-            {groep === 'bekend' && <span className="block text-xs text-muted-foreground">staat al in je kast</span>}
-            {groep === 'twijfel' && <span className="block text-xs text-muted-foreground">label niet goed leesbaar</span>}
+            {groep === 'bekend' && <span className="block text-xs text-muted-foreground">{t("staat al in je kast")}</span>}
+            {groep === 'twijfel' && <span className="block text-xs text-muted-foreground">{t("label niet goed leesbaar")}</span>}
           </span>
         </label>
         {/* Verkeerd gelezen? Verbeter het hier, niet straks in de kast. */}
         <button
           type="button"
           onClick={() => setEditing({ was: hit.name, name: hit.name })}
-          aria-label={`${hit.name} aanpassen`}
+          aria-label={t("{0} aanpassen", [hit.name])}
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
         >
           <Pencil className="h-3.5 w-3.5" />
@@ -139,12 +140,12 @@ const PantryScanSheet = ({ hits, onClose, onConfirm, onAnotherPhoto, scanning, k
       <SheetContent side="bottom" className="mx-auto flex max-h-[85vh] [@supports(height:100dvh)]:max-h-[85dvh] max-w-lg flex-col rounded-t-[20px]">
         <SheetHeader className="pr-10 text-left">
           <SheetTitle className="font-display text-xl">
-            {shown.length === 0 ? 'Niets herkend' : `${shown.length} ${shown.length === 1 ? 'product' : 'producten'} gezien`}
+            {shown.length === 0 ? t("Niets herkend") : t('{0} {1} gezien', [shown.length, shown.length === 1 ? t('product') : t('producten')])}
           </SheetTitle>
           <SheetDescription>
             {shown.length === 0
-              ? 'Probeer het nog eens van dichterbij, met de etiketten naar voren.'
-              : 'Vink af wat klopt. Twijfelgevallen staan onderaan.'}
+              ? t("Probeer het nog eens van dichterbij, met de etiketten naar voren.")
+              : t("Vink af wat klopt. Twijfelgevallen staan onderaan.")}
           </SheetDescription>
         </SheetHeader>
 
@@ -166,18 +167,18 @@ const PantryScanSheet = ({ hits, onClose, onConfirm, onAnotherPhoto, scanning, k
             value={extra}
             onChange={(e) => setExtra(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addByHand(); } }}
-            placeholder="Iets gemist? Typ het erbij"
-            aria-label="Zelf een product toevoegen"
+            placeholder={t("Iets gemist? Typ het erbij")}
+            aria-label={t("Zelf een product toevoegen")}
             className="bg-card font-body"
           />
-          <Button onClick={addByHand} size="icon" className="h-11 w-11 shrink-0" aria-label="Product toevoegen">
+          <Button onClick={addByHand} size="icon" className="h-11 w-11 shrink-0" aria-label={t("Product toevoegen")}>
             <Plus className="h-4 w-4" />
           </Button>
         </div>
 
         <div className="mt-3 flex gap-2 pb-2">
           <Button variant="outline" className="min-h-12 flex-1 gap-2" onClick={onAnotherPhoto} disabled={scanning}>
-            <Camera className="h-4 w-4" /> {scanning ? 'Bezig…' : 'Opnieuw'}
+            <Camera className="h-4 w-4" /> {scanning ? t("Bezig…") : t("Opnieuw")}
           </Button>
           <Button
             variant="secondary"
@@ -185,7 +186,7 @@ const PantryScanSheet = ({ hits, onClose, onConfirm, onAnotherPhoto, scanning, k
             disabled={chosen.size === 0}
             onClick={() => onConfirm([...chosen])}
           >
-            {chosen.size > 0 ? `${chosen.size} toevoegen` : 'Toevoegen'}
+            {chosen.size > 0 ? t("{0} toevoegen", [chosen.size]) : t("Toevoegen")}
           </Button>
         </div>
       </SheetContent>

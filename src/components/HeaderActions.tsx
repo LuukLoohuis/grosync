@@ -9,12 +9,18 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup,
   DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { type Taal, setTaal, t, taal } from '@/lib/i18n';
 
 const THEMES = [
-  ['system', 'Zoals je telefoon'],
-  ['light', 'Licht'],
-  ['dark', 'Donker'],
+  ['system', t('Zoals je telefoon')],
+  ['light', t('Licht')],
+  ['dark', t('Donker')],
 ] as const;
+
+const TALEN: [Taal, string][] = [
+  ['nl', 'Nederlands'],
+  ['en', 'English'],
+];
 
 /** Share, theme menu and sign out. `onDark` styles them for the green plane on "Vandaag". */
 const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
@@ -32,17 +38,17 @@ const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
 
   return (
     <div className="-mr-2 flex items-center">
-      <button type="button" onClick={() => setShareOpen(true)} aria-label="Lijst delen" title="Lijst delen" className={iconButton}>
+      <button type="button" onClick={() => setShareOpen(true)} aria-label={t("Lijst delen")} title={t("Lijst delen")} className={iconButton}>
         <Share2 className="h-5 w-5" strokeWidth={1.9} />
       </button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button type="button" aria-label="Thema en meer" title="Thema en meer" className={iconButton}>
+          <button type="button" aria-label={t("Thema en meer")} title={t("Thema en meer")} className={iconButton}>
             <MoreVertical className="h-5 w-5" strokeWidth={1.9} />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuLabel>Thema</DropdownMenuLabel>
+          <DropdownMenuLabel>{t("Thema")}</DropdownMenuLabel>
           <DropdownMenuRadioGroup value={theme ?? 'system'} onValueChange={setTheme}>
             {THEMES.map(([value, label]) => (
               <DropdownMenuRadioItem key={value} value={value} className="min-h-11 cursor-pointer">
@@ -51,30 +57,39 @@ const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
             ))}
           </DropdownMenuRadioGroup>
           <DropdownMenuSeparator />
+          <DropdownMenuLabel>{t('Taal')}</DropdownMenuLabel>
+          <DropdownMenuRadioGroup value={taal()} onValueChange={(waarde) => setTaal(waarde as Taal)}>
+            {TALEN.map(([value, label]) => (
+              <DropdownMenuRadioItem key={value} value={value} className="min-h-11 cursor-pointer">
+                {label}
+              </DropdownMenuRadioItem>
+            ))}
+          </DropdownMenuRadioGroup>
+          <DropdownMenuSeparator />
           <DropdownMenuItem className="gap-2 min-h-11 cursor-pointer" onSelect={() => setUsageOpen(true)}>
-            <PieChart className="h-4 w-4" /> Je tegoed
+            <PieChart className="h-4 w-4" /> {t("Je tegoed")}
           </DropdownMenuItem>
           {isAdmin && (
             <DropdownMenuItem asChild className="gap-2 min-h-11 cursor-pointer">
-              <a href="#/admin"><Gauge className="h-4 w-4" /> Beheer</a>
+              <a href="#/admin"><Gauge className="h-4 w-4" /> {t("Beheer")}</a>
             </DropdownMenuItem>
           )}
           <DropdownMenuItem asChild className="gap-2 min-h-11 cursor-pointer">
-            <a href="#/info/voorwaarden"><FileText className="h-4 w-4" /> Voorwaarden en privacy</a>
+            <a href="#/info/voorwaarden"><FileText className="h-4 w-4" /> {t("Voorwaarden en privacy")}</a>
           </DropdownMenuItem>
           <DropdownMenuItem asChild className="gap-2 min-h-11 cursor-pointer">
             <a href="mailto:couplecart@gmail.com?subject=Hulp%20bij%20CoupleCart">
-              <LifeBuoy className="h-4 w-4" /> Hulp nodig?
+              <LifeBuoy className="h-4 w-4" /> {t("Hulp nodig?")}
             </a>
           </DropdownMenuItem>
           <DropdownMenuItem asChild className="gap-2 min-h-11 cursor-pointer">
             <a href="https://www.buymeacoffee.com/luukloohuis" target="_blank" rel="noopener noreferrer">
-              <Heart className="h-4 w-4" /> Steun CoupleCart
+              <Heart className="h-4 w-4" /> {t("Steun CoupleCart")}
             </a>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <button type="button" onClick={signOut} aria-label="Uitloggen" title="Uitloggen" className={iconButton}>
+      <button type="button" onClick={signOut} aria-label={t("Uitloggen")} title={t("Uitloggen")} className={iconButton}>
         <LogOut className="h-5 w-5" strokeWidth={1.9} />
       </button>
       <ShareListSheet open={shareOpen} onOpenChange={setShareOpen} />

@@ -1,3 +1,4 @@
+import { t } from '@/lib/i18n';
 /**
  * Sorteer boodschappen per afdeling, in de volgorde waarin je door een AH loopt.
  * Heeft een boodschap een AH-product, dan telt de afdeling die AH zelf opgeeft;
@@ -30,16 +31,16 @@ const DEPARTMENT_ORDER: Department[] = [
 ];
 
 export const DEPARTMENT_LABELS: Record<Department, string> = {
-  groente_fruit: 'Groente & fruit',
-  brood: 'Brood & bakkerij',
-  vlees_vis: 'Vlees & vis',
-  zuivel: 'Zuivel & eieren',
-  maaltijden: 'Maaltijden & salades',
-  pasta_rijst: 'Pasta, rijst & wereld',
-  houdbaar: 'Houdbaar',
-  drinken: 'Drinken',
-  huishouden: 'Huishouden',
-  diepvries: 'Diepvries',
+  groente_fruit: t('Groente & fruit'),
+  brood: t('Brood & bakkerij'),
+  vlees_vis: t('Vlees & vis'),
+  zuivel: t('Zuivel & eieren'),
+  maaltijden: t('Maaltijden & salades'),
+  pasta_rijst: t('Pasta, rijst & wereld'),
+  houdbaar: t('Houdbaar'),
+  drinken: t('Drinken'),
+  huishouden: t('Huishouden'),
+  diepvries: t('Diepvries'),
 };
 
 // AH's own main categories, such as "Zuivel, eieren" or "Soepen, sauzen, kruiden".

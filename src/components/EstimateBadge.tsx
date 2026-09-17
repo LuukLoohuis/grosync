@@ -1,6 +1,7 @@
 import { toast } from 'sonner';
+import { t } from '@/lib/i18n';
 
-const EXPLANATION = 'Deze hoeveelheid is geschat uit de video. Kijk hem even na.';
+const EXPLANATION = t('Deze hoeveelheid is geschat uit de video. Kijk hem even na.');
 
 const EstimateBadge = () => (
   <button

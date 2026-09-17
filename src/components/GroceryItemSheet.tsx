@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useAppContext } from '@/contexts/AppContext';
 import { translateForSearch } from '@/lib/groceryTranslations';
 import type { GroceryItem } from '@/types';
+import { t } from '@/lib/i18n';
 
 interface GroceryItemSheetProps {
   item: GroceryItem | null;
@@ -50,12 +51,12 @@ const GroceryItemSheet = ({ item, department, onClose, onPickProduct }: GroceryI
         <SheetHeader className="pr-10 text-left">
           <SheetTitle className="font-display text-xl">{shown.name}</SheetTitle>
           <SheetDescription className="text-accent-ink">
-            {[shown.fromRecipe ? `uit ${shown.fromRecipe}` : null, department].filter(Boolean).join(' · ') || 'Op je lijst'}
+            {[shown.fromRecipe ? t('uit {0}', [shown.fromRecipe]) : null, department].filter(Boolean).join(' · ') || t("Op je lijst")}
           </SheetDescription>
         </SheetHeader>
 
         <div className="mt-4">
-          <label htmlFor="boodschap-naam" className="mb-1 block text-sm text-muted-foreground">Naam</label>
+          <label htmlFor="boodschap-naam" className="mb-1 block text-sm text-muted-foreground">{t("Naam")}</label>
           <Input
             id="boodschap-naam"
             value={name}
@@ -66,7 +67,7 @@ const GroceryItemSheet = ({ item, department, onClose, onPickProduct }: GroceryI
           />
           {shown.ahProduct && (
             <p className="mt-1 text-xs text-muted-foreground">
-              Wijzig je de naam, dan vervalt het gekozen AH-product.
+              {t("Wijzig je de naam, dan vervalt het gekozen AH-product.")}
             </p>
           )}
         </div>
@@ -77,14 +78,14 @@ const GroceryItemSheet = ({ item, department, onClose, onPickProduct }: GroceryI
               <Tag className="h-4 w-4 shrink-0 text-muted-foreground" />
               <span className="min-w-0 flex-1 truncate">
                 {shown.ahProduct.title}
-                {shown.ahProduct.isBonus && <span className="ml-2 font-semibold text-accent-ink">Bonus</span>}
+                {shown.ahProduct.isBonus && <span className="ml-2 font-semibold text-accent-ink">{t("Bonus")}</span>}
               </span>
               <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
             </button>
           ) : (
             <button type="button" onClick={() => { onClose(); onPickProduct(shown.id); }} className={rij}>
               <Tag className="h-4 w-4 shrink-0 text-muted-foreground" />
-              <span className="flex-1">Product bij AH kiezen</span>
+              <span className="flex-1">{t("Product bij AH kiezen")}</span>
               <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
             </button>
           )}
@@ -92,18 +93,18 @@ const GroceryItemSheet = ({ item, department, onClose, onPickProduct }: GroceryI
           {dubbel > 0 && (
             <button type="button" onClick={() => { onClose(); void mergeDuplicateItems(); }} className={rij}>
               <Merge className="h-4 w-4 shrink-0 text-muted-foreground" />
-              <span className="flex-1">Samenvoegen met dubbel item</span>
+              <span className="flex-1">{t("Samenvoegen met dubbel item")}</span>
               <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
             </button>
           )}
 
           <a href={`https://www.ah.nl/zoeken?query=${zoekterm(shown.name)}`} target="_blank" rel="noopener noreferrer" className={rij}>
             <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
-            <span className="flex-1">Zoek bij Albert Heijn</span>
+            <span className="flex-1">{t("Zoek bij Albert Heijn")}</span>
           </a>
           <a href={`https://www.jumbo.com/producten/?searchTerms=${zoekterm(shown.name)}`} target="_blank" rel="noopener noreferrer" className={rij}>
             <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
-            <span className="flex-1">Zoek bij Jumbo</span>
+            <span className="flex-1">{t("Zoek bij Jumbo")}</span>
           </a>
 
           <button
@@ -112,11 +113,11 @@ const GroceryItemSheet = ({ item, department, onClose, onPickProduct }: GroceryI
             className={`${rij} text-destructive`}
           >
             <Trash2 className="h-4 w-4 shrink-0" />
-            <span className="flex-1">Weggooien</span>
+            <span className="flex-1">{t("Weggooien")}</span>
           </button>
         </div>
 
-        <Button className="mt-5 min-h-12 w-full" onClick={onClose}>Klaar</Button>
+        <Button className="mt-5 min-h-12 w-full" onClick={onClose}>{t("Klaar")}</Button>
       </SheetContent>
     </Sheet>
   );

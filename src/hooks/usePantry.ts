@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { PantryItem } from '@/types';
 import { MAX_QUANTITY, sameProduct } from '@/lib/pantry';
 import { deleteWithUndo } from '@/lib/undoableDelete';
+import { t } from '@/lib/i18n';
 
 interface UsePantryOptions {
   userId?: string | null;
@@ -105,7 +106,7 @@ export const usePantry = ({ userId }: UsePantryOptions = {}) => {
     const item = pantry[index];
     if (!item) return;
     deleteWithUndo({
-      message: `“${item.name}” uit je kast gehaald`,
+      message: t('“{0}” uit je kast gehaald', [item.name]),
       remove: () => setPantry((prev) => prev.filter((row) => row.id !== id)),
       restore: () => setPantry((prev) => (
         prev.some((row) => row.id === id) ? prev : [...prev.slice(0, index), item, ...prev.slice(index)]

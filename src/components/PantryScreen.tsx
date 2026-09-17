@@ -17,14 +17,15 @@ import { sortByStoreRoute, type Department } from '@/lib/storeRouteSort';
 import { FREE_LIMIT } from '@/hooks/useEntitlements';
 import { QuotaError } from '@/services/functions';
 import { scanPantryPhoto, type ScanHit } from '@/services/pantryApi';
+import { locale, t } from '@/lib/i18n';
 
 /** De eerste van de volgende maand, wanneer het tegoed weer vol staat. */
 const resetDatum = () => {
   const nu = new Date();
-  return new Date(nu.getFullYear(), nu.getMonth() + 1, 1).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' });
+  return new Date(nu.getFullYear(), nu.getMonth() + 1, 1).toLocaleDateString(locale(), { day: 'numeric', month: 'long' });
 };
 
-const dezeMaand = () => new Date().toLocaleDateString('nl-NL', { month: 'long' });
+const dezeMaand = () => new Date().toLocaleDateString(locale(), { month: 'long' });
 
 interface PantryScreenProps {
   onNavigate?: (tab: 'list') => void;
@@ -64,7 +65,7 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
     ...afdelingen.map((groep) => ({ sleutel: groep.category, label: groep.label, items: groep.items })),
   ];
   const zichtbaar = filter === 'bijna'
-    ? [{ sleutel: 'bijna' as const, label: 'Bijna op', items: bijnaOp }]
+    ? [{ sleutel: 'bijna' as const, label: t('Bijna op'), items: bijnaOp }]
     : filter
       ? planken.filter((plank) => plank.sleutel === filter)
       : planken;
@@ -91,7 +92,7 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
         void refreshEntitlements();
       } else {
         console.error('Pantry scan failed:', error);
-        toast.error('De foto lezen lukte niet. Probeer het nog eens.');
+        toast.error(t("De foto lezen lukte niet. Probeer het nog eens."));
       }
     } finally {
       setScanning(false);
@@ -113,15 +114,15 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
     if (!name) return;
     setAdding('');
     if (pantry.some((item) => sameProduct(item.name, name))) {
-      toast(`“${name}” staat er al in, er is er eentje bij gezet`);
+      toast(t("“{0}” staat er al in, er is er eentje bij gezet", [name]));
     }
     await stockUp(name, 'handmatig');
   };
 
   const toList = (name: string) => {
     addGroceryItem(name);
-    toast.success(`“${name}” op je lijst gezet`, {
-      action: onNavigate ? { label: 'Bekijken', onClick: () => onNavigate('list') } : undefined,
+    toast.success(t("“{0}” op je lijst gezet", [name]), {
+      action: onNavigate ? { label: t("Bekijken"), onClick: () => onNavigate('list') } : undefined,
     });
   };
 
@@ -144,17 +145,17 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
         <>
           <header className="flex items-start gap-2">
             <div className="min-w-0 flex-1">
-              <h1 className="font-display text-2xl font-bold tracking-[-0.02em] text-foreground">Voorraad</h1>
+              <h1 className="font-display text-2xl font-bold tracking-[-0.02em] text-foreground">{t("Voorraad")}</h1>
               <p className="mt-0.5 text-sm text-muted-foreground">
-                {pantry.length} {pantry.length === 1 ? 'product' : 'producten'}
-                {bijnaTeller > 0 && ` · ${bijnaTeller} bijna op`}
-                {opTeller > 0 && ` · ${opTeller} op`}
+                {pantry.length} {pantry.length === 1 ? t('product') : t('producten')}
+                {bijnaTeller > 0 && t("· {0} bijna op", [bijnaTeller])}
+                {opTeller > 0 && t("· {0} op", [opTeller])}
               </p>
             </div>
             <button
               type="button"
               onClick={() => { setZoeken((aan) => !aan); setZoekterm(''); }}
-              aria-label={zoeken ? 'Zoeken sluiten' : 'Zoeken in je kast'}
+              aria-label={zoeken ? t("Zoeken sluiten") : t("Zoeken in je kast")}
               aria-pressed={zoeken}
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border-strong text-foreground transition-colors duration-150 ease-smooth hover:bg-muted"
             >
@@ -164,7 +165,7 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
               variant="secondary"
               size="icon"
               className="h-11 w-11 shrink-0"
-              aria-label={opGeraakt ? 'Je foto’s zijn op' : 'Kast scannen'}
+              aria-label={opGeraakt ? t("Je foto’s zijn op") : t("Kast scannen")}
               disabled={scanning}
               onClick={scan}
             >
@@ -177,8 +178,8 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
               autoFocus
               value={zoekterm}
               onChange={(e) => setZoekterm(e.target.value)}
-              placeholder="Zoek in je kast"
-              aria-label="Zoek in je kast"
+              placeholder={t("Zoek in je kast")}
+              aria-label={t("Zoek in je kast")}
               className="bg-card font-body"
             />
           )}
@@ -197,7 +198,7 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
                       : 'border-accent/40 bg-accent-soft text-accent-ink'
                   }`}
                 >
-                  Bijna op · {bijnaOp.length}
+                  {t('Bijna op · {0}', [bijnaOp.length])}
                 </button>
               )}
               <button
@@ -208,7 +209,7 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
                   filter === null ? 'bg-primary text-primary-foreground' : 'border border-border text-muted-foreground hover:text-foreground'
                 }`}
               >
-                Alles
+                {t("Alles")}
               </button>
               {planken.map((plank) => (
                 <button
@@ -229,14 +230,14 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
 
           <div className="flex gap-2">
             <Input
-              placeholder="Zelf iets toevoegen"
-              aria-label="Zelf iets toevoegen"
+              placeholder={t("Zelf iets toevoegen")}
+              aria-label={t("Zelf iets toevoegen")}
               value={adding}
               onChange={(e) => setAdding(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && addByHand()}
               className="bg-card font-body"
             />
-            <Button onClick={addByHand} size="icon" className="h-11 w-11 shrink-0" aria-label="Toevoegen aan de kast">
+            <Button onClick={addByHand} size="icon" className="h-11 w-11 shrink-0" aria-label={t("Toevoegen aan de kast")}>
               <Plus className="h-4 w-4" />
             </Button>
           </div>
@@ -244,8 +245,8 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
           {!plus && (
             <p className="-mt-2 text-xs text-muted-foreground">
               {opGeraakt
-                ? `Kastfoto’s zijn op, op ${resetDatum()} staat je tegoed weer op ${FREE_LIMIT}.`
-                : <>Nog <span className="font-semibold tabular-nums text-foreground">{remaining('kastfoto')}</span> van {FREE_LIMIT} kastfoto’s deze maand</>}
+                ? t("Kastfoto’s zijn op, op {0} staat je tegoed weer op {1}.", [resetDatum(), FREE_LIMIT])
+                : t('Nog {0} van {1} kastfoto’s deze maand', [remaining('kastfoto'), FREE_LIMIT])}
             </p>
           )}
         </>
@@ -266,36 +267,36 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
               className="mx-auto flex h-[150px] w-full items-end justify-center rounded-[14px] border border-border p-2"
               style={{ backgroundImage: 'repeating-linear-gradient(135deg, hsl(var(--muted)) 0 4px, transparent 4px 8px)' }}
             >
-              <span className="font-mono text-[0.625rem] text-muted-foreground">foto · plank in beeld</span>
+              <span className="font-mono text-[0.625rem] text-muted-foreground">{t("foto · plank in beeld")}</span>
             </div>
-            <h2 className="mt-4 font-display text-2xl font-bold tracking-[-0.01em] text-foreground">Maak een foto van je plank</h2>
+            <h2 className="mt-4 font-display text-2xl font-bold tracking-[-0.01em] text-foreground">{t("Maak een foto van je plank")}</h2>
             <p className="mx-auto mt-2 max-w-[20rem] text-sm text-muted-foreground">
-              CoupleCart leest welke producten erop staan. Je ziet eerst wat er herkend is en vinkt zelf af wat klopt.
+              {t("CoupleCart leest welke producten erop staan. Je ziet eerst wat er herkend is en vinkt zelf af wat klopt.")}
             </p>
             <Button variant="secondary" className="mt-4 min-h-[50px] w-full gap-2" onClick={scan} disabled={scanning}>
-              {scanning ? <><Loader2 className="h-4 w-4 animate-spin" /> Foto lezen…</> : <><Camera className="h-4 w-4" /> Foto maken</>}
+              {scanning ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("Foto lezen…")}</> : <><Camera className="h-4 w-4" /> {t("Foto maken")}</>}
             </Button>
             <Button variant="outline" className="mt-2 min-h-[50px] w-full" onClick={() => document.getElementById('kast-zelf-typen')?.focus()}>
-              Zelf typen
+              {t("Zelf typen")}
             </Button>
-            <p className="mt-3 text-xs text-muted-foreground">Vijf foto’s per maand gratis</p>
+            <p className="mt-3 text-xs text-muted-foreground">{t("Vijf foto’s per maand gratis")}</p>
           </section>
 
           <p className="text-center text-xs text-muted-foreground">
-            Vink je iets af op je lijst? Dan zet CoupleCart het hier vanzelf bij.
+            {t("Vink je iets af op je lijst? Dan zet CoupleCart het hier vanzelf bij.")}
           </p>
 
           <div className="flex gap-2">
             <Input
               id="kast-zelf-typen"
-              placeholder="Zelf iets toevoegen"
-              aria-label="Zelf iets toevoegen"
+              placeholder={t("Zelf iets toevoegen")}
+              aria-label={t("Zelf iets toevoegen")}
               value={adding}
               onChange={(e) => setAdding(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && addByHand()}
               className="bg-card font-body"
             />
-            <Button onClick={addByHand} size="icon" className="h-11 w-11 shrink-0" aria-label="Toevoegen aan de kast">
+            <Button onClick={addByHand} size="icon" className="h-11 w-11 shrink-0" aria-label={t("Toevoegen aan de kast")}>
               <Plus className="h-4 w-4" />
             </Button>
           </div>
@@ -306,7 +307,7 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
         <section key={plank.sleutel}>
           {plank.sleutel === 'bijna' ? (
             <h2 className="mb-1.5 mt-1.5 font-display text-[0.6875rem] font-semibold uppercase tracking-[0.09em] text-accent-ink">
-              Bijna op
+              {t("Bijna op")}
             </h2>
           ) : (
             <DepartmentDot
@@ -324,11 +325,11 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
       ))}
 
       {!pantryLoading && pantry.length > 0 && zichtbaar.every((plank) => plank.items.length === 0) && (
-        <p className="py-8 text-center text-sm text-muted-foreground">Niets gevonden.</p>
+        <p className="py-8 text-center text-sm text-muted-foreground">{t("Niets gevonden.")}</p>
       )}
 
       <section>
-        <h2 className="mb-2 font-display text-[0.9375rem] font-bold tracking-[-0.01em] text-foreground">Vaak gekocht</h2>
+        <h2 className="mb-2 font-display text-[0.9375rem] font-bold tracking-[-0.01em] text-foreground">{t("Vaak gekocht")}</h2>
         <UsualsList />
       </section>
 

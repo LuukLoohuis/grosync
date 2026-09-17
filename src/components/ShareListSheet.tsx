@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useAppContext } from '@/contexts/AppContext';
 import { supabase } from '@/integrations/supabase/client';
+import { t } from '@/lib/i18n';
 
 interface ShareListSheetProps {
   open: boolean;
@@ -25,7 +26,7 @@ type ShareState =
 const shareUrl = (code: string) => `${window.location.origin}/#/shared/${code}`;
 
 const membersLabel = (count: number) =>
-  count === 0 ? 'Nog niemand doet mee' : count === 1 ? '1 persoon doet mee' : `${count} mensen doen mee`;
+  count === 0 ? t('Nog niemand doet mee') : count === 1 ? t('1 persoon doet mee') : t('{0} mensen doen mee', [count]);
 
 const ShareListSheet = ({ open, onOpenChange }: ShareListSheetProps) => {
   const { groceryItems, userId } = useAppContext();
@@ -74,7 +75,7 @@ const ShareListSheet = ({ open, onOpenChange }: ShareListSheetProps) => {
       .single();
     setBusy(false);
     if (error || !data) {
-      toast.error('Deellink maken lukte niet. Probeer het opnieuw.');
+      toast.error(t("Deellink maken lukte niet. Probeer het opnieuw."));
       return;
     }
     setState({ status: 'ready', shareCode: data.share_code, members: 0 });
@@ -83,9 +84,9 @@ const ShareListSheet = ({ open, onOpenChange }: ShareListSheetProps) => {
   const copyLink = async (code: string) => {
     try {
       await navigator.clipboard.writeText(shareUrl(code));
-      toast.success('Link gekopieerd');
+      toast.success(t("Link gekopieerd"));
     } catch {
-      toast.error('Kopiëren lukte niet. Houd de link ingedrukt en kies Kopiëren.');
+      toast.error(t("Kopiëren lukte niet. Houd de link ingedrukt en kies Kopiëren."));
     }
   };
 
@@ -97,23 +98,23 @@ const ShareListSheet = ({ open, onOpenChange }: ShareListSheetProps) => {
     setBusy(false);
     if (error || !data?.length) {
       if (error) console.error('Stop sharing failed:', error);
-      toast.error('Stoppen met delen lukte niet. Probeer het opnieuw.');
+      toast.error(t("Stoppen met delen lukte niet. Probeer het opnieuw."));
       return;
     }
     setState({ status: 'ready', shareCode: null, members: 0 });
-    toast.success('Je lijst wordt niet meer gedeeld');
+    toast.success(t("Je lijst wordt niet meer gedeeld"));
   };
 
   const uncheckedNames = groceryItems.filter((i) => !i.checked).map((i) => i.name);
 
   const shareWhatsApp = () => {
-    if (uncheckedNames.length === 0) { toast.error('Je lijst is leeg, er valt niets te sturen'); return; }
+    if (uncheckedNames.length === 0) { toast.error(t("Je lijst is leeg, er valt niets te sturen")); return; }
     const text = '🛒 Boodschappenlijst\n\n' + uncheckedNames.map((name) => `• ${name}`).join('\n');
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
 
   const downloadPDF = () => {
-    if (uncheckedNames.length === 0) { toast.error('Je lijst is leeg, er valt niets te downloaden'); return; }
+    if (uncheckedNames.length === 0) { toast.error(t("Je lijst is leeg, er valt niets te downloaden")); return; }
     const doc = new jsPDF();
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(20);
@@ -126,46 +127,46 @@ const ShareListSheet = ({ open, onOpenChange }: ShareListSheetProps) => {
       doc.text(`☐  ${name}`, 20, y);
     });
     doc.save('boodschappenlijst.pdf');
-    toast.success('PDF gedownload');
+    toast.success(t("PDF gedownload"));
   };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="mx-auto flex max-h-[90vh] [@supports(height:100dvh)]:max-h-[90dvh] max-w-lg flex-col gap-0 rounded-t-[20px] p-0 shadow-sheet">
         <SheetHeader className="px-5 pb-3 pt-5 pr-14 text-left">
-          <SheetTitle className="font-display text-xl">Deel je lijst</SheetTitle>
-          <SheetDescription>Wie de link opent, kijkt en vinkt mee op je lijst.</SheetDescription>
+          <SheetTitle className="font-display text-xl">{t("Deel je lijst")}</SheetTitle>
+          <SheetDescription>{t("Wie de link opent, kijkt en vinkt mee op je lijst.")}</SheetDescription>
         </SheetHeader>
 
         <div className="flex-1 space-y-5 overflow-y-auto px-5 pb-5">
           {state.status === 'loading' && (
             <p className="flex min-h-11 items-center gap-2 text-sm text-muted-foreground" role="status">
-              <Loader2 className="h-4 w-4 animate-spin" /> Deellink ophalen…
+              <Loader2 className="h-4 w-4 animate-spin" /> {t("Deellink ophalen…")}
             </p>
           )}
 
           {state.status === 'error' && (
             <p className="text-sm text-muted-foreground">
-              Je deellink ophalen lukte niet.{' '}
+              {t("Je deellink ophalen lukte niet.")}{' '}
               <button type="button" onClick={() => void load()} className="min-h-11 font-medium text-primary hover:underline">
-                Opnieuw proberen
+                {t("Opnieuw proberen")}
               </button>
             </p>
           )}
 
           {state.status === 'ready' && !state.shareCode && (
             <div className="space-y-3">
-              <p className="text-sm text-foreground">Je lijst wordt nog niet gedeeld.</p>
+              <p className="text-sm text-foreground">{t("Je lijst wordt nog niet gedeeld.")}</p>
               <Button className="min-h-11 w-full gap-2" onClick={createLink} disabled={busy}>
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Link2 className="h-4 w-4" />}
-                Maak een deellink
+                {t("Maak een deellink")}
               </Button>
             </div>
           )}
 
           {state.status === 'ready' && state.shareCode && (
             <div className="space-y-3">
-              <label htmlFor="share-link" className="sr-only">Deellink</label>
+              <label htmlFor="share-link" className="sr-only">{t("Deellink")}</label>
               <Input
                 id="share-link"
                 readOnly
@@ -174,7 +175,7 @@ const ShareListSheet = ({ open, onOpenChange }: ShareListSheetProps) => {
                 className="bg-card font-body text-sm"
               />
               <Button className="min-h-11 w-full gap-2" onClick={() => copyLink(state.shareCode!)}>
-                <Link2 className="h-4 w-4" /> Link kopiëren
+                <Link2 className="h-4 w-4" /> {t("Link kopiëren")}
               </Button>
               <p className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Users className="h-4 w-4" /> {membersLabel(state.members)}
@@ -183,13 +184,13 @@ const ShareListSheet = ({ open, onOpenChange }: ShareListSheetProps) => {
           )}
 
           <div className="space-y-2 border-t border-border pt-4">
-            <p className="text-sm font-medium text-foreground">Of stuur de lijst zelf</p>
+            <p className="text-sm font-medium text-foreground">{t("Of stuur de lijst zelf")}</p>
             <div className="grid grid-cols-2 gap-2">
               <Button variant="outline" className="min-h-11 gap-2" onClick={shareWhatsApp}>
-                <MessageCircle className="h-4 w-4" /> Via WhatsApp
+                <MessageCircle className="h-4 w-4" /> {t("Via WhatsApp")}
               </Button>
               <Button variant="outline" className="min-h-11 gap-2" onClick={downloadPDF}>
-                <FileDown className="h-4 w-4" /> Als PDF
+                <FileDown className="h-4 w-4" /> {t("Als PDF")}
               </Button>
             </div>
           </div>
@@ -202,18 +203,18 @@ const ShareListSheet = ({ open, onOpenChange }: ShareListSheetProps) => {
                   disabled={busy}
                   className="min-h-11 w-full rounded-md text-sm font-medium text-destructive hover:bg-destructive/10"
                 >
-                  Stop met delen
+                  {t("Stop met delen")}
                 </button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Stoppen met delen?</AlertDialogTitle>
-                  <AlertDialogDescription>Wie de link heeft, ziet je lijst niet meer.</AlertDialogDescription>
+                  <AlertDialogTitle>{t("Stoppen met delen?")}</AlertDialogTitle>
+                  <AlertDialogDescription>{t("Wie de link heeft, ziet je lijst niet meer.")}</AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
-                  <AlertDialogCancel>Annuleren</AlertDialogCancel>
+                  <AlertDialogCancel>{t("Annuleren")}</AlertDialogCancel>
                   <AlertDialogAction onClick={stopSharing} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                    Stop met delen
+                    {t("Stop met delen")}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>

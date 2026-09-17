@@ -1,5 +1,6 @@
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import { taal } from '@/lib/i18n';
 
 const HERZIEN = '16 september 2026';
 const MAIL = 'couplecart@gmail.com';
@@ -224,6 +225,11 @@ const Legal = () => {
       </header>
 
       <main className="mx-auto max-w-2xl px-4 pb-16 pt-4">
+        {taal() === 'en' && (
+          <p className="mb-4 rounded-[12px] border border-border bg-card px-3 py-2 text-sm text-muted-foreground">
+            These terms, privacy and cookie notes are available in Dutch only. Questions? Email couplecart@gmail.com.
+          </p>
+        )}
         <nav aria-label="Juridisch" className="flex flex-wrap gap-2">
           {Object.entries(DELEN).map(([sleutel, item]) => (
             <Link

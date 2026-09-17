@@ -6,6 +6,7 @@ import type { AhMatch } from '@/services/ahApi';
 import { GroceryItem } from '@/types';
 import { deleteWithUndo } from '@/lib/undoableDelete';
 import { flushGroceryChanges, pendingGroceryChanges, saveGroceryChange, type GroceryChange } from '@/lib/offlineQueue';
+import { t } from '@/lib/i18n';
 
 type GroceryRow = Database['public']['Tables']['grocery_items']['Row'];
 type GroceryInsert = Database['public']['Tables']['grocery_items']['Insert'];
@@ -184,7 +185,7 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
     setGroceryItems((prev) => [...prev, rowToItem(row)]);
     if (!(await saveGroceryChange({ kind: 'insert', rows: [row] }))) {
       setGroceryItems((prev) => prev.filter((i) => i.id !== row.id));
-      toast.error('Toevoegen lukte niet. Probeer het opnieuw.');
+      toast.error(t("Toevoegen lukte niet. Probeer het opnieuw."));
     }
   }, [userId]);
 

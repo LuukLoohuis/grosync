@@ -10,6 +10,7 @@ import { isPantryStaple } from '@/lib/pantryStaples';
 import { isEstimated, withoutEstimate } from '@/lib/recipeImport';
 import { scaleIngredient } from '@/lib/scaleIngredient';
 import type { Recipe } from '@/types';
+import { t } from '@/lib/i18n';
 
 interface AddToListSheetProps {
   recipe: Recipe | null;
@@ -17,7 +18,7 @@ interface AddToListSheetProps {
   onNavigate?: (tab: 'list') => void;
 }
 
-const personen = (count: number) => `${count} ${count === 1 ? 'persoon' : 'personen'}`;
+const personen = (count: number) => `${count} ${count === 1 ? t('persoon') : t('personen')}`;
 
 const AddToListSheet = ({ recipe, onClose, onNavigate }: AddToListSheetProps) => {
   const { addRecipeToGroceryList, pantryStaples } = useAppContext();
@@ -51,7 +52,7 @@ const AddToListSheet = ({ recipe, onClose, onNavigate }: AddToListSheetProps) =>
   const multiplier = servings / baseServings;
   const lineFor = (ingredient: string) => scaleIngredient(withoutEstimate(ingredient), multiplier);
   const chosen = [...rows.needed, ...rows.basics].filter((row) => !unchecked.has(row.index));
-  const itemsLabel = `${chosen.length} ${chosen.length === 1 ? 'item' : 'items'}`;
+  const itemsLabel = `${chosen.length} ${chosen.length === 1 ? t('item') : t('items')}`;
 
   const toggle = (index: number, checked: boolean) =>
     setUnchecked((prev) => {
@@ -67,13 +68,13 @@ const AddToListSheet = ({ recipe, onClose, onNavigate }: AddToListSheetProps) =>
     const added = await addRecipeToGroceryList(chosen.map((row) => lineFor(row.ingredient)), shown.name);
     setSaving(false);
     if (!added) {
-      toast.error('Op je lijst zetten lukte niet. Probeer het opnieuw.');
+      toast.error(t("Op je lijst zetten lukte niet. Probeer het opnieuw."));
       return;
     }
     onClose();
     toast.success(
-      `${itemsLabel} op je lijst gezet`,
-      onNavigate ? { action: { label: 'Bekijk lijst', onClick: () => onNavigate('list') } } : undefined,
+      t('{0} op je lijst gezet', [itemsLabel]),
+      onNavigate ? { action: { label: t("Bekijk lijst"), onClick: () => onNavigate('list') } } : undefined,
     );
   };
 
@@ -95,7 +96,7 @@ const AddToListSheet = ({ recipe, onClose, onNavigate }: AddToListSheetProps) =>
         {shown && (
           <>
             <SheetHeader className="px-5 pb-3 pt-5 pr-14 text-left">
-              <SheetTitle className="font-display text-xl">Wat moet je halen?</SheetTitle>
+              <SheetTitle className="font-display text-xl">{t("Wat moet je halen?")}</SheetTitle>
               <SheetDescription className="truncate">{shown.name}</SheetDescription>
             </SheetHeader>
 
@@ -103,14 +104,14 @@ const AddToListSheet = ({ recipe, onClose, onNavigate }: AddToListSheetProps) =>
               <div className="flex items-center justify-between rounded-lg bg-muted pl-3">
                 <span className="flex items-center gap-2 text-sm font-medium text-foreground">
                   <Users className="h-4 w-4 text-muted-foreground" />
-                  Voor {personen(servings)}
+                  {t('Voor {0}', [personen(servings)])}
                 </span>
                 <div className="flex items-center">
                   <button
                     type="button"
                     onClick={() => setServings((count) => Math.max(1, count - 1))}
                     disabled={servings <= 1}
-                    aria-label="Minder personen"
+                    aria-label={t("Minder personen")}
                     className="flex h-11 w-11 items-center justify-center rounded-md hover:bg-background disabled:opacity-40"
                   >
                     <Minus className="h-4 w-4" />
@@ -118,7 +119,7 @@ const AddToListSheet = ({ recipe, onClose, onNavigate }: AddToListSheetProps) =>
                   <button
                     type="button"
                     onClick={() => setServings((count) => count + 1)}
-                    aria-label="Meer personen"
+                    aria-label={t("Meer personen")}
                     className="flex h-11 w-11 items-center justify-center rounded-md hover:bg-background"
                   >
                     <Plus className="h-4 w-4" />
@@ -126,14 +127,14 @@ const AddToListSheet = ({ recipe, onClose, onNavigate }: AddToListSheetProps) =>
                 </div>
               </div>
               <p className="mt-2 min-h-4 text-xs text-muted-foreground" aria-live="polite">
-                {servings !== baseServings && `Aangepast van ${baseServings} naar ${personen(servings)}`}
+                {servings !== baseServings && t("Aangepast van {0} naar {1}", [baseServings, personen(servings)])}
               </p>
 
               <ul className="mt-1">{rows.needed.map(renderRow)}</ul>
 
               {rows.basics.length > 0 && (
                 <>
-                  <h3 className="mt-4 text-sm font-semibold text-muted-foreground">Heb je waarschijnlijk al</h3>
+                  <h3 className="mt-4 text-sm font-semibold text-muted-foreground">{t("Heb je waarschijnlijk al")}</h3>
                   <ul className="mt-1">{rows.basics.map(renderRow)}</ul>
                 </>
               )}
@@ -141,7 +142,7 @@ const AddToListSheet = ({ recipe, onClose, onNavigate }: AddToListSheetProps) =>
 
             <div className="border-t border-border px-5 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
               <Button className="min-h-11 w-full" onClick={addToList} disabled={chosen.length === 0 || saving}>
-                Zet {itemsLabel} op je lijst
+                {t('Zet {0} op je lijst', [itemsLabel])}
               </Button>
             </div>
           </>

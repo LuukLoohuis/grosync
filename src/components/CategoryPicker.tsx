@@ -3,6 +3,7 @@ import { Check, Plus, X } from 'lucide-react';
 import { useAppContext } from '@/contexts/AppContext';
 import { Input } from '@/components/ui/input';
 import { CATEGORY_COLORS, PRESETS, dotOf, nextColor, sameName, tintOf } from '@/lib/recipeCategories';
+import { t } from '@/lib/i18n';
 
 interface CategoryPickerProps {
   value: string[];
@@ -47,7 +48,7 @@ const CategoryPicker = ({ value, onChange }: CategoryPickerProps) => {
 
   return (
     <div>
-      <span className="mb-2 block text-sm text-muted-foreground">Categorieën</span>
+      <span className="mb-2 block text-sm text-muted-foreground">{t("Categorieën")}</span>
 
       <div className="flex flex-wrap gap-2">
         {known.map((category) => {
@@ -74,7 +75,7 @@ const CategoryPicker = ({ value, onChange }: CategoryPickerProps) => {
             onClick={() => setCreating(true)}
             className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-dashed border-border-strong px-3 font-display text-xs font-bold text-muted-foreground transition-colors duration-150 ease-smooth hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <Plus className="h-3.5 w-3.5" /> Eigen categorie
+            <Plus className="h-3.5 w-3.5" /> {t("Eigen categorie")}
           </button>
         )}
       </div>
@@ -86,14 +87,14 @@ const CategoryPicker = ({ value, onChange }: CategoryPickerProps) => {
               autoFocus
               value={name}
               maxLength={24}
-              placeholder="Bijvoorbeeld: Vega"
+              placeholder={t("Bijvoorbeeld: Vega")}
               onChange={(e) => setName(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); create(name, color); } }}
             />
             <button
               type="button"
               onClick={() => { setCreating(false); setName(''); }}
-              aria-label="Annuleren"
+              aria-label={t("Annuleren")}
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:text-foreground"
             >
               <X className="h-4 w-4" />
@@ -105,7 +106,7 @@ const CategoryPicker = ({ value, onChange }: CategoryPickerProps) => {
                 key={option}
                 type="button"
                 onClick={() => setColor(option)}
-                aria-label={`Kleur ${option}`}
+                aria-label={t("Kleur {0}", [option])}
                 aria-pressed={color === option}
                 className={`h-8 w-8 shrink-0 rounded-full ${dotOf(option)} transition-transform duration-150 ease-smooth ${
                   color === option ? 'ring-2 ring-foreground ring-offset-2 ring-offset-background' : 'opacity-70 hover:opacity-100'
@@ -118,7 +119,7 @@ const CategoryPicker = ({ value, onChange }: CategoryPickerProps) => {
               disabled={!name.trim()}
               className="ml-auto min-h-11 rounded-full bg-primary px-4 font-display text-xs font-bold text-primary-foreground disabled:opacity-40"
             >
-              Maken
+              {t("Maken")}
             </button>
           </div>
         </div>
@@ -126,7 +127,7 @@ const CategoryPicker = ({ value, onChange }: CategoryPickerProps) => {
 
       {unused.length > 0 && !creating && (
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <span className="text-xs text-muted-foreground">Ook handig:</span>
+          <span className="text-xs text-muted-foreground">{t("Ook handig:")}</span>
           {unused.map((preset) => (
             <button
               key={preset.name}

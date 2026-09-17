@@ -1,9 +1,10 @@
 import { supabase } from '@/integrations/supabase/client';
+import { t } from '@/lib/i18n';
 
 /** Thrown when the monthly free allowance for a feature is used up. */
 export class QuotaError extends Error {
   constructor(public feature: string, public used: number, public quota: number) {
-    super('Je gratis tegoed voor deze maand is op');
+    super(t('Je gratis tegoed voor deze maand is op'));
     this.name = 'QuotaError';
   }
 }

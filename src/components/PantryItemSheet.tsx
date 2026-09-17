@@ -9,6 +9,7 @@ import { DEPARTMENT_DOT } from '@/components/DepartmentHeading';
 import { MAX_QUANTITY, isHerb, sameProduct } from '@/lib/pantry';
 import { sortByStoreRoute } from '@/lib/storeRouteSort';
 import type { PantryItem } from '@/types';
+import { t } from '@/lib/i18n';
 
 interface PantryItemSheetProps {
   item: PantryItem | null;
@@ -50,7 +51,7 @@ const PantryItemSheet = ({ item, onClose, onAddToList }: PantryItemSheetProps) =
     setHernoemen(false);
     if (!getypt || getypt === live.name) return;
     if (pantry.some((row) => row.id !== live.id && sameProduct(row.name, getypt))) {
-      toast.error(`“${getypt}” staat al in je kast`);
+      toast.error(t("“{0}” staat al in je kast", [getypt]));
       setNaam(live.name);
       return;
     }
@@ -72,13 +73,13 @@ const PantryItemSheet = ({ item, onClose, onAddToList }: PantryItemSheetProps) =
 
         <div className="mt-4">
           <div className={`${rij} min-h-[60px] justify-between`}>
-            <span className="text-[0.9375rem] text-foreground">Aantal</span>
+            <span className="text-[0.9375rem] text-foreground">{t("Aantal")}</span>
             <div className="flex items-center gap-1">
               <button
                 type="button"
                 onClick={() => setPantryQuantity(live.id, live.quantity - 1)}
                 disabled={live.quantity === 0}
-                aria-label="Eén minder"
+                aria-label={t("Eén minder")}
                 className="flex h-11 w-11 items-center justify-center rounded-full border border-border-strong text-foreground disabled:opacity-30"
               >
                 <Minus className="h-4 w-4" />
@@ -90,7 +91,7 @@ const PantryItemSheet = ({ item, onClose, onAddToList }: PantryItemSheetProps) =
                 type="button"
                 onClick={() => setPantryQuantity(live.id, live.quantity + 1)}
                 disabled={live.quantity >= MAX_QUANTITY}
-                aria-label="Eén meer"
+                aria-label={t("Eén meer")}
                 className="flex h-11 w-11 items-center justify-center rounded-full border border-border-strong text-foreground disabled:opacity-30"
               >
                 <Plus className="h-4 w-4" />
@@ -100,14 +101,14 @@ const PantryItemSheet = ({ item, onClose, onAddToList }: PantryItemSheetProps) =
 
           <div className={`${rij} min-h-[56px] justify-between`}>
             <span className="min-w-0">
-              <span className="block text-[0.9375rem] text-foreground">Bijna op</span>
-              <span className="block text-xs text-muted-foreground">Zet hem in de bijna-op-rij</span>
+              <span className="block text-[0.9375rem] text-foreground">{t("Bijna op")}</span>
+              <span className="block text-xs text-muted-foreground">{t("Zet hem in de bijna-op-rij")}</span>
             </span>
             <button
               type="button"
               role="switch"
               aria-checked={live.low}
-              aria-label="Bijna op"
+              aria-label={t("Bijna op")}
               onClick={() => setPantryLow(live.id, !live.low)}
               className={`relative h-[31px] w-[52px] shrink-0 rounded-full transition-colors duration-150 ease-smooth ${
                 live.low ? 'bg-accent' : 'bg-muted'
@@ -127,7 +128,7 @@ const PantryItemSheet = ({ item, onClose, onAddToList }: PantryItemSheetProps) =
                 autoFocus
                 value={naam}
                 maxLength={40}
-                aria-label={`Naam van ${live.name}`}
+                aria-label={t("Naam van {0}", [live.name])}
                 onChange={(e) => setNaam(e.target.value)}
                 onBlur={bewaarNaam}
                 onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
@@ -135,7 +136,7 @@ const PantryItemSheet = ({ item, onClose, onAddToList }: PantryItemSheetProps) =
             </div>
           ) : (
             <button type="button" onClick={() => setHernoemen(true)} className={`${rij} min-h-[56px]`}>
-              <span className="flex-1 text-[0.9375rem] text-foreground">Naam wijzigen</span>
+              <span className="flex-1 text-[0.9375rem] text-foreground">{t("Naam wijzigen")}</span>
               <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
             </button>
           )}
@@ -146,12 +147,12 @@ const PantryItemSheet = ({ item, onClose, onAddToList }: PantryItemSheetProps) =
             className={`${rij} min-h-[56px] text-destructive`}
           >
             <Trash2 className="h-4 w-4 shrink-0" />
-            <span className="flex-1">Weggooien</span>
+            <span className="flex-1">{t("Weggooien")}</span>
           </button>
         </div>
 
         <Button className="mt-5 min-h-[50px] w-full" onClick={() => { onAddToList(live.name); onClose(); }}>
-          Op de lijst zetten
+          {t("Op de lijst zetten")}
         </Button>
       </SheetContent>
     </Sheet>

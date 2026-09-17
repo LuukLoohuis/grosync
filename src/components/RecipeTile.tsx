@@ -3,6 +3,7 @@ import { ShoppingCart } from 'lucide-react';
 import { productName } from '@/lib/itemAmount';
 import { dotOf, findCategory, tintOf } from '@/lib/recipeCategories';
 import type { Recipe, RecipeCategory } from '@/types';
+import { t } from '@/lib/i18n';
 
 interface RecipeTileProps {
   recipe: Recipe;
@@ -71,8 +72,8 @@ const RecipeTile = ({ recipe, categories, cookCount = 0, reason = null, wide = f
             {recipe.name}
           </h3>
           <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
-            {count} {count === 1 ? 'ingrediënt' : 'ingrediënten'}
-            {recipe.servings ? ` · voor ${recipe.servings}` : ''}
+            {count} {count === 1 ? t("ingrediënt") : t("ingrediënten")}
+            {recipe.servings ? t("· voor {0}", [recipe.servings]) : ''}
             {first ? ` · ${first.name}` : ''}
           </p>
         </div>
@@ -81,7 +82,7 @@ const RecipeTile = ({ recipe, categories, cookCount = 0, reason = null, wide = f
       <button
         type="button"
         onClick={onAddToList}
-        aria-label={`Zet ${recipe.name} op je lijst`}
+        aria-label={t("Zet {0} op je lijst", [recipe.name])}
         className="absolute right-1.5 top-1.5 flex h-10 w-10 items-center justify-center rounded-full bg-background/85 text-foreground shadow-flat backdrop-blur transition-colors duration-150 ease-smooth hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <ShoppingCart className="h-4 w-4" />

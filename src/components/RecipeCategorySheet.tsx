@@ -6,6 +6,7 @@ import CategoryPicker from '@/components/CategoryPicker';
 import CategoryManager from '@/components/CategoryManager';
 import { useAppContext } from '@/contexts/AppContext';
 import type { Recipe } from '@/types';
+import { t } from '@/lib/i18n';
 
 interface RecipeCategorySheetProps {
   /** The recipe to label, or null when only the categories themselves are being managed. */
@@ -44,10 +45,10 @@ const RecipeCategorySheet = ({ recipe, open, onClose }: RecipeCategorySheetProps
       <SheetContent side="bottom" className="mx-auto max-h-[85vh] [@supports(height:100dvh)]:max-h-[85dvh] max-w-lg overflow-y-auto rounded-t-[20px]">
         <SheetHeader className="pr-10 text-left">
           <SheetTitle className="font-display text-xl">
-            {managing ? 'Je categorieën' : 'Waar hoort dit bij?'}
+            {managing ? t("Je categorieën") : t("Waar hoort dit bij?")}
           </SheetTitle>
           <SheetDescription>
-            {managing ? 'Naam wijzigen, andere kleur kiezen of weggooien.' : shown?.name}
+            {managing ? t("Naam wijzigen, andere kleur kiezen of weggooien.") : shown?.name}
           </SheetDescription>
         </SheetHeader>
 
@@ -61,11 +62,11 @@ const RecipeCategorySheet = ({ recipe, open, onClose }: RecipeCategorySheetProps
             onClick={() => setManaging((prev) => !prev)}
             className="mt-4 flex min-h-11 items-center gap-2 text-sm text-primary hover:underline"
           >
-            {managing ? <><Tags className="h-4 w-4" /> Terug naar dit recept</> : <><Settings2 className="h-4 w-4" /> Categorieën beheren</>}
+            {managing ? <><Tags className="h-4 w-4" /> {t("Terug naar dit recept")}</> : <><Settings2 className="h-4 w-4" /> {t("Categorieën beheren")}</>}
           </button>
         )}
 
-        <Button className="mt-4 min-h-12 w-full" onClick={onClose}>Klaar</Button>
+        <Button className="mt-4 min-h-12 w-full" onClick={onClose}>{t("Klaar")}</Button>
       </SheetContent>
     </Sheet>
   );

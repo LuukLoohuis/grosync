@@ -1,4 +1,5 @@
 import type { FetchedRecipe } from '@/services/recipeApi';
+import { t } from '@/lib/i18n';
 
 export type ImportInput = { kind: 'url'; url: string } | { kind: 'text'; text: string };
 
@@ -27,12 +28,12 @@ export function detectImportInput(value: string): ImportInput | null {
 export type SourceKey = NonNullable<FetchedRecipe['extractedFrom']> | 'text';
 
 export const SOURCE_LABELS: Record<SourceKey, string> = {
-  page: 'Van de website',
-  description: 'Uit de beschrijving',
-  'linked-page': 'Van de receptsite achter de link',
-  video: 'Uit de video · hoeveelheden nakijken',
-  none: 'Geen recept gevonden',
-  text: 'Uit geplakte tekst',
+  page: t('Van de website'),
+  description: t('Uit de beschrijving'),
+  'linked-page': t('Van de receptsite achter de link'),
+  video: t('Uit de video · hoeveelheden nakijken'),
+  none: t('Geen recept gevonden'),
+  text: t('Uit geplakte tekst'),
 };
 
 /**
@@ -40,10 +41,10 @@ export const SOURCE_LABELS: Record<SourceKey, string> = {
  * time rather than the real progress.
  */
 export function progressLabel(elapsedMs: number, input: ImportInput): string {
-  if (input.kind === 'text') return 'Recept zoeken…';
-  if (elapsedMs < 3000) return 'Link lezen…';
-  if (elapsedMs < 12000) return 'Recept zoeken…';
-  return /youtu\.?be|instagram\.com/i.test(input.url) ? 'Nog even, we kijken de video…' : 'Nog even geduld…';
+  if (input.kind === 'text') return t('Recept zoeken…');
+  if (elapsedMs < 3000) return t('Link lezen…');
+  if (elapsedMs < 12000) return t('Recept zoeken…');
+  return /youtu\.?be|instagram\.com/i.test(input.url) ? t('Nog even, we kijken de video…') : t('Nog even geduld…');
 }
 
 const ESTIMATE_PREFIX = /^ca\.\s*/i;

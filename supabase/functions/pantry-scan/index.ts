@@ -110,6 +110,8 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const image: string = typeof body?.image === 'string' ? body.image : '';
+    const lang = body?.lang === 'en' ? 'en' : 'nl';
+    const prompt = PROMPT + (lang === 'en' ? '\n\nBelangrijk: schrijf elke productnaam in het Engels, bijvoorbeeld "peanut butter", "passata", "wholemeal bread".' : '');
     if (!image.startsWith('data:image/')) return json({ error: 'Geen foto ontvangen' }, 400);
     if (image.length > MAX_BASE64) return json({ error: 'De foto is te groot' }, 413);
 
@@ -124,7 +126,7 @@ Deno.serve(async (req) => {
         messages: [{
           role: 'user',
           content: [
-            { type: 'text', text: PROMPT },
+            { type: 'text', text: prompt },
             // "high" makes the model tile the image instead of reading one small thumbnail.
             { type: 'image_url', image_url: { url: image, detail: 'high' } },
           ],

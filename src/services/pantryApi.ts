@@ -1,3 +1,4 @@
+import { taal } from '@/lib/i18n';
 import { callFunction } from '@/services/functions';
 
 export interface ScanHit {
@@ -8,6 +9,6 @@ export interface ScanHit {
 
 /** Sends one photo to be read. The image is not stored anywhere; only the names come back. */
 export const scanPantryPhoto = async (image: string): Promise<ScanHit[]> => {
-  const data = await callFunction<{ items?: ScanHit[] }>('pantry-scan', { image });
+  const data = await callFunction<{ items?: ScanHit[] }>('pantry-scan', { image, lang: taal() });
   return Array.isArray(data?.items) ? data.items : [];
 };

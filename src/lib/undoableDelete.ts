@@ -1,4 +1,5 @@
 import { toast } from 'sonner';
+import { t } from '@/lib/i18n';
 
 const UNDO_MS = 5000;
 
@@ -39,7 +40,7 @@ export function deleteWithUndo({ message, remove, restore, commit }: UndoableDel
     commit().catch((error) => {
       console.error('Delete failed:', error);
       restore();
-      toast.error('Verwijderen lukte niet. Probeer het opnieuw.');
+      toast.error(t("Verwijderen lukte niet. Probeer het opnieuw."));
     });
   };
 
@@ -51,7 +52,7 @@ export function deleteWithUndo({ message, remove, restore, commit }: UndoableDel
   toast(message, {
     duration: UNDO_MS,
     action: {
-      label: 'Ongedaan maken',
+      label: t("Ongedaan maken"),
       onClick: () => {
         if (settled) return;
         settled = true;

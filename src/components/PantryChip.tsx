@@ -1,6 +1,7 @@
 import type { HeadingCategory } from '@/components/DepartmentHeading';
 import { DEPARTMENT_CHIP, DEPARTMENT_COUNT } from '@/components/DepartmentHeading';
 import type { PantryItem } from '@/types';
+import { t } from '@/lib/i18n';
 
 interface PantryChipProps {
   item: PantryItem;
@@ -20,7 +21,7 @@ const PantryChip = ({ item, shelf, onOpen }: PantryChipProps) => {
     <button
       type="button"
       onClick={onOpen}
-      aria-label={`${item.name} openen`}
+      aria-label={t("{0} openen", [item.name])}
       className={`inline-flex min-h-11 items-center gap-2 rounded-full border px-3.5 text-[0.9375rem] transition-[background-color,border-color,transform] duration-150 ease-smooth active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
         out
           ? 'border-destructive/35 bg-destructive/10 text-destructive'
@@ -41,8 +42,8 @@ const PantryChip = ({ item, shelf, onOpen }: PantryChipProps) => {
         </span>
       )}
 
-      {out && <span className="-mr-0.5 text-xs font-semibold">op</span>}
-      {!out && item.low && <span className="-mr-0.5 text-xs font-semibold">bijna op</span>}
+      {out && <span className="-mr-0.5 text-xs font-semibold">{t("op")}</span>}
+      {!out && item.low && <span className="-mr-0.5 text-xs font-semibold">{t("bijna op")}</span>}
     </button>
   );
 };

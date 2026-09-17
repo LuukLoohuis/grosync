@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
+import { t } from '@/lib/i18n';
 
 const UsualsList = () => {
   const [newItem, setNewItem] = useState('');
@@ -27,7 +28,7 @@ const UsualsList = () => {
 
   const handleAddToList = (name: string) => {
     addGroceryItem(name);
-    toast.success(`“${name}” op je lijst gezet`);
+    toast.success(t("“{0}” op je lijst gezet", [name]));
   };
 
   return (
@@ -35,14 +36,14 @@ const UsualsList = () => {
       {/* Add usual */}
       <div className="flex gap-2">
         <Input
-          placeholder="Wat koop je vaak?"
-          aria-label="Wat koop je vaak?"
+          placeholder={t("Wat koop je vaak?")}
+          aria-label={t("Wat koop je vaak?")}
           value={newItem}
           onChange={(e) => setNewItem(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
           className="bg-card border-border font-body"
         />
-        <Button onClick={handleAdd} size="icon" className="shrink-0 h-11 w-11" aria-label="Favoriet toevoegen">
+        <Button onClick={handleAdd} size="icon" className="shrink-0 h-11 w-11" aria-label={t("Favoriet toevoegen")}>
           <Plus className="h-4 w-4" />
         </Button>
       </div>
@@ -57,8 +58,8 @@ const UsualsList = () => {
       {/* Empty state */}
       {!loading && usuals.length === 0 && (
         <div className="text-center py-12 text-muted-foreground">
-          <p className="text-lg font-display text-foreground">Nog geen favorieten</p>
-          <p className="text-sm mt-1">Zet hier wat je elke week koopt. Eén tik en het staat op je lijst.</p>
+          <p className="text-lg font-display text-foreground">{t("Nog geen favorieten")}</p>
+          <p className="text-sm mt-1">{t("Zet hier wat je elke week koopt. Eén tik en het staat op je lijst.")}</p>
         </div>
       )}
 
@@ -72,14 +73,14 @@ const UsualsList = () => {
             <button
               onClick={() => handleAddToList(item.name)}
               className="flex items-center gap-1.5 min-h-11 pr-1 hover:text-primary transition-colors"
-              aria-label={`Zet ${item.name} op je lijst`}
+              aria-label={t("Zet {0} op je lijst", [item.name])}
             >
               <ShoppingCart className="h-3.5 w-3.5 text-primary" />
               <span className="font-body text-sm">{item.name}</span>
             </button>
             <button
               onClick={() => removeUsual(item.id)}
-              aria-label={`Verwijder ${item.name}`}
+              aria-label={t("Verwijder {0}", [item.name])}
               className="h-11 w-11 flex items-center justify-center text-destructive rounded-full hover:bg-destructive/10 transition-opacity [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100 focus-visible:opacity-100"
             >
               <X className="h-3.5 w-3.5" />
@@ -91,19 +92,19 @@ const UsualsList = () => {
       {/* Pantry staples */}
       <section className="space-y-3 border-t border-border pt-6" aria-labelledby="pantry-heading">
         <div>
-          <h2 id="pantry-heading" className="font-display text-lg text-foreground">Dit heb ik altijd in huis</h2>
-          <p className="text-sm text-muted-foreground">Die staan uitgevinkt als je een recept op je lijst zet.</p>
+          <h2 id="pantry-heading" className="font-display text-lg text-foreground">{t("Dit heb ik altijd in huis")}</h2>
+          <p className="text-sm text-muted-foreground">{t("Die staan uitgevinkt als je een recept op je lijst zet.")}</p>
         </div>
         <div className="flex gap-2">
           <Input
-            placeholder="Bijvoorbeeld: sojasaus"
-            aria-label="Wat heb je altijd in huis?"
+            placeholder={t("Bijvoorbeeld: sojasaus")}
+            aria-label={t("Wat heb je altijd in huis?")}
             value={newStaple}
             onChange={(e) => setNewStaple(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleAddStaple()}
             className="bg-card border-border font-body"
           />
-          <Button onClick={handleAddStaple} size="icon" className="shrink-0 h-11 w-11" aria-label="Toevoegen aan altijd in huis">
+          <Button onClick={handleAddStaple} size="icon" className="shrink-0 h-11 w-11" aria-label={t("Toevoegen aan altijd in huis")}>
             <Plus className="h-4 w-4" />
           </Button>
         </div>
@@ -113,7 +114,7 @@ const UsualsList = () => {
               {staple}
               <button
                 onClick={() => savePantryStaples(pantryStaples.filter((s) => s !== staple))}
-                aria-label={`Haal ${staple} weg uit altijd in huis`}
+                aria-label={t("Haal {0} weg uit altijd in huis", [staple])}
                 className="h-11 w-11 flex items-center justify-center rounded-full text-muted-foreground hover:bg-background hover:text-foreground"
               >
                 <X className="h-3.5 w-3.5" />

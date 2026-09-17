@@ -124,6 +124,7 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const staples: string[] = Array.isArray(body?.staples) ? body.staples.slice(0, 20) : [];
     const avoid: string[] = Array.isArray(body?.avoid) ? body.avoid.slice(0, 20) : [];
+    const lang = body?.lang === 'en' ? 'en' : 'nl';
 
     // The client can pass the offers ah-bonus already fetched; otherwise read them here.
     const given: Offer[] = Array.isArray(body?.offers)
@@ -148,7 +149,9 @@ Deno.serve(async (req) => {
           {
             role: 'system',
             content:
-              'Je bent een Nederlandse kok die goedkoop en lekker kookt met de aanbiedingen van de week. Antwoord in het Nederlands en alleen als JSON.',
+              lang === 'en'
+                ? 'You are a Dutch home cook who cooks cheap, tasty meals with this week’s supermarket offers. Answer in English and only as JSON.'
+                : 'Je bent een Nederlandse kok die goedkoop en lekker kookt met de aanbiedingen van de week. Antwoord in het Nederlands en alleen als JSON.',
           },
           {
             role: 'user',
@@ -158,7 +161,8 @@ Deno.serve(async (req) => {
               `- Daarnaast mag je basisproducten gebruiken die mensen in huis hebben: ${staples.join(', ') || 'zout, peper, olie, bloem, suiker'}.\n` +
               (avoid.length ? `- Gebruik niet: ${avoid.join(', ')}.\n` : '') +
               `- Houd het haalbaar op een doordeweekse avond, hoogstens 40 minuten.\n` +
-              `- Schrijf hoeveelheden per ingrediënt. Zet "ca. " voor een hoeveelheid die je zelf schat.\n\n` +
+              `- Schrijf hoeveelheden per ingrediënt. Zet "ca. " voor een hoeveelheid die je zelf schat.\n` +
+              (lang === 'en' ? `- Write the name, description, ingredients and instructions in English; keep the product titles from the list as they are.\n` : '') + `\n` +
               `JSON: {"recipes":[{"name":"","description":"één zin","ingredients":["500 g kipfilet"],"instructions":"1. …\\n2. …","servings":2,"usedBonus":["exacte titel uit de lijst"],"minutes":30}]}`,
           },
         ],

@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAppContext } from '@/contexts/AppContext';
 import { supabase } from '@/integrations/supabase/client';
+import { locale } from '@/lib/i18n';
 
 /** What a call costs us, in euros. A guess, but a documented one. */
 const RATES: Record<string, number> = { recept: 0.02, kastfoto: 0.005 };
@@ -61,7 +62,7 @@ const SCAN_MODELS: { value: string; label: string; hint: string }[] = [
 ];
 
 const euro = (value: number) => `€ ${value.toFixed(2).replace('.', ',')}`;
-const datum = (value: string | null) => (value ? new Date(value).toLocaleDateString('nl-NL', { day: 'numeric', month: 'short' }) : '—');
+const datum = (value: string | null) => (value ? new Date(value).toLocaleDateString(locale(), { day: 'numeric', month: 'short' }) : '—');
 
 const Tile = ({ label, value, hint }: { label: string; value: string | number; hint?: string }) => (
   <div className="rounded-[14px] border border-border bg-card p-3">
