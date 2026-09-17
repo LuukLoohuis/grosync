@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ShoppingCart } from 'lucide-react';
+import { Heart, ShoppingCart } from 'lucide-react';
 import { productName } from '@/lib/itemAmount';
 import { dotOf, findCategory, tintOf } from '@/lib/recipeCategories';
 import type { Recipe, RecipeCategory } from '@/types';
@@ -16,6 +16,7 @@ interface RecipeTileProps {
   wide?: boolean;
   onOpen: () => void;
   onAddToList: () => void;
+  onToggleFavorite: () => void;
 }
 
 /** De eerste paar ingrediënten, zonder hoeveelheid: waar het gerecht van gemaakt is. */
@@ -27,7 +28,7 @@ const wordsOf = (recipe: Recipe, hoeveel: number) =>
  * het er geen, dan vertelt een vlak met de ingrediënten waar het over gaat — dat
  * zegt meer dan een beginletter, en de helft van wat je plakt heeft geen foto.
  */
-const RecipeTile = ({ recipe, categories, cookCount = 0, reason = null, wide = false, onOpen, onAddToList }: RecipeTileProps) => {
+const RecipeTile = ({ recipe, categories, cookCount = 0, reason = null, wide = false, onOpen, onAddToList, onToggleFavorite }: RecipeTileProps) => {
   const labels = recipe.categories ?? [];
   const first = labels.length > 0 ? findCategory(categories, labels[0]) : null;
   const count = recipe.ingredients.length;
@@ -77,6 +78,20 @@ const RecipeTile = ({ recipe, categories, cookCount = 0, reason = null, wide = f
             {first ? ` · ${first.name}` : ''}
           </p>
         </div>
+      </button>
+
+      <button
+        type="button"
+        onClick={onToggleFavorite}
+        aria-label={recipe.favorite ? t('Haal {0} uit je favorieten', [recipe.name]) : t('Maak {0} favoriet', [recipe.name])}
+        aria-pressed={recipe.favorite === true}
+        className="absolute left-1.5 top-1.5 flex h-10 w-10 items-center justify-center rounded-full bg-background/85 text-foreground shadow-flat backdrop-blur transition-colors duration-150 ease-smooth hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        <Heart
+          className={`h-4 w-4 transition-colors ${recipe.favorite ? 'text-destructive' : 'text-muted-foreground'}`}
+          fill={recipe.favorite ? 'currentColor' : 'none'}
+          strokeWidth={recipe.favorite ? 0 : 2}
+        />
       </button>
 
       <button

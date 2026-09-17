@@ -48,6 +48,8 @@ export interface Recipe {
   servings?: number;
   /** Labels like "Vega" or "Snel"; a recipe can sit in more than one. */
   categories?: string[];
+  /** Met een hartje gemarkeerd; die staan vooraan in het overzicht. */
+  favorite?: boolean;
 }
 
 export interface RecipeCategory {

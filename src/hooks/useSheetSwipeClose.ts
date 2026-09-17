@@ -46,9 +46,15 @@ export const useSheetSwipeClose = (onClose: () => void) => {
     if (!start?.actief) return;
     const dy = e.changedTouches[0].clientY - start.y;
     if (dy >= DREMPEL) {
-      // Radix schuift het vel zelf weg; onze verschuiving moet daarvoor weg zijn.
-      zet(0, false);
-      onClose();
+      const el = vel.current;
+      const rustig = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const hoogte = el?.getBoundingClientRect().height ?? window.innerHeight;
+      // Het vel schuift verder waar je vinger ophield. Radix zou er zijn eigen
+      // uitschuif-animatie overheen leggen, die bij nul begint — dat is precies
+      // het sprongetje omhoog. Die zetten we hier uit; wij zijn al onderweg.
+      if (el) el.style.animation = 'none';
+      zet(hoogte - dy > 0 ? hoogte : dy, !rustig);
+      window.setTimeout(onClose, rustig ? 0 : 200);
     } else {
       zet(0, true);
     }

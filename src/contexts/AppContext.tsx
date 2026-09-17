@@ -37,6 +37,7 @@ interface AppContextType {
   updateRecipe: (id: string, updates: Partial<Omit<Recipe, 'id'>>) => Promise<void>;
   removeRecipe: (id: string) => void;
   updateRecipeImage: (id: string, imageUrl: string) => Promise<void>;
+  toggleFavorite: (id: string) => Promise<void>;
   recipeCategories: RecipeCategory[];
   addRecipeCategory: (name: string, color?: string) => Promise<string>;
   renameRecipeCategory: (id: string, name: string) => Promise<void>;
@@ -99,6 +100,7 @@ export const AppProvider = ({ children, userId }: { children: React.ReactNode; u
     updateRecipe: recipeHook.updateRecipe,
     removeRecipe: recipeHook.removeRecipe,
     updateRecipeImage: recipeHook.updateRecipeImage,
+    toggleFavorite: recipeHook.toggleFavorite,
     recipeCategories: categoryHook.categories,
     addRecipeCategory: categoryHook.addCategory,
     renameRecipeCategory: categoryHook.renameCategory,

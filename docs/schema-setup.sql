@@ -700,3 +700,8 @@ ALTER TABLE public.stripe_events ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Beheerder leest gebeurtenissen" ON public.stripe_events;
 CREATE POLICY "Beheerder leest gebeurtenissen" ON public.stripe_events
   FOR SELECT USING (public.is_admin());
+-- Een recept als favoriet markeren, met een hartje in het overzicht.
+ALTER TABLE public.recipes ADD COLUMN IF NOT EXISTS favorite BOOLEAN NOT NULL DEFAULT false;
+
+-- Favorieten staan vooraan; deze index houdt dat goedkoop.
+CREATE INDEX IF NOT EXISTS recipes_favorite_idx ON public.recipes (user_id, favorite);

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useSheetSwipeClose } from '@/hooks/useSheetSwipeClose';
-import { ExternalLink, Flame, Pencil, ShoppingCart, Tags, Trash2, Users } from 'lucide-react';
+import { ExternalLink, Flame, Heart, Pencil, ShoppingCart, Tags, Trash2, Users } from 'lucide-react';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import CategoryChip from '@/components/CategoryChip';
@@ -23,7 +23,7 @@ interface RecipeDetailSheetProps {
 
 /** The whole recipe, one swipe away from the grid. */
 const RecipeDetailSheet = ({ recipe, onClose, onAddToList, onEdit, onMacros, onCategories }: RecipeDetailSheetProps) => {
-  const { recipeCategories, removeRecipe } = useAppContext();
+  const { recipeCategories, removeRecipe, toggleFavorite } = useAppContext();
   const [shown, setShown] = useState<Recipe | null>(recipe);
   // Keep showing the recipe while the sheet slides away.
   if (recipe && recipe !== shown) setShown(recipe);
@@ -50,6 +50,21 @@ const RecipeDetailSheet = ({ recipe, onClose, onAddToList, onEdit, onMacros, onC
           aria-hidden="true"
           className="absolute left-1/2 top-2 z-10 h-1 w-9 -translate-x-1/2 rounded-full bg-foreground/25"
         />
+        {shown && (
+          <button
+            type="button"
+            onClick={() => void toggleFavorite(shown.id)}
+            aria-label={shown.favorite ? t('Uit je favorieten halen') : t('Favoriet maken')}
+            aria-pressed={shown.favorite === true}
+            className="absolute right-[3.75rem] top-3 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background/90 text-foreground shadow-flat backdrop-blur transition-colors hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <Heart
+              className={`h-[18px] w-[18px] ${shown.favorite ? 'text-destructive' : 'text-muted-foreground'}`}
+              fill={shown.favorite ? 'currentColor' : 'none'}
+              strokeWidth={shown.favorite ? 0 : 2.2}
+            />
+          </button>
+        )}
         {shown?.imageUrl && (
           <div className="aspect-[16/9] w-full shrink-0 overflow-hidden rounded-t-[20px] bg-muted">
             <img src={shown.imageUrl} alt="" className="h-full w-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />

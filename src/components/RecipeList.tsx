@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowUpDown, Lightbulb, Plus, Search, Settings2, Link, X, Loader2, Languages, ClipboardPaste } from 'lucide-react';
+import { ArrowUpDown, Heart, Lightbulb, Plus, Search, Settings2, Link, X, Loader2, Languages, ClipboardPaste } from 'lucide-react';
 import { useAppContext } from '@/contexts/AppContext';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -35,7 +35,7 @@ interface RecipeListProps {
 }
 
 const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListProps) => {
-  const { loading, recipes, addRecipe, removeRecipe, updateRecipeImage, updateRecipe, recipeCategories, addRecipeCategory, plus, remaining, refreshEntitlements, userId, pantry } = useAppContext();
+  const { loading, recipes, addRecipe, removeRecipe, updateRecipeImage, updateRecipe, recipeCategories, addRecipeCategory, plus, remaining, refreshEntitlements, userId, pantry, toggleFavorite } = useAppContext();
   const [open, setOpen] = useState(false);
   const [manual, setManual] = useState(false);
   const [name, setName] = useState('');
@@ -64,6 +64,8 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
   const importOp = !plus && remaining('recept') === 0;
   const [categories, setCategories] = useState<string[]>([]);
   const [filter, setFilter] = useState<string | null>(null);
+  // Los van de categorieën: alleen wat je met een hartje hebt gemarkeerd.
+  const [alleenFavoriet, setAlleenFavoriet] = useState(false);
 
   const resetForm = () => {
     setName(''); setDescription(''); setIngredientText(''); setInstructions(''); setSourceUrl(''); setManual(false); setFetchedMacros(null); setFetchedImageUrl(undefined); setServings(4); setTranslating(false);
@@ -291,6 +293,7 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
   const visibleRecipes = useMemo(() => {
     const needle = search.trim().toLowerCase();
     const found = recipes.filter((recipe) => {
+      if (alleenFavoriet && !recipe.favorite) return false;
       if (filter && !(recipe.categories ?? []).some((label) => sameName(label, filter))) return false;
       if (!needle) return true;
       // Searching on an ingredient answers "wat kan ik met kip?" without extra UI.
@@ -302,7 +305,7 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
     return sort === 'naam'
       ? [...found].sort((a, b) => a.name.localeCompare(b.name, 'nl'))
       : [...found].reverse();
-  }, [recipes, filter, search, sort]);
+  }, [recipes, filter, search, sort, alleenFavoriet]);
 
   const cookCounts = useCookCounts(userId);
   // Het gerecht dat jullie het vaakst maakten; pas noemenswaardig vanaf twee keer.
@@ -318,8 +321,12 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
   // Het gerecht dat jullie het vaakst maken ligt vooraan, en dus breed: het
   // overzicht krijgt zijn ritme van wat jullie echt koken.
   const mosaicRecipes = useMemo(() => {
-    if (search.trim() || filter || !favoriet) return visibleRecipes;
-    return [favoriet.recipe, ...visibleRecipes.filter((recipe) => recipe.id !== favoriet.recipe.id)];
+    const metHartje = [
+      ...visibleRecipes.filter((recipe) => recipe.favorite),
+      ...visibleRecipes.filter((recipe) => !recipe.favorite),
+    ];
+    if (search.trim() || filter || !favoriet || favoriet.recipe.favorite) return metHartje;
+    return [favoriet.recipe, ...metHartje.filter((recipe) => recipe.id !== favoriet.recipe.id)];
   }, [visibleRecipes, favoriet, search, filter]);
 
   // Staat het woord niet in de naam, dan laat de regel zien waar het wel in stond.
@@ -614,6 +621,20 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
           {filterNames.length > 0 && (
             <div className="-mx-4 overflow-x-auto px-4 pb-1">
               <div className="flex w-max items-center gap-2">
+                {recipes.some((recipe) => recipe.favorite) && (
+                  <button
+                    type="button"
+                    onClick={() => setAlleenFavoriet((aan) => !aan)}
+                    aria-pressed={alleenFavoriet}
+                    aria-label={t('Alleen je favorieten')}
+                    className={`inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 font-display text-xs font-bold tracking-[-0.01em] transition-colors duration-150 ease-smooth ${
+                      alleenFavoriet ? 'bg-destructive text-destructive-foreground' : 'border border-border text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    <Heart className="h-3.5 w-3.5" fill="currentColor" strokeWidth={0} />
+                    <span className="tabular-nums opacity-80">{recipes.filter((recipe) => recipe.favorite).length}</span>
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setFilter(null)}
@@ -685,6 +706,7 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
                     wide={wide}
                     onOpen={() => setDetailId(recipe.id)}
                     onAddToList={() => setListRecipeId(recipe.id)}
+                    onToggleFavorite={() => void toggleFavorite(recipe.id)}
                   />
                 </div>
               );

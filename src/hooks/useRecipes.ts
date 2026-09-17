@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Recipe } from '@/types';
 import { deleteWithUndo } from '@/lib/undoableDelete';
+import { toast } from 'sonner';
+import { t } from '@/lib/i18n';
 
 interface UseRecipesOptions {
   userId?: string | null;
@@ -33,6 +35,7 @@ export const useRecipes = ({ userId }: UseRecipesOptions = {}) => {
           macros: d.macros as any || undefined,
           servings: (d as any).servings || 4,
           categories: (d as any).categories || [],
+          favorite: (d as any).favorite === true,
         }))
       );
       setLoading(false);
@@ -57,6 +60,7 @@ export const useRecipes = ({ userId }: UseRecipesOptions = {}) => {
             imageUrl: d.image_url || undefined, sourceUrl: d.source_url || undefined,
             macros: d.macros || undefined, servings: d.servings || 4,
             categories: d.categories || [],
+            favorite: d.favorite === true,
           });
 
           if (payload.eventType === 'INSERT') {
@@ -108,6 +112,7 @@ export const useRecipes = ({ userId }: UseRecipesOptions = {}) => {
           imageUrl: data.image_url || undefined, sourceUrl: data.source_url || undefined,
           macros: data.macros as any || undefined, servings: data.servings || 4,
           categories: (data as any).categories || [],
+          favorite: (data as any).favorite === true,
         }];
       });
     }
@@ -125,7 +130,25 @@ export const useRecipes = ({ userId }: UseRecipesOptions = {}) => {
     if (updates.macros !== undefined) dbUpdates.macros = updates.macros || null;
     if (updates.servings !== undefined) dbUpdates.servings = updates.servings;
     if (updates.categories !== undefined) dbUpdates.categories = updates.categories;
+    if (updates.favorite !== undefined) dbUpdates.favorite = updates.favorite;
     await supabase.from('recipes').update(dbUpdates).eq('id', id);
+  }, []);
+
+  /** Het hartje aan of uit. Gaat meteen om; klopt de database niet, dan terug. */
+  const toggleFavorite = useCallback(async (id: string) => {
+    let nieuw = false;
+    setRecipes((prev) => prev.map((r) => {
+      if (r.id !== id) return r;
+      nieuw = !r.favorite;
+      return { ...r, favorite: nieuw };
+    }));
+    // 'favorite' zit nog niet in de gegenereerde typen; de migratie voegt hem toe.
+    const { error } = await supabase.from('recipes').update({ favorite: nieuw } as never).eq('id', id);
+    if (error) {
+      console.error('Failed to set favourite:', error);
+      setRecipes((prev) => prev.map((r) => (r.id === id ? { ...r, favorite: !nieuw } : r)));
+      toast.error(t('Favoriet maken lukte niet. Probeer het opnieuw.'));
+    }
   }, []);
 
   const removeRecipe = useCallback((id: string) => {
@@ -151,5 +174,5 @@ export const useRecipes = ({ userId }: UseRecipesOptions = {}) => {
     await supabase.from('recipes').update({ image_url: imageUrl }).eq('id', id);
   }, []);
 
-  return { recipes, loading, addRecipe, updateRecipe, removeRecipe, updateRecipeImage };
+  return { recipes, loading, addRecipe, updateRecipe, removeRecipe, updateRecipeImage, toggleFavorite };
 };
