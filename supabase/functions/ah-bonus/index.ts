@@ -146,7 +146,9 @@ const SAMPLE_SIZE = 70;
 function sampleOffers(bonus: BonusRow[]) {
   const usable = bonus.filter((row) => {
     const category = row.category ?? '';
-    return category && !NON_FOOD_CATEGORY.test(category) && !TREAT_CATEGORY.test(category);
+    if (!category || NON_FOOD_CATEGORY.test(category) || TREAT_CATEGORY.test(category)) return false;
+    // Een tweepak met 3% volume voordeel is geen aanbieding om je week op te bouwen.
+    return !BULK_TITLE.test(row.title) && !BULK_MECHANISM.test(row.mechanism ?? '');
   });
   const byCategory = new Map<string, BonusRow[]>();
   for (const row of usable) {
@@ -193,6 +195,12 @@ const MEAT_FISH = /\b(kip|kipfilet|kippen\w*|gehakt|rund|rundvlees|biefstuk|bief
 // Meal kits are a whole dinner, not an ingredient: "AH Groene curry verspakket"
 // is not the curry paste your recipe asks for.
 const KIT_WORD = /\b(verspakket\w*|maaltijdpakket\w*|maaltijdbox\w*|kookpakket\w*|maaltijdsalade\w*|wokpakket\w*)\b/i;
+
+// A recipe asks for one pack, not a tray of six. AH's bulk deals ("6-pack",
+// "2 stuks", "5% volume voordeel") are a reason to stock up, not a week's bonus,
+// and their headline savings drown out the real offers.
+const BULK_TITLE = /(\b\d+\s*-?\s*pack\b|\b\d+\s*stuks?\b|\bvoordeel(?:pak|verpakking)\w*|\bmultipack\w*|\bgrootverpakking\w*|\bfamiliepak\w*)/i;
+const BULK_MECHANISM = /volume\s*voordeel/i;
 
 // English ingredients against Dutch shelf labels. Only the words that actually
 // turn up in recipes; a wrong translation here costs a wrong match.
@@ -306,6 +314,8 @@ Deno.serve(async (req) => {
             if (!wantsMeal && MEAL_CATEGORY.test(category)) continue;
             // A whole dinner in a box is not the ingredient you asked for.
             if (!wantsMeal && KIT_WORD.test(candidate.title)) continue;
+            // Buying six of something is not this week's bonus on one of them.
+            if (BULK_TITLE.test(candidate.title) || BULK_MECHANISM.test(candidate.mechanism ?? '')) continue;
             // Meat or fish only for a recipe that has meat or fish, and only on
             // the line that asks for it: garlic never buys a steak skewer.
             if (MEAT_FISH.test(candidate.title) && !(wantsMeatFish && thisIsMeatFish)) continue;

@@ -68,6 +68,19 @@ export const DEPARTMENT_COUNT: Record<HeadingCategory, string> = {
   diepvries: 'bg-[hsl(var(--dept-diepvries)/0.18)] text-[hsl(var(--dept-diepvries))]',
 };
 
+/** Kop boven een plank: een stip in de kleur van de afdeling, verder niets. */
+export const DepartmentDot = ({ category, label, count }: { category: HeadingCategory; label: string; count?: number }) => (
+  <div className="mb-1.5 mt-1.5 flex items-center gap-2">
+    <span className={`h-2 w-2 shrink-0 rounded-full ${DEPARTMENT_DOT[category]}`} aria-hidden="true" />
+    <h2 className="font-display text-[0.6875rem] font-semibold uppercase tracking-[0.09em] text-muted-foreground">{label}</h2>
+    {count !== undefined && (
+      <span className="rounded-[5px] bg-primary-soft px-1.5 font-display text-[0.625rem] font-bold tabular-nums text-primary">
+        {count}
+      </span>
+    )}
+  </div>
+);
+
 interface DepartmentHeadingProps {
   category: HeadingCategory;
   label: string;

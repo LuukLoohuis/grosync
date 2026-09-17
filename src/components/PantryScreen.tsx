@@ -1,33 +1,32 @@
-import { useEffect, useRef, useState } from 'react';
-import { Camera, Loader2, Plus, ShoppingCart } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Camera, Loader2, Plus, Search, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import DepartmentHeading from '@/components/DepartmentHeading';
-import PantryChip from '@/components/PantryChip';
-import SwipeToRemove from '@/components/SwipeToRemove';
+import { DepartmentDot } from '@/components/DepartmentHeading';
+import PantryTile from '@/components/PantryTile';
 import PantryScanSheet from '@/components/PantryScanSheet';
 import PantryItemSheet from '@/components/PantryItemSheet';
+import PlusSheet from '@/components/PlusSheet';
+import SwipeToRemove from '@/components/SwipeToRemove';
 import UsualsList from '@/components/UsualsList';
 import { useAppContext } from '@/contexts/AppContext';
 import { isHerb, sameProduct } from '@/lib/pantry';
 import { toSmallDataUrl } from '@/lib/photo';
-import { sortByStoreRoute } from '@/lib/storeRouteSort';
-import { scanPantryPhoto, type ScanHit } from '@/services/pantryApi';
-import { QuotaError } from '@/services/functions';
-import PlusSheet from '@/components/PlusSheet';
+import { sortByStoreRoute, type Department } from '@/lib/storeRouteSort';
 import { FREE_LIMIT } from '@/hooks/useEntitlements';
+import { QuotaError } from '@/services/functions';
+import { scanPantryPhoto, type ScanHit } from '@/services/pantryApi';
 
 const HINT_KEY = 'couplecart-veeg-hint';
 
-/** Hoe vaak het potje al even opzij is gewipt; na drie keer weet je het wel. */
 const hintStand = () => {
   try { return Number(window.localStorage.getItem(HINT_KEY) ?? 0); } catch { return 99; }
 };
 
 const hintOnthouden = (waarde: number) => {
-  try { window.localStorage.setItem(HINT_KEY, String(waarde)); } catch { /* privémodus: dan maar geen hint */ }
+  try { window.localStorage.setItem(HINT_KEY, String(waarde)); } catch { /* privémodus */ }
 };
 
 /** De eerste van de volgende maand, wanneer het tegoed weer vol staat. */
@@ -36,28 +35,29 @@ const resetDatum = () => {
   return new Date(nu.getFullYear(), nu.getMonth() + 1, 1).toLocaleDateString('nl-NL', { day: 'numeric', month: 'long' });
 };
 
+const dezeMaand = () => new Date().toLocaleDateString('nl-NL', { month: 'long' });
+
 interface PantryScreenProps {
   onNavigate?: (tab: 'list') => void;
 }
 
+/** De voorraadkast: twee tegels breed, want dichtheid is hier het probleem. */
 const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
   const {
-    pantry, pantryLoading, stockUp, removePantryItem, addGroceryItem, groceryItems, plus, remaining, refreshEntitlements,
+    pantry, pantryLoading, stockUp, removePantryItem, addGroceryItem,
+    plus, remaining, refreshEntitlements,
   } = useAppContext();
+
   const [adding, setAdding] = useState('');
+  const [zoeken, setZoeken] = useState(false);
+  const [zoekterm, setZoekterm] = useState('');
   const [scanning, setScanning] = useState(false);
   const [hits, setHits] = useState<ScanHit[] | null>(null);
   const [openItemId, setOpenItemId] = useState<string | null>(null);
+  const [filter, setFilter] = useState<Department | 'kruiden' | 'bijna' | null>(null);
   const [overLimit, setOverLimit] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
-  const onList = new Set(groceryItems.filter((i) => !i.checked).map((i) => i.name.trim().toLowerCase()));
-  const herbs = pantry.filter((item) => isHerb(item.name));
-  // Het eerste potje op het scherm doet het voor.
-  const eersteId = (herbs[0] ?? pantry.find((item) => !isHerb(item.name)))?.id;
-  const departments = sortByStoreRoute(pantry.filter((item) => !isHerb(item.name)));
-  const runningOut = pantry.filter((item) => item.low || item.quantity === 0);
-  const openItem = pantry.find((item) => item.id === openItemId) ?? null;
   const opGeraakt = !plus && remaining('kastfoto') === 0;
 
   // Eén keer per bezoek tellen, hoogstens drie bezoeken lang voordoen.
@@ -73,13 +73,36 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
     setToonHint(true);
   }, [pantry.length]);
 
-  /** Wie één keer geveegd heeft, hoeft het nooit meer voorgedaan te krijgen. */
+  const gezocht = useMemo(() => {
+    const needle = zoekterm.trim().toLowerCase();
+    return needle ? pantry.filter((item) => item.name.toLowerCase().includes(needle)) : pantry;
+  }, [pantry, zoekterm]);
+
+  const bijnaOp = gezocht.filter((item) => item.low || item.quantity === 0);
+  const kruiden = gezocht.filter((item) => isHerb(item.name));
+  const afdelingen = sortByStoreRoute(gezocht.filter((item) => !isHerb(item.name)));
+
+  // Kruiden staan bovenaan, daarna de winkelafdelingen.
+  const planken = [
+    ...(kruiden.length > 0 ? [{ sleutel: 'kruiden' as const, label: 'Kruiden & specerijen', items: kruiden }] : []),
+    ...afdelingen.map((groep) => ({ sleutel: groep.category, label: groep.label, items: groep.items })),
+  ];
+  const zichtbaar = filter === 'bijna'
+    ? [{ sleutel: 'bijna' as const, label: 'Bijna op', items: bijnaOp }]
+    : filter
+      ? planken.filter((plank) => plank.sleutel === filter)
+      : planken;
+
+  const eersteId = planken[0]?.items[0]?.id;
+  const openItem = pantry.find((item) => item.id === openItemId) ?? null;
+
   const weggooien = (id: string) => {
     hintOnthouden(3);
     setToonHint(false);
     void removePantryItem(id);
   };
 
+  // Een kast past zelden in één foto, dus meerdere planken landen in één lijst.
   const takePhotos = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     setScanning(true);
@@ -103,9 +126,11 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
     }
   };
 
+  const scan = () => (opGeraakt ? setOverLimit(true) : fileInput.current?.click());
+
   const keep = async (names: string[]) => {
     setHits(null);
-    // Seeing something on a shelf says it is there, not that there is one more of it.
+    // Iets op een foto zien zegt dat het er staat, niet dat er eentje bij komt.
     for (const name of names) await stockUp(name, 'foto', false);
     toast.success(names.length === 1 ? '1 product in de kast' : `${names.length} producten in de kast`);
   };
@@ -127,8 +152,11 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
     });
   };
 
+  const opTeller = pantry.filter((item) => item.quantity === 0).length;
+  const bijnaTeller = pantry.filter((item) => item.low && item.quantity > 0).length;
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <input
         ref={fileInput}
         type="file"
@@ -139,134 +167,202 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
         onChange={(e) => takePhotos(e.target.files)}
       />
 
-      {/* Een volle kast heeft geen uitleg meer nodig; dan is scannen gewoon een knop. */}
-      {pantry.length === 0 ? (
-        <section className="rounded-[14px] border border-border bg-accent-soft p-4">
-          <h2 className="font-display text-lg font-bold tracking-[-0.01em] text-foreground">Wat staat er in huis?</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Maak een foto van een plank of van de koelkast. Je ziet eerst wat er herkend is, daarna gaat het pas de kast in.
-          </p>
-          <Button
-            className="mt-3 min-h-12 w-full gap-2"
-            onClick={() => (opGeraakt ? setOverLimit(true) : fileInput.current?.click())}
-            disabled={scanning}
-          >
-            {scanning
-              ? <><Loader2 className="h-4 w-4 animate-spin" /> Foto lezen…</>
-              : <><Camera className="h-4 w-4" /> {opGeraakt ? 'Je foto’s zijn op' : 'Kast scannen'}</>}
-          </Button>
-        </section>
-      ) : (
-        <div className="flex items-baseline gap-2">
-          <p className="flex-1 text-sm text-muted-foreground">
-            <span className="font-display font-bold tabular-nums text-foreground">{pantry.length}</span> in huis
-            {runningOut.length > 0 && (
-              <>
-                {' · '}
-                <span className="font-display font-bold tabular-nums text-accent-ink">{runningOut.length}</span> bijna op
-              </>
-            )}
-          </p>
-        </div>
-      )}
+      {pantry.length > 0 && (
+        <>
+          <header className="flex items-start gap-2">
+            <div className="min-w-0 flex-1">
+              <h1 className="font-display text-2xl font-bold tracking-[-0.02em] text-foreground">Voorraad</h1>
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                {pantry.length} {pantry.length === 1 ? 'product' : 'producten'}
+                {bijnaTeller > 0 && ` · ${bijnaTeller} bijna op`}
+                {opTeller > 0 && ` · ${opTeller} op`}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => { setZoeken((aan) => !aan); setZoekterm(''); }}
+              aria-label={zoeken ? 'Zoeken sluiten' : 'Zoeken in je kast'}
+              aria-pressed={zoeken}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border-strong text-foreground transition-colors duration-150 ease-smooth hover:bg-muted"
+            >
+              {zoeken ? <X className="h-4 w-4" /> : <Search className="h-4 w-4" />}
+            </button>
+            <Button
+              variant="secondary"
+              size="icon"
+              className="h-11 w-11 shrink-0"
+              aria-label={opGeraakt ? 'Je foto’s zijn op' : 'Kast scannen'}
+              disabled={scanning}
+              onClick={scan}
+            >
+              {scanning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+            </Button>
+          </header>
 
-      <div className="flex gap-2">
-        <Input
-          placeholder="Zelf iets toevoegen"
-          aria-label="Zelf iets toevoegen"
-          value={adding}
-          onChange={(e) => setAdding(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && addByHand()}
-          className="bg-card font-body"
-        />
-        <Button onClick={addByHand} size="icon" className="h-11 w-11 shrink-0" aria-label="Toevoegen aan de kast">
-          <Plus className="h-4 w-4" />
-        </Button>
-        {pantry.length > 0 && (
-          <Button
-            variant="outline"
-            size="icon"
-            className="h-11 w-11 shrink-0"
-            aria-label={opGeraakt ? 'Je foto’s zijn op' : 'Kast scannen'}
-            disabled={scanning}
-            onClick={() => (opGeraakt ? setOverLimit(true) : fileInput.current?.click())}
-          >
-            {scanning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
-          </Button>
-        )}
-      </div>
+          {zoeken && (
+            <Input
+              autoFocus
+              value={zoekterm}
+              onChange={(e) => setZoekterm(e.target.value)}
+              placeholder="Zoek in je kast"
+              aria-label="Zoek in je kast"
+              className="bg-card font-body"
+            />
+          )}
 
-      {!plus && (
-        <p className="-mt-3 text-xs text-muted-foreground">
-          {opGeraakt
-            ? `Kastfoto’s zijn op, op ${resetDatum()} staat je tegoed weer op ${FREE_LIMIT}.`
-            : <>Nog <span className="font-semibold tabular-nums text-foreground">{remaining('kastfoto')}</span> van {FREE_LIMIT} kastfoto’s deze maand</>}
-        </p>
-      )}
-
-      {runningOut.length > 0 && (
-        <section className="rounded-[14px] border border-accent/25 bg-accent-soft p-4">
-          <h2 className="font-display text-[0.9375rem] font-bold tracking-[-0.01em] text-foreground">Bijna op</h2>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {runningOut.map((item) => (
+          {/* Bijna op vooraan, daarna de planken. */}
+          <div className="-mx-4 overflow-x-auto px-4 pb-1">
+            <div className="flex w-max items-center gap-2">
+              {bijnaOp.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setFilter(filter === 'bijna' ? null : 'bijna')}
+                  aria-pressed={filter === 'bijna'}
+                  className={`inline-flex h-9 items-center gap-1.5 rounded-[18px] border px-3 font-display text-xs font-semibold transition-colors duration-150 ease-smooth ${
+                    filter === 'bijna'
+                      ? 'border-accent bg-accent-soft text-accent-ink ring-1 ring-accent'
+                      : 'border-accent/40 bg-accent-soft text-accent-ink'
+                  }`}
+                >
+                  Bijna op · {bijnaOp.length}
+                </button>
+              )}
               <button
-                key={item.id}
                 type="button"
-                onClick={() => toList(item.name)}
-                disabled={onList.has(item.name.trim().toLowerCase())}
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-accent/30 bg-card px-3.5 text-sm text-foreground transition-colors duration-150 ease-smooth hover:border-accent disabled:opacity-50"
+                onClick={() => setFilter(null)}
+                aria-pressed={filter === null}
+                className={`inline-flex h-9 items-center rounded-[18px] px-3 font-display text-xs font-semibold transition-colors duration-150 ease-smooth ${
+                  filter === null ? 'bg-primary text-primary-foreground' : 'border border-border text-muted-foreground hover:text-foreground'
+                }`}
               >
-                <ShoppingCart className="h-3.5 w-3.5" />
-                <span className="first-letter:uppercase">{item.name}</span>
-                {item.quantity === 0 && <span className="text-xs font-semibold text-destructive">op</span>}
+                Alles
               </button>
-            ))}
+              {planken.map((plank) => (
+                <button
+                  key={plank.sleutel}
+                  type="button"
+                  onClick={() => setFilter(filter === plank.sleutel ? null : plank.sleutel)}
+                  aria-pressed={filter === plank.sleutel}
+                  className={`inline-flex h-9 items-center gap-1.5 rounded-[18px] border px-3 font-display text-xs font-semibold transition-colors duration-150 ease-smooth ${
+                    filter === plank.sleutel ? 'border-border-strong bg-muted text-foreground' : 'border-border text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  <span className="h-[7px] w-[7px] shrink-0 rounded-full bg-current opacity-70" aria-hidden="true" />
+                  {plank.label.split(/[ ,]/)[0]}
+                </button>
+              ))}
+            </div>
           </div>
-          <p className="mt-2 text-xs text-muted-foreground">Tik om op je lijst te zetten.</p>
-        </section>
+
+          <div className="flex gap-2">
+            <Input
+              placeholder="Zelf iets toevoegen"
+              aria-label="Zelf iets toevoegen"
+              value={adding}
+              onChange={(e) => setAdding(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && addByHand()}
+              className="bg-card font-body"
+            />
+            <Button onClick={addByHand} size="icon" className="h-11 w-11 shrink-0" aria-label="Toevoegen aan de kast">
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {!plus && (
+            <p className="-mt-2 text-xs text-muted-foreground">
+              {opGeraakt
+                ? `Kastfoto’s zijn op, op ${resetDatum()} staat je tegoed weer op ${FREE_LIMIT}.`
+                : <>Nog <span className="font-semibold tabular-nums text-foreground">{remaining('kastfoto')}</span> van {FREE_LIMIT} kastfoto’s deze maand</>}
+            </p>
+          )}
+        </>
       )}
 
       {pantryLoading && (
-        <div className="space-y-2" aria-hidden="true">
-          {[0, 1, 2].map((i) => <Skeleton key={i} className="h-20 rounded-[12px]" />)}
+        <div className="grid grid-cols-2 gap-1.5" aria-hidden="true">
+          {[0, 1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-[46px] rounded-[12px]" />)}
         </div>
       )}
 
+      {/* De uitleg over scannen woont hier, en nergens anders. */}
       {!pantryLoading && pantry.length === 0 && (
-        <p className="py-8 text-center text-sm text-muted-foreground">
-          Je kast is nog leeg. Scan een plank, of typ hierboven wat je in huis hebt.
-        </p>
-      )}
+        <>
+          <section className="rounded-[20px] border border-border bg-card p-5 text-center">
+            <div
+              aria-hidden="true"
+              className="mx-auto flex h-[150px] w-full items-end justify-center rounded-[14px] border border-border p-2"
+              style={{ backgroundImage: 'repeating-linear-gradient(135deg, hsl(var(--muted)) 0 4px, transparent 4px 8px)' }}
+            >
+              <span className="font-mono text-[0.625rem] text-muted-foreground">foto · plank in beeld</span>
+            </div>
+            <h2 className="mt-4 font-display text-2xl font-bold tracking-[-0.01em] text-foreground">Maak een foto van je plank</h2>
+            <p className="mx-auto mt-2 max-w-[20rem] text-sm text-muted-foreground">
+              CoupleCart leest welke producten erop staan. Je ziet eerst wat er herkend is en vinkt zelf af wat klopt.
+            </p>
+            <Button variant="secondary" className="mt-4 min-h-[50px] w-full gap-2" onClick={scan} disabled={scanning}>
+              {scanning ? <><Loader2 className="h-4 w-4 animate-spin" /> Foto lezen…</> : <><Camera className="h-4 w-4" /> Foto maken</>}
+            </Button>
+            <Button variant="outline" className="mt-2 min-h-[50px] w-full" onClick={() => document.getElementById('kast-zelf-typen')?.focus()}>
+              Zelf typen
+            </Button>
+            <p className="mt-3 text-xs text-muted-foreground">Vijf foto’s per maand gratis</p>
+          </section>
 
-      {herbs.length > 0 && (
-        <section>
-          <DepartmentHeading category="kruiden" label="Kruiden & specerijen" count={herbs.length} />
-          {/* A spice rack, not a stack of rows: nobody counts jars of oregano. */}
-          <div className="flex flex-wrap gap-2">
-            {herbs.map((item) => (
-              <SwipeToRemove key={item.id} label={item.name} onRemove={() => weggooien(item.id)} nudge={toonHint && item.id === eersteId}>
-                <PantryChip item={item} shelf="kruiden" onOpen={() => setOpenItemId(item.id)} />
-              </SwipeToRemove>
-            ))}
+          <p className="text-center text-xs text-muted-foreground">
+            Vink je iets af op je lijst? Dan zet CoupleCart het hier vanzelf bij.
+          </p>
+
+          <div className="flex gap-2">
+            <Input
+              id="kast-zelf-typen"
+              placeholder="Zelf iets toevoegen"
+              aria-label="Zelf iets toevoegen"
+              value={adding}
+              onChange={(e) => setAdding(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && addByHand()}
+              className="bg-card font-body"
+            />
+            <Button onClick={addByHand} size="icon" className="h-11 w-11 shrink-0" aria-label="Toevoegen aan de kast">
+              <Plus className="h-4 w-4" />
+            </Button>
           </div>
-        </section>
+        </>
       )}
 
-      {departments.map(({ category, label, items }) => (
-        <section key={category}>
-          <DepartmentHeading category={category} label={label} count={items.length} />
-          <div className="flex flex-wrap gap-2">
-            {items.map((item) => (
-              <SwipeToRemove key={item.id} label={item.name} onRemove={() => weggooien(item.id)} nudge={toonHint && item.id === eersteId}>
-                <PantryChip item={item} shelf={category} onOpen={() => setOpenItemId(item.id)} />
+      {zichtbaar.map((plank) => (
+        <section key={plank.sleutel}>
+          {plank.sleutel === 'bijna' ? (
+            <h2 className="mb-1.5 mt-1.5 font-display text-[0.6875rem] font-semibold uppercase tracking-[0.09em] text-accent-ink">
+              Bijna op
+            </h2>
+          ) : (
+            <DepartmentDot
+              category={plank.sleutel as Department | 'kruiden'}
+              label={plank.label}
+              count={pantry.length >= 30 ? plank.items.length : undefined}
+            />
+          )}
+          <div className="grid grid-cols-2 gap-1.5">
+            {plank.items.map((item) => (
+              <SwipeToRemove
+                key={item.id}
+                label={item.name}
+                onRemove={() => weggooien(item.id)}
+                nudge={toonHint && item.id === eersteId}
+              >
+                <PantryTile item={item} onOpen={() => setOpenItemId(item.id)} />
               </SwipeToRemove>
             ))}
           </div>
         </section>
       ))}
 
-      {toonHint && (
-        <p className="text-xs text-muted-foreground">Veeg een potje naar links om het weg te gooien.</p>
+      {!pantryLoading && pantry.length > 0 && zichtbaar.every((plank) => plank.items.length === 0) && (
+        <p className="py-8 text-center text-sm text-muted-foreground">Niets gevonden.</p>
+      )}
+
+      {toonHint && pantry.length > 0 && (
+        <p className="text-xs text-muted-foreground">Veeg een tegel naar links om hem weg te gooien.</p>
       )}
 
       <section>

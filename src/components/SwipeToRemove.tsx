@@ -92,16 +92,16 @@ const SwipeToRemove = ({ onRemove, label, nudge = false, children }: SwipeToRemo
   const reached = offset <= -THRESHOLD;
 
   return (
-    <span className="relative inline-flex overflow-hidden rounded-full">
+    <span className="relative flex overflow-hidden rounded-[12px]">
       <span
         aria-hidden="true"
-        className="absolute inset-0 flex items-center justify-end rounded-full bg-destructive pr-3.5 text-destructive-foreground"
+        className="absolute inset-0 flex items-center justify-end rounded-[12px] bg-destructive pr-3.5 text-destructive-foreground"
         style={{ opacity: offset < 0 ? 0.35 + 0.65 * Math.min(-offset / THRESHOLD, 1) : 0 }}
       >
         <Trash2 className={`h-4 w-4 transition-transform duration-150 ${reached ? 'scale-110' : ''}`} />
       </span>
       <span
-        className={`relative inline-flex touch-pan-y ${dragging ? '' : 'transition-transform duration-200 ease-smooth'}`}
+        className={`relative flex w-full touch-pan-y ${dragging ? '' : 'transition-transform duration-200 ease-smooth'}`}
         style={offset ? { transform: `translateX(${offset}px)` } : undefined}
         aria-label={`${label}, veeg naar links om weg te gooien`}
         onPointerDown={onPointerDown}

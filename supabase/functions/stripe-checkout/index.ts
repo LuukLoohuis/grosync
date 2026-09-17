@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
   try {
     const key = env('STRIPE_SECRET_KEY');
     // Zonder echte sleutel staat betalen nog niet aan; dat is geen fout.
-    if (!echt(key, 'sk_', 30)) return json({ error: 'betalen-uit' }, 503);
+    if (!echt(key, 'sk_', 30)) return json({ error: 'betalen-uit', ontbreekt: 'sleutel' }, 503);
 
     const user = await signedInUser(req);
     if (!user) return json({ error: 'Sign in required' }, 401);
@@ -55,7 +55,9 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const plan = body?.plan === 'jaar' ? 'jaar' : 'maand';
     const price = plan === 'jaar' ? env('STRIPE_PRICE_YEAR') : env('STRIPE_PRICE_MONTH');
-    if (!echt(price, 'price_', 20)) return json({ error: 'betalen-uit' }, 503);
+    if (!echt(price, 'price_', 20)) {
+      return json({ error: 'betalen-uit', ontbreekt: `prijs-${plan}` }, 503);
+    }
 
     const site = env('SITE_URL') || 'https://www.couplecart.nl';
     const stripe = new Stripe(key, { apiVersion: '2024-06-20', httpClient: Stripe.createFetchHttpClient() });
