@@ -10,6 +10,135 @@ const MAX_PAGES = 30;
 // One fetch serves everyone; the bonus changes weekly, so half a day is plenty.
 const FRESH_MS = 12 * 60 * 60 * 1000;
 const MAX_RECIPES = 60;
+// Zoveel paren legt de keurmeester in één keer voor; de rest gaat ongekeurd door.
+const MAX_KEURING = 150;
+
+// Tekstmodel: standaard OpenAI, maar zet DEEPSEEK_API_KEY en alles wat tekst is
+// loopt via DeepSeek. De keuze in Beheer wint.
+const textApi = (settings = { provider: '', textModel: '' }) => {
+  const deepseek = Deno.env.get('DEEPSEEK_API_KEY') ?? '';
+  const openai = Deno.env.get('OPENAI_API_KEY') ?? '';
+  const wantsDeepseek = settings.provider ? settings.provider === 'deepseek' : Boolean(deepseek);
+  if (wantsDeepseek && deepseek) {
+    return {
+      key: deepseek,
+      endpoint: (Deno.env.get('TEXT_API_BASE') || 'https://api.deepseek.com/v1') + '/chat/completions',
+      model: settings.textModel || Deno.env.get('TEXT_MODEL') || 'deepseek-chat',
+    };
+  }
+  return {
+    key: openai,
+    endpoint: (Deno.env.get('TEXT_API_BASE') || 'https://api.openai.com/v1') + '/chat/completions',
+    model: settings.textModel || Deno.env.get('TEXT_MODEL') || 'gpt-4o-mini',
+  };
+};
+
+/** Instellingen uit de database; leeg betekent: val terug op de omgeving. */
+async function aiSettings(): Promise<{ provider: string; textModel: string }> {
+  const leeg = { provider: '', textModel: '' };
+  const url = Deno.env.get('SUPABASE_URL') ?? '';
+  const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  if (!url || !key) return leeg;
+  try {
+    const response = await fetch(`${url}/rest/v1/app_settings?key=eq.ai&select=value`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}` },
+    });
+    if (!response.ok) return leeg;
+    const rows = await response.json();
+    const value = rows?.[0]?.value ?? {};
+    return { provider: String(value.provider ?? ''), textModel: String(value.text_model ?? '') };
+  } catch (error) {
+    console.error('Instellingen lezen mislukt:', error);
+    return leeg;
+  }
+}
+
+type Paar = { recept: string; ingredient: string; productId: number; titel: string };
+
+// Wat eenmaal gekeurd is, blijft gekeurd zolang deze instantie leeft: de bonus
+// wisselt woensdag, de recepten zelden.
+const geheugen = new Map<string, boolean>();
+const sleutelVan = (paar: Paar) => `${paar.ingredient.trim().toLowerCase()}|${paar.productId}`;
+
+/**
+ * De woordregels vinden kandidaten; of een kandidaat ook echt is wat het recept
+ * vraagt, kan een woordregel niet zien. "Vanilla extract" deelt een woord met
+ * vanilleyoghurt, en roomkaas bieslook is geen roomkaas. Dit legt elk paar aan
+ * een taalmodel voor. Gaat dat mis, dan blijven de regels leidend — liever een
+ * twijfelachtige treffer dan een lege Bonus-tab door een storing.
+ */
+async function keur(paren: Paar[]): Promise<{ goed: Set<string>; gekeurd: boolean }> {
+  const goed = new Set<string>();
+  const open: Paar[] = [];
+  for (const paar of paren) {
+    const eerder = geheugen.get(sleutelVan(paar));
+    if (eerder === true) goed.add(sleutelVan(paar));
+    else if (eerder === undefined) open.push(paar);
+  }
+  if (open.length === 0) return { goed, gekeurd: true };
+
+  const ai = textApi(await aiSettings());
+  if (!ai.key) {
+    for (const paar of open) goed.add(sleutelVan(paar));
+    return { goed, gekeurd: false };
+  }
+  const ronde = open.slice(0, MAX_KEURING);
+  const regels = ronde.map((paar, i) =>
+    `${i + 1}. Recept «${paar.recept}» vraagt: «${paar.ingredient}» · product: «${paar.titel}»`);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 9000);
+  try {
+    const response = await fetch(ai.endpoint, {
+      method: 'POST',
+      signal: controller.signal,
+      headers: { Authorization: `Bearer ${ai.key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: ai.model,
+        temperature: 0,
+        response_format: { type: 'json_object' },
+        messages: [
+          {
+            role: 'system',
+            content: 'Je controleert of een supermarktproduct precies is wat een recept vraagt. Antwoord alleen als JSON.',
+          },
+          {
+            role: 'user',
+            content:
+              'Per regel staat wat een recept vraagt en welk product bij Albert Heijn erbij gezocht is. ' +
+              'Zeg per nummer of iemand die dit recept kookt dít product zou kopen voor dát ingrediënt.\n' +
+              'JA als het hetzelfde product is, ook in een gewone variant: heel of gesneden, vers of instant, ' +
+              'huismerk of A-merk, andere maat of verpakking. Voorbeelden van ja: ' +
+              '"volkoren brood" → "AH Rond volkoren heel"; "noodles" → "instant noodles"; ' +
+              '"zoete aardappel" → "zoete aardappel, gesneden"; "kipfilet" → "AH Scharrel kipfilet"; "eieren" → "scharreleieren".\n' +
+              'NEE als het een ander product is dat toevallig een woord deelt, of een smaak of vorm heeft die het recept niet vraagt. ' +
+              'Voorbeelden van nee: "vanilla extract" → "vanille yoghurt"; "cream cheese" → "roomkaas bieslook"; ' +
+              '"melk" → "chocoladehagel melk"; "aardappel" → "chips"; "kokosmelk" → "kokos drink"; "groente" → "kant-en-klare maaltijd".\n\n' +
+              regels.join('\n') +
+              '\n\nJSON: {"ja":[nummers van de paren die kloppen]}',
+          },
+        ],
+      }),
+    });
+    if (!response.ok) throw new Error(`keuring ${response.status}`);
+    const data = await response.json();
+    const parsed = JSON.parse(data.choices?.[0]?.message?.content || '{}');
+    const ja = new Set<number>(Array.isArray(parsed?.ja) ? parsed.ja.map((n: unknown) => Number(n)) : []);
+    ronde.forEach((paar, i) => {
+      const klopt = ja.has(i + 1);
+      geheugen.set(sleutelVan(paar), klopt);
+      if (klopt) goed.add(sleutelVan(paar));
+    });
+    // Wat niet meer in de ronde paste, gaat ongekeurd door.
+    for (const paar of open.slice(MAX_KEURING)) goed.add(sleutelVan(paar));
+    return { goed, gekeurd: true };
+  } catch (error) {
+    console.error('Keuring mislukt, regels blijven leidend:', error);
+    for (const paar of open) goed.add(sleutelVan(paar));
+    return { goed, gekeurd: false };
+  } finally {
+    clearTimeout(timer);
+  }
+}
 
 type BonusRow = {
   product_id: number;
@@ -430,7 +559,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    const matches = recipes.map((recipe) => {
+    const ruw = recipes.map((recipe) => {
       const seen = new Set<number>();
       const hits: { ingredient: string; product: BonusRow }[] = [];
       // A dish without meat or fish in it never gets meat or fish offered, whatever
@@ -512,6 +641,25 @@ Deno.serve(async (req) => {
       .filter((match) => match.hits.length > 0)
       .sort((a, b) => b.hits.length - a.hits.length || b.saving - a.saving);
 
+    // De regels vonden kandidaten; het taalmodel zegt welke echt kloppen.
+    const paren: Paar[] = ruw.flatMap((match) =>
+      match.hits.map((hit) => ({ recept: match.name, ingredient: hit.ingredient, productId: hit.productId, titel: hit.title })));
+    const { goed, gekeurd } = await keur(paren);
+    const afgekeurd: { ingredient: string; title: string }[] = [];
+    const matches = ruw
+      .map((match) => {
+        const hits = match.hits.filter((hit) => {
+          const klopt = goed.has(`${hit.ingredient.trim().toLowerCase()}|${hit.productId}`);
+          if (!klopt) afgekeurd.push({ ingredient: hit.ingredient, title: hit.title });
+          return klopt;
+        });
+        const saving = hits.reduce((sum, hit) =>
+          sum + (hit.price != null && hit.priceBefore != null && hit.priceBefore > hit.price ? hit.priceBefore - hit.price : 0), 0);
+        return { ...match, hits, saving: Math.round(saving * 100) / 100 };
+      })
+      .filter((match) => match.hits.length > 0)
+      .sort((a, b) => b.hits.length - a.hits.length || b.saving - a.saving);
+
     // Most offers end on the same Sunday; some run for months, so only look at the coming weeks.
     const horizon = new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
     const dateCount = new Map<string, number>();
@@ -519,7 +667,7 @@ Deno.serve(async (req) => {
       if (row.end_date && row.end_date <= horizon) dateCount.set(row.end_date, (dateCount.get(row.end_date) ?? 0) + 1);
     }
     const endDate = [...dateCount.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
-    return json({ matches, bonusCount: bonus.length, endDate, sample: sampleOffers(bonus) });
+    return json({ matches, bonusCount: bonus.length, endDate, sample: sampleOffers(bonus), gekeurd, afgekeurd });
   } catch (error) {
     console.error('ah-bonus failed:', error);
     return json({ error: 'Bonus ophalen lukte niet' }, 500);
