@@ -31,7 +31,7 @@ const dagIndex = (datum = new Date()) => (datum.getDay() + 6) % 7;
 
 /** Het openingsscherm: wat er vanavond gegeten wordt, en wat er nog gehaald moet worden. */
 const TodayScreen = ({ onNavigate }: { onNavigate: (tab: TodayTarget) => void }) => {
-  const { userId, recipes, groceryItems, usuals, pantry, loading, addGroceryItem, setGroceryItemChecked, trackPurchase, stockUp } = useAppContext();
+  const { userId, recipes, groceryItems, usuals, pantry, loading, addGroceryItem, setGroceryItemChecked, trackPurchase } = useAppContext();
   const planner = useMealPlanner(userId, recipes);
   const [addRecipe, setAddRecipe] = useState<Recipe | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -99,7 +99,6 @@ const TodayScreen = ({ onNavigate }: { onNavigate: (tab: TodayTarget) => void })
 
   const vinkAf = (item: GroceryItem) => {
     trackPurchase(item.name);
-    void stockUp(item.name, 'lijst');
     void setGroceryItemChecked(item.id, true);
     toast(t("“{0}” afgevinkt", [item.name]), {
       action: { label: t("Ongedaan maken"), onClick: () => { void setGroceryItemChecked(item.id, false); } },
@@ -265,7 +264,7 @@ const TodayScreen = ({ onNavigate }: { onNavigate: (tab: TodayTarget) => void })
             <div className="mt-2.5">
               <p className="text-sm text-muted-foreground">
                 {allesKlaar
-                  ? t("Alles gehaald. Wat je afvinkte staat nu in je voorraad.")
+                  ? t('Alles gehaald.')
                   : t("Nog niets te halen. Typ wat je nodig hebt, of zet een recept op je lijst.")}
               </p>
               <Button variant="outline" className="mt-2.5 min-h-11 w-full" onClick={() => onNavigate('list')}>

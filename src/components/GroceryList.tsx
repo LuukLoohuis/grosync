@@ -65,7 +65,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
   const [showChecked, setShowChecked] = useState(false);
   const barRef = useRef<HTMLDivElement>(null);
   const [barHeight, setBarHeight] = useState(0);
-  const { loading, groceryItems, addGroceryItem, setGroceryItemChecked, removeGroceryItem, clearCheckedItems, clearAllItems, mergeDuplicateItems, applyAhMatches, frequentItems, trackPurchase, stockUp } = useAppContext();
+  const { loading, groceryItems, addGroceryItem, setGroceryItemChecked, removeGroceryItem, clearCheckedItems, clearAllItems, mergeDuplicateItems, applyAhMatches, frequentItems, trackPurchase } = useAppContext();
 
   const handleAdd = (name?: string) => {
     const item = (name || newItem).trim();
@@ -77,8 +77,8 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
 
   const checkOff = (item: GroceryItem) => {
     trackPurchase(item.name);
-    // Wat in het mandje gaat, staat straks in de kast.
-    void stockUp(item.name, 'lijst');
+    // De kast is van jou alleen: die vul je met een foto of met de hand, niet
+    // vanuit de lijst.
     void setGroceryItemChecked(item.id, true);
     toast(t("“{0}” afgevinkt", [item.name]), {
       action: { label: t("Ongedaan maken"), onClick: () => { void setGroceryItemChecked(item.id, false); } },

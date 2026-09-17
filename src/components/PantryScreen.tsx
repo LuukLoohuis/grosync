@@ -318,7 +318,7 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
           </section>
 
           <p className="text-center text-xs text-muted-foreground">
-            {t("Vink je iets af op je lijst? Dan zet CoupleCart het hier vanzelf bij.")}
+            {t('Je kast vul je zelf: met een foto, of door te typen. De lijst blijft eraf.')}
           </p>
 
           <div className="flex gap-2">
