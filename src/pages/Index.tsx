@@ -53,6 +53,8 @@ const Index = () => {
     let el = e.target as HTMLElement | null;
     let laat = false;
     while (el && el !== e.currentTarget) {
+      // Iets dat zelf zijwaarts schuift, of een tegel die je kunt wegvegen, gaat voor.
+      if (el.dataset?.veeg === 'item') { laat = true; break; }
       if (el.scrollWidth > el.clientWidth + 2 && /auto|scroll/.test(getComputedStyle(el).overflowX)) { laat = true; break; }
       el = el.parentElement;
     }

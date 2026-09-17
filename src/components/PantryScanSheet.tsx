@@ -4,23 +4,54 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
+import { sortByStoreRoute } from '@/lib/storeRouteSort';
 import type { ScanHit } from '@/services/pantryApi';
+import type { PantryItem } from '@/types';
 import { t } from '@/lib/i18n';
 
 interface PantryScanSheetProps {
   hits: ScanHit[] | null;
   onClose: () => void;
-  onConfirm: (names: string[]) => void;
+  onConfirm: (names: string[], opIds: string[]) => void;
   /** Opent de camera opnieuw; wat die vindt komt bij deze lijst. */
   onAnotherPhoto: () => void;
   scanning: boolean;
-  /** Wat er al in de kast staat, zodat een tweede scan dat zegt in plaats van dubbel te doen. */
-  known: string[];
+  /** Wat er al in de kast staat: voor "staat er al", en om te zien wat er niet meer staat. */
+  known: PantryItem[];
 }
 
 type Groep = 'zeker' | 'bekend' | 'twijfel';
 
 const KOP: Record<Groep, string> = { zeker: 'Zeker', bekend: 'Staat er al', twijfel: 'Twijfel' };
+
+/** Hoeveel herkende producten een plank moet opleveren voordat we hem "in beeld" noemen. */
+const PLANK_DREMPEL = 2;
+
+/**
+ * Wat er volgens de kast op deze planken hoort te staan, maar niet op de foto te
+ * zien was. Alleen planken waar de foto een paar dingen van herkende tellen mee,
+ * anders stelt één toevallige treffer je halve kast als "op" voor.
+ */
+const nietMeerGezien = (gezien: string[], kast: PantryItem[]): PantryItem[] => {
+  if (gezien.length === 0) return [];
+  const plankVan = (namen: string[]) => {
+    const kaart = new Map<string, string>();
+    for (const groep of sortByStoreRoute(namen.map((name) => ({ name })))) {
+      for (const item of groep.items) kaart.set(item.name, groep.category);
+    }
+    return kaart;
+  };
+  const gezienePlanken = new Map<string, number>();
+  for (const plank of plankVan(gezien).values()) gezienePlanken.set(plank, (gezienePlanken.get(plank) ?? 0) + 1);
+  const inBeeld = new Set([...gezienePlanken.entries()].filter(([, aantal]) => aantal >= PLANK_DREMPEL).map(([plank]) => plank));
+  if (inBeeld.size === 0) return [];
+  const herkend = new Set(gezien.map((naam) => naam.trim().toLowerCase()));
+  const plankenVanKast = plankVan(kast.map((item) => item.name));
+  return kast
+    .filter((item) => item.quantity > 0 && !herkend.has(item.name.trim().toLowerCase()))
+    .filter((item) => inBeeld.has(plankenVanKast.get(item.name) ?? ''))
+    .slice(0, 10);
+};
 
 /**
  * Wat de foto zag, in drie groepen: wat zeker is staat aangevinkt, wat je al hebt
@@ -31,6 +62,8 @@ const PantryScanSheet = ({ hits, onClose, onConfirm, onAnotherPhoto, scanning, k
   const [shown, setShown] = useState<ScanHit[]>([]);
   const [extra, setExtra] = useState('');
   const [editing, setEditing] = useState<{ was: string; name: string } | null>(null);
+  // Wat je aanvinkt als "staat er niet meer"; standaard uit, want een pot kan achteraan staan.
+  const [opgeraakt, setOpgeraakt] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!hits) return;
@@ -47,7 +80,7 @@ const PantryScanSheet = ({ hits, onClose, onConfirm, onAnotherPhoto, scanning, k
     setChosen((prev) => new Set([
       ...prev,
       ...hits
-        .filter((hit) => hit.sure >= 0.6 && !known.some((naam) => naam.trim().toLowerCase() === hit.name))
+        .filter((hit) => hit.sure >= 0.6 && !known.some((item) => item.name.trim().toLowerCase() === hit.name))
         .map((hit) => hit.name),
     ]));
     // De kast verandert tijdens het afvinken niet; alleen nieuwe treffers tellen.
@@ -83,12 +116,13 @@ const PantryScanSheet = ({ hits, onClose, onConfirm, onAnotherPhoto, scanning, k
   };
 
   const groepVan = (hit: ScanHit): Groep => {
-    if (known.some((naam) => naam.trim().toLowerCase() === hit.name)) return 'bekend';
+    if (known.some((item) => item.name.trim().toLowerCase() === hit.name)) return 'bekend';
     return hit.sure >= 0.6 ? 'zeker' : 'twijfel';
   };
 
   const groepen: Record<Groep, ScanHit[]> = { zeker: [], bekend: [], twijfel: [] };
   for (const hit of shown) groepen[groepVan(hit)].push(hit);
+  const gemist = nietMeerGezien(shown.map((hit) => hit.name), known);
 
   const regel = (hit: ScanHit, groep: Groep) => {
     const on = chosen.has(hit.name);
@@ -162,6 +196,38 @@ const PantryScanSheet = ({ hits, onClose, onConfirm, onAnotherPhoto, scanning, k
           ))}
         </div>
 
+        {gemist.length > 0 && (
+          <div className="mt-1">
+            <h3 className="mb-1 font-display text-[0.6875rem] font-semibold uppercase tracking-[0.09em] text-muted-foreground">
+              {t('Niet meer gezien')} · {gemist.length}
+            </h3>
+            <p className="mb-1 text-xs text-muted-foreground">
+              {t('Deze staan in je kast, maar niet op de foto. Vink aan wat echt op is.')}
+            </p>
+            <ul className="space-y-1">
+              {gemist.map((item) => (
+                <li key={item.id} className="flex items-center gap-1 rounded-[12px] border border-dashed border-border-strong px-1">
+                  <label className="flex min-h-12 flex-1 cursor-pointer items-center gap-3 px-2">
+                    <Checkbox
+                      checked={opgeraakt.has(item.id)}
+                      onCheckedChange={() => setOpgeraakt((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(item.id)) next.delete(item.id); else next.add(item.id);
+                        return next;
+                      })}
+                      aria-label={t('{0} is op', [item.name])}
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[0.9375rem] text-foreground first-letter:uppercase">{item.name}</span>
+                      <span className="block text-xs text-muted-foreground">{t('stond er wel, staat niet op de foto')}</span>
+                    </span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         <div className="mt-3 flex gap-2">
           <Input
             value={extra}
@@ -183,10 +249,10 @@ const PantryScanSheet = ({ hits, onClose, onConfirm, onAnotherPhoto, scanning, k
           <Button
             variant="secondary"
             className="min-h-12 flex-1"
-            disabled={chosen.size === 0}
-            onClick={() => onConfirm([...chosen])}
+            disabled={chosen.size === 0 && opgeraakt.size === 0}
+            onClick={() => onConfirm([...chosen], [...opgeraakt])}
           >
-            {chosen.size > 0 ? t("{0} toevoegen", [chosen.size]) : t("Toevoegen")}
+            {chosen.size > 0 ? t("{0} toevoegen", [chosen.size]) : opgeraakt.size > 0 ? t('{0} bijwerken', [opgeraakt.size]) : t("Toevoegen")}
           </Button>
         </div>
       </SheetContent>

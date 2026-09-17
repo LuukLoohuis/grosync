@@ -1,4 +1,4 @@
-import React, { createContext, useContext } from 'react';
+import React, { createContext, useCallback, useContext } from 'react';
 import { useGroceryItems } from '@/hooks/useGroceryItems';
 import { useRecipes } from '@/hooks/useRecipes';
 import { useUsuals } from '@/hooks/useUsuals';
@@ -9,6 +9,10 @@ import { useEntitlements, type MeteredFeature } from '@/hooks/useEntitlements';
 import { usePurchaseHistory } from '@/hooks/usePurchaseHistory';
 import type { AhMatch } from '@/services/ahApi';
 import { GroceryItem, PantryItem, Recipe, RecipeCategory, UsualItem } from '@/types';
+import { sameProduct } from '@/lib/pantry';
+
+/** Hoe vol een potje is, in de woorden die de app gebruikt. */
+export type PantryState = 'vol' | 'bijna' | 'op';
 
 interface FrequentItem {
   name: string;
@@ -50,6 +54,7 @@ interface AppContextType {
   stockUp: (name: string, source?: string, bump?: boolean) => Promise<void>;
   setPantryQuantity: (id: string, quantity: number) => Promise<void>;
   setPantryLow: (id: string, low: boolean) => Promise<void>;
+  setPantryState: (id: string, stand: PantryState) => Promise<void>;
   renamePantryItem: (id: string, name: string) => Promise<void>;
   removePantryItem: (id: string) => Promise<void>;
   plus: boolean;
@@ -77,6 +82,42 @@ export const AppProvider = ({ children, userId }: { children: React.ReactNode; u
   const categoryHook = useRecipeCategories({ userId });
   const pantryHook = usePantry({ userId });
   const entitlements = useEntitlements({ userId });
+
+  // Wat bijna op of op is hoort op de boodschappenlijst; staat het weer vol, dan
+  // hoeft het er niet meer op. Zo doet het label in de kast ook echt iets.
+  const VAN_VOORRAAD = 'je voorraad';
+  const stemAfMetLijst = useCallback((naam: string, nodig: boolean) => {
+    const staatEr = grocery.groceryItems.find((item) => !item.checked && sameProduct(item.name, naam));
+    if (nodig && !staatEr) { void grocery.addGroceryItem(naam, VAN_VOORRAAD); return; }
+    // Alleen weghalen wat er namens de kast op kwam; wat je zelf typte blijft staan.
+    if (!nodig && staatEr && staatEr.fromRecipe === VAN_VOORRAAD) void grocery.removeGroceryItem(staatEr.id);
+  }, [grocery]);
+
+  const setPantryQuantity = useCallback(async (id: string, quantity: number) => {
+    const item = pantryHook.pantry.find((row) => row.id === id);
+    await pantryHook.setQuantity(id, quantity);
+    if (item) stemAfMetLijst(item.name, quantity === 0 || (quantity === 1 && item.low));
+  }, [pantryHook, stemAfMetLijst]);
+
+  /** De drie standen in één keer goed zetten, inclusief wat er op de lijst hoort. */
+  const setPantryState = useCallback(async (id: string, stand: PantryState) => {
+    const item = pantryHook.pantry.find((row) => row.id === id);
+    if (!item) return;
+    if (stand === 'op') {
+      await pantryHook.setQuantity(id, 0);
+      await pantryHook.setLow(id, false);
+    } else {
+      await pantryHook.setQuantity(id, Math.max(1, item.quantity));
+      await pantryHook.setLow(id, stand === 'bijna');
+    }
+    stemAfMetLijst(item.name, stand !== 'vol');
+  }, [pantryHook, stemAfMetLijst]);
+
+  const setPantryLow = useCallback(async (id: string, low: boolean) => {
+    const item = pantryHook.pantry.find((row) => row.id === id);
+    await pantryHook.setLow(id, low);
+    if (item) stemAfMetLijst(item.name, low || item.quantity === 0);
+  }, [pantryHook, stemAfMetLijst]);
 
   const value: AppContextType = {
     userId,
@@ -111,8 +152,9 @@ export const AppProvider = ({ children, userId }: { children: React.ReactNode; u
     pantry: pantryHook.pantry,
     pantryLoading: pantryHook.pantryLoading,
     stockUp: pantryHook.stockUp,
-    setPantryQuantity: pantryHook.setQuantity,
-    setPantryLow: pantryHook.setLow,
+    setPantryQuantity,
+    setPantryLow,
+    setPantryState,
     renamePantryItem: pantryHook.renamePantryItem,
     removePantryItem: pantryHook.removePantryItem,
     plus: entitlements.plus,

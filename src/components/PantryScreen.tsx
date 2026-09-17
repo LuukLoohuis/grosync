@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Camera, Check, Loader2, Plus, Search, Trash2, X } from 'lucide-react';
+import { Camera, Check, ListChecks, Loader2, Plus, Search, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DepartmentDot } from '@/components/DepartmentHeading';
 import PantryTile from '@/components/PantryTile';
+import SwipeToRemove from '@/components/SwipeToRemove';
 import PantryScanSheet from '@/components/PantryScanSheet';
 import PantryItemSheet from '@/components/PantryItemSheet';
 import PlusSheet from '@/components/PlusSheet';
@@ -14,6 +15,7 @@ import { useAppContext } from '@/contexts/AppContext';
 import { isHerb, sameProduct } from '@/lib/pantry';
 import { toSmallDataUrl } from '@/lib/photo';
 import { sortByStoreRoute, type Department } from '@/lib/storeRouteSort';
+import type { PantryItem } from '@/types';
 import { FREE_LIMIT } from '@/hooks/useEntitlements';
 import { QuotaError } from '@/services/functions';
 import { scanPantryPhoto, type ScanHit } from '@/services/pantryApi';
@@ -34,7 +36,7 @@ interface PantryScreenProps {
 /** De voorraadkast: twee tegels breed, want dichtheid is hier het probleem. */
 const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
   const {
-    pantry, pantryLoading, stockUp, removePantryItem, addGroceryItem,
+    pantry, pantryLoading, stockUp, removePantryItem, addGroceryItem, setPantryQuantity, setPantryState,
     plus, remaining, refreshEntitlements,
   } = useAppContext();
 
@@ -45,9 +47,9 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
   const [hits, setHits] = useState<ScanHit[] | null>(null);
   const [openItemId, setOpenItemId] = useState<string | null>(null);
   const [filter, setFilter] = useState<Department | 'kruiden' | 'bijna' | null>(null);
-  // Opruimen: tikken gooit weg in plaats van openen. Vegen is van de tabs.
-  const [opruimen, setOpruimen] = useState(false);
-  useEffect(() => { if (pantry.length === 0) setOpruimen(false); }, [pantry.length]);
+  // Bijwerken: één tik loopt door vol → bijna op → op. Weggooien doe je met een veeg.
+  const [bijwerken, setBijwerken] = useState(false);
+  useEffect(() => { if (pantry.length === 0) setBijwerken(false); }, [pantry.length]);
   const [overLimit, setOverLimit] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -105,11 +107,17 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
 
   const scan = () => (opGeraakt ? setOverLimit(true) : fileInput.current?.click());
 
-  const keep = async (names: string[]) => {
+  const keep = async (names: string[], opIds: string[]) => {
     setHits(null);
     // Iets op een foto zien zegt dat het er staat, niet dat er eentje bij komt.
     for (const name of names) await stockUp(name, 'foto', false);
-    toast.success(names.length === 1 ? '1 product in de kast' : `${names.length} producten in de kast`);
+    // Wat er niet meer stond gaat op nul; de lijst pikt dat vanzelf op.
+    for (const id of opIds) await setPantryQuantity(id, 0);
+    const delen = [
+      names.length > 0 ? t('{0} in de kast', [names.length]) : null,
+      opIds.length > 0 ? t('{0} op je lijst', [opIds.length]) : null,
+    ].filter(Boolean);
+    if (delen.length > 0) toast.success(delen.join(' · '));
   };
 
   const addByHand = async () => {
@@ -127,6 +135,12 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
     toast.success(t("“{0}” op je lijst gezet", [name]), {
       action: onNavigate ? { label: t("Bekijken"), onClick: () => onNavigate('list') } : undefined,
     });
+  };
+
+  /** Eén tik verder in de rij: vol → bijna op → op → vol. */
+  const volgendeStand = (item: PantryItem) => {
+    const volgende = item.quantity === 0 ? 'vol' : item.low ? 'op' : 'bijna';
+    void setPantryState(item.id, volgende);
   };
 
   const opTeller = pantry.filter((item) => item.quantity === 0).length;
@@ -157,15 +171,15 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
             </div>
             <button
               type="button"
-              onClick={() => setOpruimen((aan) => !aan)}
-              aria-pressed={opruimen}
-              aria-label={opruimen ? t('Klaar met opruimen') : t('Opruimen')}
-              title={opruimen ? t('Klaar met opruimen') : t('Opruimen')}
+              onClick={() => setBijwerken((aan) => !aan)}
+              aria-pressed={bijwerken}
+              aria-label={bijwerken ? t('Klaar met bijwerken') : t('Voorraad bijwerken')}
+              title={bijwerken ? t('Klaar met bijwerken') : t('Voorraad bijwerken')}
               className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition-colors duration-150 ease-smooth ${
-                opruimen ? 'border-destructive bg-destructive text-destructive-foreground' : 'border-border-strong text-foreground hover:bg-muted'
+                bijwerken ? 'border-primary bg-primary text-primary-foreground' : 'border-border-strong text-foreground hover:bg-muted'
               }`}
             >
-              {opruimen ? <Check className="h-4 w-4" /> : <Trash2 className="h-4 w-4" />}
+              {bijwerken ? <Check className="h-4 w-4" /> : <ListChecks className="h-4 w-4" />}
             </button>
             <button
               type="button"
@@ -188,9 +202,9 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
             </Button>
           </header>
 
-          {opruimen && (
-            <p className="rounded-[12px] border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-foreground">
-              {t('Tik op een potje om het weg te gooien. Ongedaan maken kan meteen.')}
+          {bijwerken && (
+            <p className="rounded-[12px] border border-primary/30 bg-primary-soft px-3 py-2 text-sm text-primary-deep">
+              {t('Tik een potje om het bij te werken: vol → bijna op → op. Wat bijna op is, zet CoupleCart op je lijst.')}
             </p>
           )}
 
@@ -339,12 +353,13 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
           )}
           <div className="grid grid-cols-2 gap-1.5">
             {plank.items.map((item) => (
-              <PantryTile
-                key={item.id}
-                item={item}
-                opruimen={opruimen}
-                onOpen={() => (opruimen ? weggooien(item.id) : setOpenItemId(item.id))}
-              />
+              <SwipeToRemove key={item.id} label={item.name} onRemove={() => weggooien(item.id)}>
+                <PantryTile
+                  item={item}
+                  bijwerken={bijwerken}
+                  onOpen={() => (bijwerken ? volgendeStand(item) : setOpenItemId(item.id))}
+                />
+              </SwipeToRemove>
             ))}
           </div>
         </section>
@@ -365,7 +380,7 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
         onConfirm={keep}
         onAnotherPhoto={() => fileInput.current?.click()}
         scanning={scanning}
-        known={pantry.map((item) => item.name)}
+        known={pantry}
       />
       <PantryItemSheet item={openItem} onClose={() => setOpenItemId(null)} onAddToList={toList} />
       <PlusSheet feature={overLimit ? 'kastfoto' : null} onClose={() => setOverLimit(false)} />
