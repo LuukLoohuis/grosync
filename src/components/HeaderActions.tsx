@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Share2, Heart, LogOut, MoreVertical, Gauge, PieChart, LifeBuoy, FileText } from 'lucide-react';
+import { Heart, LogOut, MoreVertical, Gauge, PieChart, LifeBuoy, FileText, Link2 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppContext } from '@/contexts/AppContext';
-import ShareListSheet from '@/components/ShareListSheet';
+import KoppelSheet from '@/components/KoppelSheet';
 import UsageSheet from '@/components/UsageSheet';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup,
@@ -38,8 +38,8 @@ const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
 
   return (
     <div className="-mr-2 flex items-center">
-      <button type="button" onClick={() => setShareOpen(true)} aria-label={t("Lijst delen")} title={t("Lijst delen")} className={iconButton}>
-        <Share2 className="h-5 w-5" strokeWidth={1.9} />
+      <button type="button" onClick={() => setShareOpen(true)} aria-label={t("Koppelen")} title={t("Koppelen")} className={iconButton}>
+        <Link2 className="h-5 w-5" strokeWidth={1.9} />
       </button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -92,7 +92,7 @@ const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
       <button type="button" onClick={signOut} aria-label={t("Uitloggen")} title={t("Uitloggen")} className={iconButton}>
         <LogOut className="h-5 w-5" strokeWidth={1.9} />
       </button>
-      <ShareListSheet open={shareOpen} onOpenChange={setShareOpen} />
+      <KoppelSheet open={shareOpen} onOpenChange={setShareOpen} />
       <UsageSheet open={usageOpen} onOpenChange={setUsageOpen} />
     </div>
   );

@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HashRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { PENDING_IMPORT_KEY } from "@/lib/recipeImport";
 import { useAuth } from "@/hooks/useAuth";
+import { useHousehold } from "@/hooks/useHousehold";
 import { AppProvider } from "@/contexts/AppContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -18,7 +19,9 @@ const queryClient = new QueryClient();
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { session, loading } = useAuth();
   const location = useLocation();
-  if (loading) return null;
+  // Gekoppeld aan iemand? Dan draait de hele app op diens lijst, recepten en kast.
+  const household = useHousehold(session?.user.id ?? null);
+  if (loading || household.loading) return null;
   if (!session) {
     // Keep a link shared into the app (iOS shortcut, Android share) across the login screen.
     const pending = new URLSearchParams(location.search).get("import");
@@ -26,7 +29,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     return <Navigate to="/auth" replace />;
   }
   return (
-    <AppProvider userId={session.user.id}>
+    <AppProvider userId={household.ownerId ?? session.user.id} selfId={session.user.id} household={household}>
       {children}
     </AppProvider>
   );

@@ -109,6 +109,13 @@ const SharedList = () => {
         return;
       }
 
+      // Met een eigen account ben je nu gekoppeld en hoor je in de app zelf,
+      // niet op deze kijkpagina. Gasten blijven hier.
+      if (session && !session.user.is_anonymous) {
+        window.location.replace(`${window.location.origin}/#/`);
+        window.location.reload();
+        return;
+      }
       setUserId(ownerId);
       setLoading(false);
     };

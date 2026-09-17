@@ -10,6 +10,7 @@ import { usePurchaseHistory } from '@/hooks/usePurchaseHistory';
 import type { AhMatch } from '@/services/ahApi';
 import { GroceryItem, PantryItem, Recipe, RecipeCategory, UsualItem } from '@/types';
 import { sameProduct } from '@/lib/pantry';
+import type { Rol } from '@/hooks/useHousehold';
 
 /** Hoe vol een potje is, in de woorden die de app gebruikt. */
 export type PantryState = 'vol' | 'bijna' | 'op';
@@ -20,7 +21,11 @@ interface FrequentItem {
 }
 
 interface AppContextType {
+  /** Van wie de data is: bij een koppeling de eigenaar, anders jijzelf. */
   userId: string | null;
+  /** Wie er ingelogd is. Tegoed en beheer blijven per persoon. */
+  selfId: string | null;
+  household: { rol: Rol; refresh: () => Promise<void>; leave: () => Promise<boolean> };
   groceryItems: GroceryItem[];
   recipes: Recipe[];
   usuals: UsualItem[];
@@ -73,7 +78,16 @@ export const useAppContext = () => {
   return ctx;
 };
 
-export const AppProvider = ({ children, userId }: { children: React.ReactNode; userId: string | null }) => {
+const LOS = { rol: 'geen' as Rol, refresh: async () => {}, leave: async () => false };
+
+export const AppProvider = ({
+  children, userId, selfId = userId, household = LOS,
+}: {
+  children: React.ReactNode;
+  userId: string | null;
+  selfId?: string | null;
+  household?: { rol: Rol; refresh: () => Promise<void>; leave: () => Promise<boolean> };
+}) => {
   const grocery = useGroceryItems({ userId });
   const recipeHook = useRecipes({ userId });
   const usualsHook = useUsuals({ userId });
@@ -81,7 +95,8 @@ export const AppProvider = ({ children, userId }: { children: React.ReactNode; u
   const pantry = usePantryStaples(userId);
   const categoryHook = useRecipeCategories({ userId });
   const pantryHook = usePantry({ userId });
-  const entitlements = useEntitlements({ userId });
+  // Tegoed is van jou; of Plus geldt, beslist de server voor het hele huishouden.
+  const entitlements = useEntitlements({ userId: selfId });
 
   // Wat bijna op of op is hoort op de boodschappenlijst; staat het weer vol, dan
   // hoeft het er niet meer op. Zo doet het label in de kast ook echt iets.
@@ -121,6 +136,8 @@ export const AppProvider = ({ children, userId }: { children: React.ReactNode; u
 
   const value: AppContextType = {
     userId,
+    selfId,
+    household,
     groceryItems: grocery.groceryItems,
     recipes: recipeHook.recipes,
     usuals: usualsHook.usuals,

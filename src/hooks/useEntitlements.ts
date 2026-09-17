@@ -32,14 +32,22 @@ export const useEntitlements = ({ userId }: UseEntitlementsOptions = {}) => {
   const load = useCallback(async () => {
     if (!userId) { setPlus(false); setUsed({}); setIsAdmin(false); return; }
 
-    const [plusRow, usage, admin] = await Promise.all([
-      supabase.from('plus_members').select('expires_at').eq('user_id', userId).maybeSingle(),
+    // my_plus kijkt ook naar je partner; staat nog niet in de gegenereerde typen.
+    // Via de client aanroepen, anders raakt rpc zijn `this` kwijt.
+    const client = supabase as unknown as { rpc: (fn: string) => PromiseLike<{ data: unknown; error: unknown }> };
+    const [plusRpc, usage, admin] = await Promise.all([
+      client.rpc('my_plus'),
       supabase.from('ai_usage').select('feature, count').eq('user_id', userId).eq('period', currentPeriod()),
       supabase.rpc('is_admin'),
     ]);
 
-    const row = plusRow.data;
-    setPlus(Boolean(row) && (!row?.expires_at || new Date(row.expires_at) > new Date()));
+    let plusNu = plusRpc.data === true;
+    if (plusRpc.error) {
+      // Migratie nog niet gedraaid: dan alleen je eigen rij.
+      const { data: row } = await supabase.from('plus_members').select('expires_at').eq('user_id', userId).maybeSingle();
+      plusNu = Boolean(row) && (!row?.expires_at || new Date(row.expires_at) > new Date());
+    }
+    setPlus(plusNu);
     setUsed(Object.fromEntries((usage.data ?? []).map((item) => [item.feature, item.count])));
     setIsAdmin(admin.data === true);
   }, [userId]);
