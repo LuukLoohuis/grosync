@@ -65,18 +65,19 @@ const RecipeDetailSheet = ({ recipe, onClose, onAddToList, onEdit, onMacros, onC
             />
           </button>
         )}
+
+        {/* Foto en kop scrollen mee, zodat de ingrediënten en de bereiding de ruimte krijgen. */}
+        <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-4">
         {shown?.imageUrl && (
           <div className="aspect-[16/9] w-full shrink-0 overflow-hidden rounded-t-[20px] bg-muted">
             <img src={shown.imageUrl} alt="" className="h-full w-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
           </div>
         )}
-
-        <SheetHeader className="shrink-0 px-5 pb-3 pr-14 pt-5 text-left">
+        <SheetHeader className="px-5 pb-3 pr-14 pt-5 text-left">
           <SheetTitle className="font-display text-xl leading-tight">{shown?.name}</SheetTitle>
           {shown?.description && <SheetDescription>{shown.description}</SheetDescription>}
         </SheetHeader>
-
-        <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-4">
+          <div className="px-5">
           <div className="flex flex-wrap items-center gap-1.5">
             {(shown?.categories ?? []).map((label) => {
               const category = findCategory(recipeCategories, label);
@@ -150,6 +151,7 @@ const RecipeDetailSheet = ({ recipe, onClose, onAddToList, onEdit, onMacros, onC
             >
               <Trash2 className="h-4 w-4" /> {t("Verwijderen")}
             </Button>
+          </div>
           </div>
         </div>
 
