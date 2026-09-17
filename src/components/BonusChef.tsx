@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import AddToListSheet from '@/components/AddToListSheet';
 import RecipeViewDialog from '@/components/RecipeViewDialog';
 import { useAppContext } from '@/contexts/AppContext';
+import { leesBonusGeheugen, schrijfBonusGeheugen } from '@/lib/bonusMemory';
 import { splitAmount } from '@/lib/itemAmount';
 import { normalizeSteps, splitSteps } from '@/lib/recipeSteps';
 import { fetchBonusMatches, fetchBonusRecipes, type BonusHit, type BonusMatch, type BonusOffer, type BonusRecipe, type BonusResult } from '@/services/bonusApi';
@@ -14,26 +15,6 @@ const euro = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR'
 
 // Zo lang doet het ophalen er meestal over; alleen voor de balk en een "nog ± ".
 const DUURT_MS = 8500;
-const VORIGE = 'bonus-vorige-keer';
-
-interface VorigeKeer { aanbiedingen: number; voordeel: number }
-
-const leesVorige = (): VorigeKeer | null => {
-  try {
-    const rauw = localStorage.getItem(VORIGE);
-    return rauw ? (JSON.parse(rauw) as VorigeKeer) : null;
-  } catch {
-    return null;
-  }
-};
-
-const schrijfVorige = (waarde: VorigeKeer) => {
-  try {
-    localStorage.setItem(VORIGE, JSON.stringify(waarde));
-  } catch {
-    // Privémodus of volle opslag: dan missen we alleen die ene regel.
-  }
-};
 
 /**
  * "1 + 1 gratis" scheelt echt iets, "2% volume voordeel" niet. AH's tekst nemen
@@ -84,7 +65,7 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
   const [toonAlles, setToonAlles] = useState(false);
   // Hoe lang het ophalen al duurt, zodat de balk iets zegt in plaats van te zwaaien.
   const [wacht, setWacht] = useState(0);
-  const [vorige] = useState(leesVorige);
+  const [vorige] = useState(leesBonusGeheugen);
 
   const load = useCallback(async () => {
     setStatus('loading');
@@ -92,9 +73,16 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
       const uitkomst = await fetchBonusMatches(recipes);
       setResult(uitkomst);
       setStatus('ready');
-      schrijfVorige({
+      schrijfBonusGeheugen({
         aanbiedingen: uitkomst.bonusCount,
         voordeel: uitkomst.matches.reduce((som, match) => som + match.saving, 0),
+        recepten: uitkomst.matches.map((match) => ({
+          id: match.recipeId,
+          naam: match.name,
+          voordeel: match.saving,
+          treffers: match.hits.length,
+        })),
+        tot: uitkomst.endDate,
       });
     } catch (error) {
       console.error('Bonus matches failed:', error);
