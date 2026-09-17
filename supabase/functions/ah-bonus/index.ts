@@ -89,13 +89,25 @@ const rest = (path: string, init: RequestInit = {}) =>
     },
   });
 
+// PostgREST geeft standaard hoogstens duizend rijen terug. De bonus is groter,
+// dus lezen we hem per blok: anders legden we maar een derde langs je recepten.
+const BLOK = 1000;
+
 async function storedBonus(): Promise<BonusRow[] & { length: number }> {
-  const response = await rest('bonus_products?select=*&order=title.asc');
-  if (!response.ok) {
-    console.error('Reading stored bonus failed:', response.status, await response.text());
-    return [] as unknown as BonusRow[];
+  const rows: BonusRow[] = [];
+  for (let start = 0; start < MAX_PAGES * PAGE_SIZE; start += BLOK) {
+    const response = await rest('bonus_products?select=*&order=title.asc', {
+      headers: { Range: `${start}-${start + BLOK - 1}`, 'Range-Unit': 'items' },
+    });
+    if (!response.ok) {
+      console.error('Reading stored bonus failed:', response.status, await response.text());
+      break;
+    }
+    const blok: BonusRow[] = await response.json();
+    rows.push(...blok);
+    if (blok.length < BLOK) break;
   }
-  return await response.json();
+  return rows as BonusRow[] & { length: number };
 }
 
 async function newestFetch(): Promise<number> {

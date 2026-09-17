@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ChefHat, Loader2, Plus, RefreshCw, Sparkles, Tag } from 'lucide-react';
+import { ChefHat, Loader2, Plus, RefreshCw, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import AddToListSheet from '@/components/AddToListSheet';
@@ -7,10 +7,33 @@ import RecipeViewDialog from '@/components/RecipeViewDialog';
 import { useAppContext } from '@/contexts/AppContext';
 import { splitAmount } from '@/lib/itemAmount';
 import { normalizeSteps, splitSteps } from '@/lib/recipeSteps';
-import { fetchBonusMatches, fetchBonusRecipes, type BonusHit, type BonusMatch, type BonusRecipe, type BonusResult } from '@/services/bonusApi';
+import { fetchBonusMatches, fetchBonusRecipes, type BonusHit, type BonusMatch, type BonusOffer, type BonusRecipe, type BonusResult } from '@/services/bonusApi';
 import type { Recipe } from '@/types';
 
 const euro = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' });
+
+// Zo lang doet het ophalen er meestal over; alleen voor de balk en een "nog ± ".
+const DUURT_MS = 8500;
+const VORIGE = 'bonus-vorige-keer';
+
+interface VorigeKeer { aanbiedingen: number; voordeel: number }
+
+const leesVorige = (): VorigeKeer | null => {
+  try {
+    const rauw = localStorage.getItem(VORIGE);
+    return rauw ? (JSON.parse(rauw) as VorigeKeer) : null;
+  } catch {
+    return null;
+  }
+};
+
+const schrijfVorige = (waarde: VorigeKeer) => {
+  try {
+    localStorage.setItem(VORIGE, JSON.stringify(waarde));
+  } catch {
+    // Privémodus of volle opslag: dan missen we alleen die ene regel.
+  }
+};
 
 /**
  * "1 + 1 gratis" scheelt echt iets, "2% volume voordeel" niet. AH's tekst nemen
@@ -58,12 +81,21 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
   const [ideas, setIdeas] = useState<BonusRecipe[]>([]);
   const [thinking, setThinking] = useState(false);
   const [saved, setSaved] = useState<string[]>([]);
+  const [toonAlles, setToonAlles] = useState(false);
+  // Hoe lang het ophalen al duurt, zodat de balk iets zegt in plaats van te zwaaien.
+  const [wacht, setWacht] = useState(0);
+  const [vorige] = useState(leesVorige);
 
   const load = useCallback(async () => {
     setStatus('loading');
     try {
-      setResult(await fetchBonusMatches(recipes));
+      const uitkomst = await fetchBonusMatches(recipes);
+      setResult(uitkomst);
       setStatus('ready');
+      schrijfVorige({
+        aanbiedingen: uitkomst.bonusCount,
+        voordeel: uitkomst.matches.reduce((som, match) => som + match.saving, 0),
+      });
     } catch (error) {
       console.error('Bonus matches failed:', error);
       setStatus('error');
@@ -71,6 +103,14 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
   }, [recipes]);
 
   useEffect(() => { void load(); }, [load]);
+
+  useEffect(() => {
+    if (status !== 'loading') return;
+    setWacht(0);
+    const begin = Date.now();
+    const tik = window.setInterval(() => setWacht(Date.now() - begin), 250);
+    return () => window.clearInterval(tik);
+  }, [status]);
 
   const think = async () => {
     const offers = result?.sample ?? [];
@@ -107,6 +147,24 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
   const matches = [...(result?.matches ?? [])].sort((a, b) => b.saving - a.saving || dekking(b) - dekking(a));
   const geldig = geldigLabel(result?.endDate ?? null);
   const aanbiedingen = result?.sample ?? [];
+
+  // Bonuschef noemt producten bij naam; de prijs en de kortingsvorm halen we
+  // terug uit dezelfde aanbiedingen die we hem gestuurd hebben.
+  const offerVoor = (naam: string) => {
+    const schoon = naam.trim().toLowerCase();
+    return aanbiedingen.find((offer) => offer.title.toLowerCase() === schoon)
+      ?? aanbiedingen.find((offer) => offer.title.toLowerCase().includes(schoon) || schoon.includes(offer.title.toLowerCase()))
+      ?? null;
+  };
+  const voordeelVan = (offer: BonusOffer | null) =>
+    offer && offer.price != null && offer.price_before != null && offer.price_before > offer.price
+      ? offer.price_before - offer.price
+      : 0;
+
+  const ideeOpLijst = (idea: BonusRecipe) => {
+    for (const regel of idea.ingredients) addGroceryItem(regel);
+    toast.success(`${idea.ingredients.length} boodschappen op je lijst`);
+  };
   const aantalBekeken = result?.bonusCount ?? 0;
 
   const paar = (hit: BonusHit, formaat: number) => (
@@ -255,14 +313,29 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
             Bonus van deze week ophalen
           </p>
           <p className="mt-1.5 font-display text-[1.375rem] font-bold leading-tight text-primary-foreground">
-            {recipes.length > 0 ? 'Alle aanbiedingen langs je recepten' : 'Alle aanbiedingen van deze week'}
+            {vorige
+              ? `${vorige.aanbiedingen.toLocaleString('nl-NL')} aanbiedingen langs je recepten`
+              : recipes.length > 0
+                ? 'Alle aanbiedingen langs je recepten'
+                : 'Alle aanbiedingen van deze week'}
           </p>
           <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-primary-foreground/20">
-            <div className="h-full w-2/5 animate-pulse rounded-full bg-accent" />
+            <div
+              className="h-full rounded-full bg-accent transition-[width] duration-300 ease-smooth"
+              style={{ width: `${Math.min(95, (wacht / DUURT_MS) * 100)}%` }}
+            />
           </div>
-          <p className="mt-3 text-[0.8125rem] text-primary-foreground/75">
-            Dit duurt zo’n acht seconden. Je hoeft niet te wachten — het staat er zo.
+          <p className="mt-2 flex items-baseline justify-between gap-2 text-[0.8125rem] text-primary-foreground/75">
+            <span>Je hoeft niet te wachten — het staat er zo.</span>
+            {wacht < DUURT_MS && (
+              <span className="shrink-0 tabular-nums">nog ± {Math.max(1, Math.ceil((DUURT_MS - wacht) / 1000))} sec</span>
+            )}
           </p>
+          {vorige && vorige.voordeel > 0 && (
+            <p className="mt-3 border-t border-primary-foreground/15 pt-3 text-[0.8125rem] text-primary-foreground/75">
+              Vorige keer scheelde het jullie {euro.format(vorige.voordeel)}.
+            </p>
+          )}
         </section>
       )}
 
@@ -327,81 +400,108 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
         </section>
       )}
 
-      {ideas.map((idea) => (
-        <article key={idea.name} className="rounded-[16px] border border-border bg-card p-3.5">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <h3 className="font-display text-[1.1875rem] font-bold leading-tight text-foreground">{idea.name}</h3>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                {idea.minutes ? `${idea.minutes} min · ` : ''}voor {idea.servings}
-              </p>
+      {ideas.map((idea) => {
+        const producten = idea.usedBonus.map((naam) => ({ naam, offer: offerVoor(naam) }));
+        const scheelt = producten.reduce((som, { offer }) => som + voordeelVan(offer), 0);
+        return (
+          <article key={idea.name} className="rounded-[16px] border border-border bg-card p-3.5">
+            <h3 className="font-display text-[1.1875rem] font-bold leading-tight text-foreground">{idea.name}</h3>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {idea.minutes ? `${idea.minutes} min · ` : ''}voor {idea.servings}
+              {scheelt > 0 ? ` · ± ${euro.format(scheelt)} goedkoper` : ''}
+            </p>
+
+            {producten.length > 0 && (
+              <ul className="mt-2.5 space-y-1.5">
+                {producten.map(({ naam, offer }) => (
+                  <li key={naam} className="flex items-center gap-2.5">
+                    <Foto url={offer?.image_url ?? null} formaat={30} />
+                    <span className="min-w-0 flex-1 truncate text-[0.8125rem] text-foreground">{offer?.title ?? naam}</span>
+                    {offer?.mechanism
+                      ? <Vorm vorm={offer.mechanism} />
+                      : offer?.price != null && (
+                        <span className="shrink-0 font-display text-xs font-bold tabular-nums text-foreground">{euro.format(offer.price)}</span>
+                      )}
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <div className="mt-3 flex gap-2">
+              <Button
+                variant="outline"
+                className="min-h-11 shrink-0 gap-1 px-4"
+                disabled={saved.includes(idea.name)}
+                onClick={() => void keep(idea)}
+              >
+                <Plus className="h-3.5 w-3.5" /> {saved.includes(idea.name) ? 'Bewaard' : 'Bewaren'}
+              </Button>
+              <Button variant="accent" className="min-h-11 flex-1" onClick={() => ideeOpLijst(idea)}>
+                Op de lijst
+              </Button>
             </div>
-            <Button
-              size="sm"
-              variant="outline"
-              className="shrink-0 gap-1"
-              disabled={saved.includes(idea.name)}
-              onClick={() => void keep(idea)}
-            >
-              <Plus className="h-3.5 w-3.5" /> {saved.includes(idea.name) ? 'Bewaard' : 'Bewaren'}
-            </Button>
-          </div>
-          {idea.usedBonus.length > 0 && (
-            <ul className="mt-2 space-y-1">
-              {idea.usedBonus.map((naam) => (
-                <li key={naam} className="flex items-center gap-2 text-xs">
-                  <Tag className="h-3 w-3 shrink-0 text-[hsl(var(--ah-bonus))]" aria-hidden="true" />
-                  <span className="min-w-0 flex-1 truncate text-foreground/80">{naam}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-          <details className="mt-2 text-xs text-muted-foreground">
-            <summary className="min-h-11 cursor-pointer font-medium text-primary">Ingrediënten en bereiding</summary>
-            <ul className="mt-1.5 space-y-0.5">
-              {idea.ingredients.map((ingredient) => <li key={ingredient}>• {ingredient}</li>)}
-            </ul>
-            <ol className="mt-2 space-y-1.5">
-              {splitSteps(idea.instructions).map((step, index) => (
-                <li key={index} className="flex gap-2">
-                  <span className="font-semibold tabular-nums text-primary">{index + 1}.</span>
-                  <span>{step}</span>
-                </li>
-              ))}
-            </ol>
-          </details>
-        </article>
-      ))}
+
+            <details className="mt-2.5 text-xs text-muted-foreground">
+              <summary className="min-h-11 cursor-pointer font-medium text-primary">Ingrediënten en bereiding</summary>
+              <ul className="mt-1.5 space-y-0.5">
+                {idea.ingredients.map((ingredient) => <li key={ingredient}>• {ingredient}</li>)}
+              </ul>
+              <ol className="mt-2 space-y-1.5">
+                {splitSteps(idea.instructions).map((step, index) => (
+                  <li key={index} className="flex gap-2">
+                    <span className="font-semibold tabular-nums text-primary">{index + 1}.</span>
+                    <span>{step}</span>
+                  </li>
+                ))}
+              </ol>
+            </details>
+          </article>
+        );
+      })}
 
       {status === 'ready' && aanbiedingen.length > 0 && (
-        <section className="space-y-2">
-          <div className="flex items-baseline gap-2 px-1">
-            <h2 className="flex-1 font-display text-[1.0625rem] font-semibold text-foreground">
-              {matches.length > 0 ? 'Deze week in de bonus' : 'Wel in de bonus deze week'}
-            </h2>
-            <span className="text-xs text-muted-foreground">tik om toe te voegen</span>
-          </div>
-          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
-            {aanbiedingen.slice(0, 20).map((offer) => (
-              <button
-                key={offer.title}
-                type="button"
-                onClick={() => opLijst(offer.title)}
-                className="flex w-[116px] shrink-0 flex-col gap-1 rounded-[12px] border border-border bg-card p-2 text-left transition-shadow duration-150 ease-smooth hover:shadow-soft"
-              >
-                <span className="mx-auto flex h-14 w-14 items-center justify-center overflow-hidden rounded-[9px] bg-white">
-                  {offer.image_url
-                    ? <img src={offer.image_url} alt="" loading="lazy" className="h-full w-full object-contain" onError={(e) => { e.currentTarget.style.visibility = 'hidden'; }} />
-                    : <Tag className="h-4 w-4 text-muted-foreground" />}
+        <section>
+          <h2 className="px-1 font-display text-[0.625rem] font-semibold uppercase tracking-[0.07em] text-muted-foreground">
+            {matches.length > 0 ? 'Deze week in de bonus' : 'Wel in de bonus deze week'}
+          </h2>
+          <ul className="mt-1.5 space-y-1.5">
+            {aanbiedingen.slice(0, toonAlles ? 24 : 6).map((offer) => (
+              <li key={offer.title} className="flex min-h-[3.25rem] items-center gap-3 rounded-[12px] border border-border bg-card px-3 py-2">
+                <Foto url={offer.image_url ?? null} formaat={40} />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[0.90625rem] font-medium leading-tight text-foreground">{offer.title}</span>
+                  <Vorm vorm={offer.mechanism} />
                 </span>
-                <span className="line-clamp-2 text-[0.78125rem] leading-tight text-foreground">{offer.title}</span>
-                <Vorm vorm={offer.mechanism} />
-                {offer.price != null && (
-                  <span className="font-display text-[0.8125rem] font-bold tabular-nums text-foreground">{euro.format(offer.price)}</span>
-                )}
-              </button>
+                <span className="shrink-0 text-right">
+                  {offer.price != null && (
+                    <span className="block font-display text-[0.9375rem] font-bold tabular-nums text-foreground">{euro.format(offer.price)}</span>
+                  )}
+                  {offer.price_before != null && offer.price != null && offer.price_before > offer.price && (
+                    <span className="block font-display text-[0.71875rem] font-medium tabular-nums text-muted-foreground line-through">
+                      {euro.format(offer.price_before)}
+                    </span>
+                  )}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => opLijst(offer.title)}
+                  aria-label={`Zet ${offer.title} op je lijst`}
+                  className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-accent-soft text-accent-ink transition-colors duration-150 ease-smooth hover:bg-accent hover:text-accent-foreground"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              </li>
             ))}
-          </div>
+          </ul>
+          {aanbiedingen.length > 6 && (
+            <button
+              type="button"
+              onClick={() => setToonAlles((aan) => !aan)}
+              className="mt-2 min-h-11 w-full text-center text-[0.8125rem] font-medium text-primary hover:underline"
+            >
+              {toonAlles ? 'Minder tonen' : `Nog ${Math.min(aanbiedingen.length, 24) - 6} aanbiedingen`}
+            </button>
+          )}
         </section>
       )}
 
