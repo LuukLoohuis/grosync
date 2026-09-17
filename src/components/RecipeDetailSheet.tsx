@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSheetSwipeClose } from '@/hooks/useSheetSwipeClose';
 import { ExternalLink, Flame, Pencil, ShoppingCart, Tags, Trash2, Users } from 'lucide-react';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -29,6 +30,7 @@ const RecipeDetailSheet = ({ recipe, onClose, onAddToList, onEdit, onMacros, onC
   const open = Boolean(recipe);
   const servings = shown?.servings || 4;
   const steps = splitSteps(shown?.instructions);
+  const { velProps, scrollRef } = useSheetSwipeClose(onClose);
 
   const act = (run: (recipe: Recipe) => void) => {
     if (!shown) return;
@@ -38,30 +40,28 @@ const RecipeDetailSheet = ({ recipe, onClose, onAddToList, onEdit, onMacros, onC
 
   return (
     <Sheet open={open} onOpenChange={(next) => { if (!next) onClose(); }}>
-      <SheetContent side="bottom" className="mx-auto flex max-h-[92vh] [@supports(height:100dvh)]:max-h-[92dvh] max-w-lg flex-col gap-0 rounded-t-[20px] p-0">
-        {shown && (
-          <button
-            type="button"
-            onClick={() => act((item) => removeRecipe(item.id))}
-            aria-label={t('Recept weggooien')}
-            title={t('Recept weggooien')}
-            className="absolute right-14 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-background/85 text-destructive shadow-flat backdrop-blur transition-colors duration-150 ease-smooth hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
-        )}
+      <SheetContent
+        side="bottom"
+        {...velProps}
+        className="mx-auto flex max-h-[92vh] [@supports(height:100dvh)]:max-h-[92dvh] max-w-lg flex-col gap-0 overflow-hidden rounded-t-[20px] p-0"
+      >
+        {/* Een greepje: hieraan trek je het vel naar beneden. */}
+        <span
+          aria-hidden="true"
+          className="absolute left-1/2 top-2 z-10 h-1 w-9 -translate-x-1/2 rounded-full bg-foreground/25"
+        />
         {shown?.imageUrl && (
           <div className="aspect-[16/9] w-full shrink-0 overflow-hidden rounded-t-[20px] bg-muted">
             <img src={shown.imageUrl} alt="" className="h-full w-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
           </div>
         )}
 
-        <SheetHeader className="shrink-0 px-5 pb-3 pr-12 pt-4 text-left">
+        <SheetHeader className="shrink-0 px-5 pb-3 pr-14 pt-5 text-left">
           <SheetTitle className="font-display text-xl leading-tight">{shown?.name}</SheetTitle>
           {shown?.description && <SheetDescription>{shown.description}</SheetDescription>}
         </SheetHeader>
 
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-4">
+        <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-4">
           <div className="flex flex-wrap items-center gap-1.5">
             {(shown?.categories ?? []).map((label) => {
               const category = findCategory(recipeCategories, label);
