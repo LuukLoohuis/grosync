@@ -27,7 +27,7 @@ const PantryTile = ({ item, bijwerken = false, onOpen, onRemove }: PantryTilePro
       {...handvatten}
       onClick={onOpen}
       aria-label={bijwerken ? t('Werk {0} bij', [item.name]) : t("{0} openen", [item.name])}
-      className={`flex min-h-[46px] w-full items-center gap-2 rounded-[12px] border bg-card px-2.5 py-[7px] text-left transition-colors duration-150 ease-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${wordtGesleept ? 'opacity-40' : ''} ${
+      className={`flex min-h-[46px] w-full select-none items-center gap-2 rounded-[12px] border bg-card px-2.5 py-[7px] text-left transition-colors duration-150 ease-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${wordtGesleept ? 'opacity-40' : ''} ${
         bijwerken ? 'border-primary/50 hover:border-primary' : op ? 'border-destructive/70' : item.low ? 'border-accent' : 'border-border hover:border-border-strong'
       }`}
     >

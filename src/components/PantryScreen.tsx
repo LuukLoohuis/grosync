@@ -353,7 +353,7 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
               count={pantry.length >= 30 ? plank.items.length : undefined}
             />
           )}
-          <div className="grid grid-cols-2 gap-1.5">
+          <div className="grid select-none grid-cols-2 gap-1.5 [-webkit-touch-callout:none]" onContextMenu={(e) => e.preventDefault()}>
             {plank.items.map((item) => (
               <SwipeToRemove key={item.id} label={item.name} onRemove={() => weggooien(item.id)}>
                 <PantryTile

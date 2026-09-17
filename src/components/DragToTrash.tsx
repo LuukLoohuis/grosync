@@ -105,6 +105,22 @@ export const useDragToTrash = (label: string, onRemove: () => void) => {
 
   const stopTimer = () => { if (timer.current !== null) { window.clearTimeout(timer.current); timer.current = null; } };
 
+  // Chrome en Safari willen bij lang indrukken tekst selecteren en "Kopiëren"
+  // aanbieden; dat kapt de sleep af. Zolang de vinger erop staat, mag dat niet.
+  const houdStil = useRef<(() => void) | null>(null);
+  const zetSelectieUit = (el: HTMLElement) => {
+    const stop = (ev: Event) => ev.preventDefault();
+    el.addEventListener('contextmenu', stop);
+    el.addEventListener('selectstart', stop);
+    document.addEventListener('selectstart', stop);
+    houdStil.current = () => {
+      el.removeEventListener('contextmenu', stop);
+      el.removeEventListener('selectstart', stop);
+      document.removeEventListener('selectstart', stop);
+      houdStil.current = null;
+    };
+  };
+
   const onPointerDown = (e: PointerEvent<HTMLElement>) => {
     if (!bak || !e.isPrimary) return;
     netGesleept.current = false;
@@ -112,11 +128,14 @@ export const useDragToTrash = (label: string, onRemove: () => void) => {
     const el = e.currentTarget;
     begin.current = { x: e.clientX, y: e.clientY, id: e.pointerId, el };
     stopTimer();
+    houdStil.current?.();
+    zetSelectieUit(el);
     timer.current = window.setTimeout(() => {
       const b = begin.current;
       if (!b) return;
       actief.current = true;
       try { el.setPointerCapture(b.id); } catch { /* de vinger is al weg */ }
+      try { document.getSelection()?.removeAllRanges(); } catch { /* geen selectie */ }
       bak.start({ label, onRemove, x: b.x, y: b.y });
     }, VASTHOUDEN_MS);
   };
@@ -125,7 +144,7 @@ export const useDragToTrash = (label: string, onRemove: () => void) => {
     const b = begin.current;
     if (!b || b.id !== e.pointerId || !bak) return;
     if (!actief.current) {
-      if (Math.hypot(e.clientX - b.x, e.clientY - b.y) > STILSTAAN_PX) { stopTimer(); begin.current = null; }
+      if (Math.hypot(e.clientX - b.x, e.clientY - b.y) > STILSTAAN_PX) { stopTimer(); begin.current = null; houdStil.current?.(); }
       return;
     }
     // De veegtegel eronder mag dit niet als veeg zien.
@@ -135,6 +154,8 @@ export const useDragToTrash = (label: string, onRemove: () => void) => {
 
   const onPointerEnd = (e: PointerEvent<HTMLElement>) => {
     stopTimer();
+    // De selectieblokkade pas een tel later los: het contextmenu komt soms nog ná pointerup.
+    window.setTimeout(() => houdStil.current?.(), 300);
     const wasActief = actief.current;
     begin.current = null;
     actief.current = false;
@@ -154,8 +175,8 @@ export const useDragToTrash = (label: string, onRemove: () => void) => {
   return {
     handvatten: {
       onPointerDown, onPointerMove, onPointerUp: onPointerEnd, onPointerCancel: onPointerEnd, onClickCapture,
-      onContextMenu: (e: MouseEvent<HTMLElement>) => { if (actief.current || timer.current !== null) e.preventDefault(); },
-      style: { WebkitTouchCallout: 'none', userSelect: 'none' } as const,
+      onContextMenu: (e: MouseEvent<HTMLElement>) => e.preventDefault(),
+      style: { WebkitTouchCallout: 'none', WebkitUserSelect: 'none', userSelect: 'none' } as const,
     },
     wordtGesleept: bak?.bezig === label,
   };
