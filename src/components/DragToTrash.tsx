@@ -69,7 +69,9 @@ export const DragToTrashProvider = ({ children }: { children: ReactNode }) => {
         <>
           <div
             aria-hidden="true"
-            className="pointer-events-none fixed z-[70] max-w-[60vw] truncate rounded-[12px] border border-border bg-card px-3 py-2 text-[0.90625rem] font-medium text-foreground shadow-soft"
+            className={`pointer-events-none fixed z-[70] max-w-[60vw] truncate rounded-[12px] border px-3 py-2 text-[0.90625rem] font-medium shadow-soft ${
+              erboven ? 'border-destructive bg-destructive text-destructive-foreground' : 'border-border bg-card text-foreground'
+            }`}
             style={{ left: sleep.x, top: sleep.y, transform: 'translate(-50%, -140%) scale(1.04)' }}
           >
             {sleep.label}
@@ -77,12 +79,12 @@ export const DragToTrashProvider = ({ children }: { children: ReactNode }) => {
           <div
             ref={bak}
             role="status"
-            className={`fixed inset-x-4 z-[70] flex h-16 items-center justify-center gap-2 rounded-[16px] border-2 border-dashed font-display text-sm font-bold transition-colors duration-150 ease-smooth ${
-              erboven ? 'border-destructive bg-destructive text-destructive-foreground' : 'border-destructive/60 bg-destructive/10 text-destructive'
+            className={`fixed inset-x-4 z-[70] flex h-[4.5rem] animate-fade-in items-center justify-center gap-2.5 rounded-[18px] bg-destructive font-display text-[0.9375rem] font-bold text-destructive-foreground shadow-soft transition-[transform,box-shadow] duration-150 ease-smooth ${
+              erboven ? 'scale-[1.04] ring-4 ring-destructive/35' : ''
             }`}
             style={{ bottom: 'calc(5.25rem + env(safe-area-inset-bottom))' }}
           >
-            <Trash2 className="h-5 w-5" />
+            <Trash2 className={`h-6 w-6 transition-transform duration-150 ${erboven ? 'scale-125' : ''}`} strokeWidth={2.2} />
             {erboven ? t('Laat los om weg te gooien') : t('Sleep hierheen om weg te gooien')}
           </div>
         </>,
