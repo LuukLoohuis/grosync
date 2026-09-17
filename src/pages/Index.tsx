@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState, type TouchEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ShoppingCart, ChefHat, Boxes, Home, Tag, type LucideIcon } from 'lucide-react';
 import GroceryList from '@/components/GroceryList';
@@ -31,6 +31,32 @@ const Index = () => {
   const [pendingImport, setPendingImport] = useState<string | null>(null);
   const onToday = tab === 'today';
   const barVisible = useIdleTabBar();
+
+  // Vegen tussen de tabs, met de volgorde van de balk. Begint de veeg in iets
+  // dat zelf zijwaarts schuift (een rij chips), dan is het geen tabwissel.
+  const veeg = useRef<{ x: number; y: number; laat: boolean } | null>(null);
+  const veegStart = (e: TouchEvent<HTMLElement>) => {
+    const t = e.touches[0];
+    let el = e.target as HTMLElement | null;
+    let laat = false;
+    while (el && el !== e.currentTarget) {
+      if (el.scrollWidth > el.clientWidth + 2 && /auto|scroll/.test(getComputedStyle(el).overflowX)) { laat = true; break; }
+      el = el.parentElement;
+    }
+    veeg.current = { x: t.clientX, y: t.clientY, laat };
+  };
+  const veegEind = (e: TouchEvent<HTMLElement>) => {
+    const start = veeg.current;
+    veeg.current = null;
+    if (!start || start.laat) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - start.x;
+    const dy = t.clientY - start.y;
+    if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 2) return;
+    const i = TABS.findIndex((item) => item.key === tab);
+    const volgende = TABS[i + (dx < 0 ? 1 : -1)];
+    if (volgende) setTab(volgende.key);
+  };
 
   // Terug van Stripe: #/?plus=gelukt of ?plus=afgebroken.
   useEffect(() => {
@@ -94,7 +120,11 @@ const Index = () => {
         </div>
       </nav>
 
-      <main className={`mx-auto max-w-lg pb-[calc(6rem+env(safe-area-inset-bottom))] sm:pb-6 ${onToday ? 'sm:pt-4' : 'px-4 pt-4'}`}>
+      <main
+        onTouchStart={veegStart}
+        onTouchEnd={veegEind}
+        className={`mx-auto min-h-[70vh] max-w-lg pb-[calc(6rem+env(safe-area-inset-bottom))] sm:pb-6 ${onToday ? 'sm:pt-4' : 'px-4 pt-4'}`}
+      >
         {!onToday && <OfflineBanner className="mb-3" />}
         {onToday && <TodayScreen onNavigate={setTab} />}
         {tab === 'list' && <GroceryList onNavigate={setTab} />}

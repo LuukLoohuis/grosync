@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowUpDown, Plus, Search, Settings2, Link, X, Loader2, Languages, ClipboardPaste } from 'lucide-react';
+import { ArrowUpDown, Lightbulb, Plus, Search, Settings2, Link, X, Loader2, Languages, ClipboardPaste } from 'lucide-react';
 import { useAppContext } from '@/contexts/AppContext';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -538,7 +538,8 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
 
       {!loading && recipes.length > 0 && (
         <>
-          <header className="px-1">
+          <header className="flex items-start justify-between gap-3 px-1">
+            <div className="min-w-0">
             <h1 className="font-display text-[1.75rem] font-bold tracking-[-0.02em] text-foreground">
               {filter ? findCategory(recipeCategories, filter).name : 'Wat eten we?'}
             </h1>
@@ -549,6 +550,30 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
                   ? `${visibleRecipes.length} ${visibleRecipes.length === 1 ? 'recept' : 'recepten'} met “${search.trim()}”`
                   : `${recipes.length} ${recipes.length === 1 ? 'recept' : 'recepten'}${favoriet ? ` · ${favoriet.recipe.name} maak je het vaakst` : ''}`}
             </p>
+            </div>
+            <div className="flex shrink-0 gap-2 pt-1">
+              <RecipeSuggestDialog
+                trigger={
+                  <button
+                    type="button"
+                    aria-label="Wat kun je koken?"
+                    title="Wat kun je koken?"
+                    className="flex h-11 w-11 items-center justify-center rounded-[12px] border border-border bg-card text-foreground transition-colors duration-150 ease-smooth hover:border-border-strong"
+                  >
+                    <Lightbulb className="h-5 w-5" strokeWidth={1.9} />
+                  </button>
+                }
+              />
+              <button
+                type="button"
+                onClick={() => setOpen(true)}
+                aria-label="Recept toevoegen"
+                title="Recept toevoegen"
+                className="flex h-11 w-11 items-center justify-center rounded-[12px] bg-accent text-accent-foreground transition-transform duration-150 ease-smooth hover:bg-[#D9661C] active:scale-[.97]"
+              >
+                <Plus className="h-5 w-5" strokeWidth={2.2} />
+              </button>
+            </div>
           </header>
 
           {/* Sticks under the header, so searching and filtering stay within reach
@@ -674,12 +699,6 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
             </section>
           )}
 
-          <div className="space-y-2 pt-1">
-            <Button variant="accent" className="min-h-[50px] w-full gap-2" onClick={() => setOpen(true)}>
-              <Plus className="h-4 w-4" /> Recept ophalen uit een link
-            </Button>
-            <RecipeSuggestDialog />
-          </div>
         </>
       )}
     </div>

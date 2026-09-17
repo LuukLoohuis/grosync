@@ -29,3 +29,10 @@ export const splitAmount = (raw: string): SplitName => {
 
   return { name: text, amount: null };
 };
+
+// "ca. 1 tbsp peanut butter, roughly chopped" → "peanut butter": what you buy, not how much or how.
+const MEASURE = /^\s*(?:ca\.?\s*)?(?:\d+(?:[.,]\d+)?\s*(?:x\s*)?)?(?:g|gr|gram|kg|ml|cl|dl|l|tsp|tbsp|el|tl|cups?|stuks?|st|teentjes?|cloves?|blik(?:jes?)?|zak(?:jes?)?|bos(?:jes?)?|takjes?|pak(?:jes?)?|potjes?|plak(?:jes?|ken)?|snufje|handje|eetlepels?|theelepels?)?\.?\s+(?=\p{L})/iu;
+
+/** The product in an ingredient line, without amount, unit or preparation. */
+export const productName = (line: string) =>
+  splitAmount(line.replace(/^\s*ca\.?\s*/i, '')).name.split(/[,;(]/)[0].replace(MEASURE, '').trim() || line.trim();

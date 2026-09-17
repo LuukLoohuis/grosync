@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { ShoppingCart } from 'lucide-react';
-import { splitAmount } from '@/lib/itemAmount';
+import { productName } from '@/lib/itemAmount';
 import { dotOf, findCategory, tintOf } from '@/lib/recipeCategories';
 import type { Recipe, RecipeCategory } from '@/types';
 
@@ -19,7 +19,7 @@ interface RecipeTileProps {
 
 /** De eerste paar ingrediënten, zonder hoeveelheid: waar het gerecht van gemaakt is. */
 const wordsOf = (recipe: Recipe, hoeveel: number) =>
-  recipe.ingredients.slice(0, hoeveel).map((line) => splitAmount(line).name.toLowerCase()).filter(Boolean);
+  recipe.ingredients.slice(0, hoeveel).map((line) => productName(line).toLowerCase()).filter(Boolean);
 
 /**
  * Eén recept in het overzicht. Heeft het een foto, dan staat die bovenaan; heeft

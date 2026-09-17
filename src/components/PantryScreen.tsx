@@ -9,7 +9,6 @@ import PantryTile from '@/components/PantryTile';
 import PantryScanSheet from '@/components/PantryScanSheet';
 import PantryItemSheet from '@/components/PantryItemSheet';
 import PlusSheet from '@/components/PlusSheet';
-import SwipeToRemove from '@/components/SwipeToRemove';
 import UsualsList from '@/components/UsualsList';
 import { useAppContext } from '@/contexts/AppContext';
 import { isHerb, sameProduct } from '@/lib/pantry';
@@ -18,16 +17,6 @@ import { sortByStoreRoute, type Department } from '@/lib/storeRouteSort';
 import { FREE_LIMIT } from '@/hooks/useEntitlements';
 import { QuotaError } from '@/services/functions';
 import { scanPantryPhoto, type ScanHit } from '@/services/pantryApi';
-
-const HINT_KEY = 'couplecart-veeg-hint';
-
-const hintStand = () => {
-  try { return Number(window.localStorage.getItem(HINT_KEY) ?? 0); } catch { return 99; }
-};
-
-const hintOnthouden = (waarde: number) => {
-  try { window.localStorage.setItem(HINT_KEY, String(waarde)); } catch { /* privémodus */ }
-};
 
 /** De eerste van de volgende maand, wanneer het tegoed weer vol staat. */
 const resetDatum = () => {
@@ -60,19 +49,6 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
 
   const opGeraakt = !plus && remaining('kastfoto') === 0;
 
-  // Eén keer per bezoek tellen, hoogstens drie bezoeken lang voordoen.
-  const [toonHint, setToonHint] = useState(false);
-  const geteld = useRef(false);
-
-  useEffect(() => {
-    if (geteld.current || pantry.length === 0) return;
-    geteld.current = true;
-    const stand = hintStand();
-    if (stand >= 3) return;
-    hintOnthouden(stand + 1);
-    setToonHint(true);
-  }, [pantry.length]);
-
   const gezocht = useMemo(() => {
     const needle = zoekterm.trim().toLowerCase();
     return needle ? pantry.filter((item) => item.name.toLowerCase().includes(needle)) : pantry;
@@ -93,12 +69,9 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
       ? planken.filter((plank) => plank.sleutel === filter)
       : planken;
 
-  const eersteId = planken[0]?.items[0]?.id;
   const openItem = pantry.find((item) => item.id === openItemId) ?? null;
 
   const weggooien = (id: string) => {
-    hintOnthouden(3);
-    setToonHint(false);
     void removePantryItem(id);
   };
 
@@ -344,14 +317,7 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
           )}
           <div className="grid grid-cols-2 gap-1.5">
             {plank.items.map((item) => (
-              <SwipeToRemove
-                key={item.id}
-                label={item.name}
-                onRemove={() => weggooien(item.id)}
-                nudge={toonHint && item.id === eersteId}
-              >
-                <PantryTile item={item} onOpen={() => setOpenItemId(item.id)} />
-              </SwipeToRemove>
+              <PantryTile key={item.id} item={item} onOpen={() => setOpenItemId(item.id)} />
             ))}
           </div>
         </section>
@@ -359,10 +325,6 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
 
       {!pantryLoading && pantry.length > 0 && zichtbaar.every((plank) => plank.items.length === 0) && (
         <p className="py-8 text-center text-sm text-muted-foreground">Niets gevonden.</p>
-      )}
-
-      {toonHint && pantry.length > 0 && (
-        <p className="text-xs text-muted-foreground">Veeg een tegel naar links om hem weg te gooien.</p>
       )}
 
       <section>

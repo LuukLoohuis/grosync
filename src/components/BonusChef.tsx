@@ -6,12 +6,13 @@ import AddToListSheet from '@/components/AddToListSheet';
 import RecipeViewDialog from '@/components/RecipeViewDialog';
 import { useAppContext } from '@/contexts/AppContext';
 import { leesBonusGeheugen, schrijfBonusGeheugen } from '@/lib/bonusMemory';
-import { splitAmount } from '@/lib/itemAmount';
+import { productName } from '@/lib/itemAmount';
 import { normalizeSteps, splitSteps } from '@/lib/recipeSteps';
 import { fetchBonusMatches, fetchBonusRecipes, type BonusHit, type BonusMatch, type BonusOffer, type BonusRecipe, type BonusResult } from '@/services/bonusApi';
 import type { Recipe } from '@/types';
 
 const euro = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' });
+
 
 // Zo lang doet het ophalen er meestal over; alleen voor de balk en een "nog ± ".
 const DUURT_MS = 8500;
@@ -159,7 +160,7 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
     <div key={hit.productId} className="flex min-h-14 items-center gap-3 border-t border-border px-3 py-2 first:border-t-0">
       <Foto url={hit.imageUrl} formaat={formaat} />
       <span className="min-w-0 flex-1">
-        <span className="block text-xs text-muted-foreground">jouw {splitAmount(hit.ingredient).name.toLowerCase()}</span>
+        <span className="block text-xs text-muted-foreground">jouw {productName(hit.ingredient).toLowerCase()}</span>
         <span className="mt-px block truncate text-[0.90625rem] font-medium leading-tight text-foreground">{hit.title}</span>
         <Vorm vorm={hit.mechanism} />
       </span>
@@ -235,7 +236,7 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
               <div key={hit.productId} className="flex items-center gap-2.5">
                 <Foto url={hit.imageUrl} formaat={30} />
                 <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
-                  {splitAmount(hit.ingredient).name} <span className="text-foreground/70">→ {hit.title}</span>
+                  {productName(hit.ingredient)} <span className="text-foreground/70">→ {hit.title}</span>
                 </span>
                 {hit.price != null && (
                   <span className="shrink-0 font-display text-xs font-bold tabular-nums text-foreground">{euro.format(hit.price)}</span>
@@ -268,7 +269,7 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
           <span className="mt-0.5 block truncate text-[0.96875rem] font-medium text-foreground">{match.name}</span>
           {match.hits[0] && (
             <span className="block truncate text-xs text-muted-foreground">
-              {splitAmount(match.hits[0].ingredient).name}{match.hits[0].mechanism ? ` · ${match.hits[0].mechanism}` : ''}
+              {productName(match.hits[0].ingredient)}{match.hits[0].mechanism ? ` · ${match.hits[0].mechanism}` : ''}
             </span>
           )}
         </span>

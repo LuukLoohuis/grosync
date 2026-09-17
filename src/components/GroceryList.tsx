@@ -222,15 +222,28 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="font-display text-2xl font-bold tracking-[-0.02em] text-foreground">Samen boodschappen</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">
-          {loading
-            ? 'Je lijst wordt opgehaald'
-            : unchecked.length === 0 && checked.length === 0
-              ? 'Nog niets op je lijst'
-              : `${unchecked.length} te halen · ${checked.length} in de kar`}
-        </p>
+      <header className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl font-bold tracking-[-0.02em] text-foreground">Samen boodschappen</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            {loading
+              ? 'Je lijst wordt opgehaald'
+              : unchecked.length === 0 && checked.length === 0
+                ? 'Nog niets op je lijst'
+                : `${unchecked.length} te halen · ${checked.length} in de kar`}
+          </p>
+        </div>
+        {groceryItems.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setClearOpen(true)}
+            aria-label="Lijst leegmaken"
+            title="Lijst leegmaken"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] border border-border bg-card text-muted-foreground transition-colors duration-150 ease-smooth hover:border-destructive/50 hover:text-destructive"
+          >
+            <Trash2 className="h-5 w-5" strokeWidth={1.9} />
+          </button>
+        )}
       </header>
 
       <div className="flex gap-2">
