@@ -7,6 +7,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { DepartmentDot } from '@/components/DepartmentHeading';
 import PantryTile from '@/components/PantryTile';
 import SwipeToRemove from '@/components/SwipeToRemove';
+import { DragToTrashProvider } from '@/components/DragToTrash';
 import PantryScanSheet from '@/components/PantryScanSheet';
 import PantryItemSheet from '@/components/PantryItemSheet';
 import PlusSheet from '@/components/PlusSheet';
@@ -147,6 +148,7 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
   const bijnaTeller = pantry.filter((item) => item.low && item.quantity > 0).length;
 
   return (
+    <DragToTrashProvider>
     <div className="space-y-4">
       <input
         ref={fileInput}
@@ -358,6 +360,7 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
                   item={item}
                   bijwerken={bijwerken}
                   onOpen={() => (bijwerken ? volgendeStand(item) : setOpenItemId(item.id))}
+                  onRemove={() => weggooien(item.id)}
                 />
               </SwipeToRemove>
             ))}
@@ -367,6 +370,10 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
 
       {!pantryLoading && pantry.length > 0 && zichtbaar.every((plank) => plank.items.length === 0) && (
         <p className="py-8 text-center text-sm text-muted-foreground">{t("Niets gevonden.")}</p>
+      )}
+
+      {!pantryLoading && pantry.length > 0 && (
+        <p className="text-xs text-muted-foreground">{t('Weggooien: houd een potje vast en sleep het naar de prullenbak, of veeg het naar links.')}</p>
       )}
 
       <section>
@@ -385,6 +392,7 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
       <PantryItemSheet item={openItem} onClose={() => setOpenItemId(null)} onAddToList={toList} />
       <PlusSheet feature={overLimit ? 'kastfoto' : null} onClose={() => setOverLimit(false)} />
     </div>
+    </DragToTrashProvider>
   );
 };
 
