@@ -170,7 +170,7 @@ const TodayScreen = ({ onNavigate }: { onNavigate: (tab: TodayTarget) => void })
                 onClick={() => openPicker(vandaag)}
                 className="border-[#3C6F5B] bg-transparent px-3.5 text-primary-foreground hover:bg-primary-deep dark:border-border-strong dark:text-foreground dark:hover:bg-card"
               >
-                {t("Ruilen")}
+                {t("Wijzigen")}
               </Button>
             </div>
           </>

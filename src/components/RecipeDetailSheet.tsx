@@ -39,6 +39,17 @@ const RecipeDetailSheet = ({ recipe, onClose, onAddToList, onEdit, onMacros, onC
   return (
     <Sheet open={open} onOpenChange={(next) => { if (!next) onClose(); }}>
       <SheetContent side="bottom" className="mx-auto flex max-h-[92vh] [@supports(height:100dvh)]:max-h-[92dvh] max-w-lg flex-col gap-0 rounded-t-[20px] p-0">
+        {shown && (
+          <button
+            type="button"
+            onClick={() => act((item) => removeRecipe(item.id))}
+            aria-label={t('Recept weggooien')}
+            title={t('Recept weggooien')}
+            className="absolute right-14 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-background/85 text-destructive shadow-flat backdrop-blur transition-colors duration-150 ease-smooth hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        )}
         {shown?.imageUrl && (
           <div className="aspect-[16/9] w-full shrink-0 overflow-hidden rounded-t-[20px] bg-muted">
             <img src={shown.imageUrl} alt="" className="h-full w-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />

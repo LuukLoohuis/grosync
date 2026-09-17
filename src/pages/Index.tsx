@@ -35,7 +35,19 @@ const Index = () => {
 
   // Vegen tussen de tabs, met de volgorde van de balk. Begint de veeg in iets
   // dat zelf zijwaarts schuift (een rij chips), dan is het geen tabwissel.
-  const veeg = useRef<{ x: number; y: number; laat: boolean } | null>(null);
+  const mainRef = useRef<HTMLElement>(null);
+  const veeg = useRef<{ x: number; y: number; laat: boolean; sleep: boolean } | null>(null);
+  // Van welke kant de nieuwe tab binnenkomt; niets bij een tik op de balk.
+  const [inkomst, setInkomst] = useState<'links' | 'rechts' | null>(null);
+  const kies = (key: AppTab) => { setInkomst(null); setTab(key); };
+
+  const zetSleep = (px: number, animeer: boolean) => {
+    const el = mainRef.current;
+    if (!el) return;
+    const rustig = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    el.style.transition = animeer && !rustig ? 'transform 220ms cubic-bezier(.2,.8,.2,1)' : 'none';
+    el.style.transform = px ? `translateX(${px}px)` : '';
+  };
   const veegStart = (e: TouchEvent<HTMLElement>) => {
     const vinger = e.touches[0];
     let el = e.target as HTMLElement | null;
@@ -44,19 +56,41 @@ const Index = () => {
       if (el.scrollWidth > el.clientWidth + 2 && /auto|scroll/.test(getComputedStyle(el).overflowX)) { laat = true; break; }
       el = el.parentElement;
     }
-    veeg.current = { x: vinger.clientX, y: vinger.clientY, laat };
+    veeg.current = { x: vinger.clientX, y: vinger.clientY, laat, sleep: false };
+  };
+  const veegBeweeg = (e: TouchEvent<HTMLElement>) => {
+    const start = veeg.current;
+    if (!start || start.laat) return;
+    const vinger = e.touches[0];
+    const dx = vinger.clientX - start.x;
+    const dy = vinger.clientY - start.y;
+    if (!start.sleep) {
+      // Scrollen wint van vegen.
+      if (Math.abs(dy) > 12 && Math.abs(dy) > Math.abs(dx)) { veeg.current = null; return; }
+      if (Math.abs(dx) < 12) return;
+      start.sleep = true;
+    }
+    // Het scherm schuift mee; aan de rand met tegenzin, want daar is geen tab meer.
+    const i = TABS.findIndex((item) => item.key === tab);
+    const kan = dx < 0 ? i < TABS.length - 1 : i > 0;
+    zetSleep(dx * (kan ? 0.45 : 0.12), false);
   };
   const veegEind = (e: TouchEvent<HTMLElement>) => {
     const start = veeg.current;
     veeg.current = null;
-    if (!start || start.laat) return;
+    if (!start || start.laat || !start.sleep) return;
     const vinger = e.changedTouches[0];
     const dx = vinger.clientX - start.x;
-    const dy = vinger.clientY - start.y;
-    if (Math.abs(dx) < 70 || Math.abs(dx) < Math.abs(dy) * 2) return;
     const i = TABS.findIndex((item) => item.key === tab);
     const volgende = TABS[i + (dx < 0 ? 1 : -1)];
-    if (volgende) setTab(volgende.key);
+    if (Math.abs(dx) >= 70 && volgende) {
+      zetSleep(0, false);
+      setInkomst(dx < 0 ? 'rechts' : 'links');
+      setTab(volgende.key);
+    } else {
+      // Niet ver genoeg: terugveren.
+      zetSleep(0, true);
+    }
   };
 
   // Terug van Stripe: #/?plus=gelukt of ?plus=afgebroken.
@@ -86,7 +120,7 @@ const Index = () => {
   }, [searchParams, setSearchParams]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen overflow-x-hidden bg-background">
       {/* "Vandaag" brings its own green header */}
       {!onToday && (
         <header className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur-md">
@@ -103,7 +137,7 @@ const Index = () => {
           {TABS.map(({ key, label, icon: Icon }) => (
             <button
               key={key}
-              onClick={() => setTab(key)}
+              onClick={() => kies(key)}
               aria-current={tab === key ? 'page' : undefined}
               className={`flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-[10px] text-[0.8125rem] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                 tab === key ? 'bg-primary-soft text-primary' : 'text-muted-foreground hover:text-foreground'
@@ -122,16 +156,23 @@ const Index = () => {
       </nav>
 
       <main
+        ref={mainRef}
         onTouchStart={veegStart}
+        onTouchMove={veegBeweeg}
         onTouchEnd={veegEind}
+        onTouchCancel={() => { veeg.current = null; zetSleep(0, true); }}
+        style={{ touchAction: 'pan-y' }}
         className={`mx-auto min-h-[70vh] max-w-lg pb-[calc(6rem+env(safe-area-inset-bottom))] sm:pb-6 ${onToday ? 'sm:pt-4' : 'px-4 pt-4'}`}
       >
-        {!onToday && <OfflineBanner className="mb-3" />}
-        {onToday && <TodayScreen onNavigate={setTab} />}
-        {tab === 'list' && <GroceryList onNavigate={setTab} />}
-        {tab === 'recipes' && <RecipeList initialImport={pendingImport} onImportConsumed={() => setPendingImport(null)} onNavigate={setTab} />}
-        {tab === 'bonus' && <BonusChef onNavigate={setTab} />}
-        {tab === 'pantry' && <PantryScreen onNavigate={setTab} />}
+        {/* Nieuwe sleutel per tab, zodat de inhoud van de goede kant binnenschuift. */}
+        <div key={tab} className={inkomst === 'rechts' ? 'animate-tab-in-right' : inkomst === 'links' ? 'animate-tab-in-left' : ''}>
+          {!onToday && <OfflineBanner className="mb-3" />}
+          {onToday && <TodayScreen onNavigate={kies} />}
+          {tab === 'list' && <GroceryList onNavigate={kies} />}
+          {tab === 'recipes' && <RecipeList initialImport={pendingImport} onImportConsumed={() => setPendingImport(null)} onNavigate={kies} />}
+          {tab === 'bonus' && <BonusChef onNavigate={kies} />}
+          {tab === 'pantry' && <PantryScreen onNavigate={kies} />}
+        </div>
       </main>
 
       <nav
@@ -146,7 +187,7 @@ const Index = () => {
             return (
               <button
                 key={key}
-                onClick={() => setTab(key)}
+                onClick={() => kies(key)}
                 aria-current={active ? 'page' : undefined}
                 className={`relative flex flex-col items-center justify-center gap-1 rounded-xl text-[0.625rem] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                   active ? 'text-primary' : 'text-muted-foreground'

@@ -1,8 +1,11 @@
+import { X } from 'lucide-react';
 import type { PantryItem } from '@/types';
 import { t } from '@/lib/i18n';
 
 interface PantryTileProps {
   item: PantryItem;
+  /** In de opruimstand gooit een tik het potje weg in plaats van het te openen. */
+  opruimen?: boolean;
   onOpen: () => void;
 }
 
@@ -10,7 +13,7 @@ interface PantryTileProps {
  * Eén product in de kast. De staat zit in de rand, niet in een extra element:
  * gewoon is een dunne rand, bijna op is oranje, op is rood met een nul erachter.
  */
-const PantryTile = ({ item, onOpen }: PantryTileProps) => {
+const PantryTile = ({ item, opruimen = false, onOpen }: PantryTileProps) => {
   const op = item.quantity === 0;
   const staat = op ? 'op' : item.low ? 'bijna op' : null;
 
@@ -18,9 +21,9 @@ const PantryTile = ({ item, onOpen }: PantryTileProps) => {
     <button
       type="button"
       onClick={onOpen}
-      aria-label={t("{0} openen", [item.name])}
+      aria-label={opruimen ? t('Gooi {0} weg', [item.name]) : t("{0} openen", [item.name])}
       className={`flex min-h-[46px] w-full items-center gap-2 rounded-[12px] border bg-card px-2.5 py-[7px] text-left transition-colors duration-150 ease-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-        op ? 'border-destructive/70' : item.low ? 'border-accent' : 'border-border hover:border-border-strong'
+        opruimen ? 'border-destructive/60 hover:border-destructive' : op ? 'border-destructive/70' : item.low ? 'border-accent' : 'border-border hover:border-border-strong'
       }`}
     >
       <span className="min-w-0 flex-1">
@@ -37,9 +40,15 @@ const PantryTile = ({ item, onOpen }: PantryTileProps) => {
           </span>
         )}
       </span>
-      <span className="shrink-0 font-display text-sm font-bold tabular-nums text-muted-foreground">
-        {item.quantity}
-      </span>
+      {opruimen ? (
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-destructive text-destructive-foreground" aria-hidden="true">
+          <X className="h-3.5 w-3.5" strokeWidth={2.5} />
+        </span>
+      ) : (
+        <span className="shrink-0 font-display text-sm font-bold tabular-nums text-muted-foreground">
+          {item.quantity}
+        </span>
+      )}
     </button>
   );
 };

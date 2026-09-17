@@ -104,12 +104,22 @@ export default {
           "50%": { transform: "scale(1.2)" },
           "100%": { transform: "scale(1)" },
         },
+        "tab-in-right": {
+          from: { opacity: "0.4", transform: "translateX(44px)" },
+          to: { opacity: "1", transform: "translateX(0)" },
+        },
+        "tab-in-left": {
+          from: { opacity: "0.4", transform: "translateX(-44px)" },
+          to: { opacity: "1", transform: "translateX(0)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "fade-in": "fade-in 0.3s ease-out",
         "check-bounce": "check-bounce 0.3s ease-out",
+        "tab-in-right": "tab-in-right 260ms cubic-bezier(.2,.8,.2,1)",
+        "tab-in-left": "tab-in-left 260ms cubic-bezier(.2,.8,.2,1)",
       },
     },
   },

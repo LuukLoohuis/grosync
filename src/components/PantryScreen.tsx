@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Camera, Loader2, Plus, Search, X } from 'lucide-react';
+import { Camera, Check, Loader2, Plus, Search, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,6 +45,9 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
   const [hits, setHits] = useState<ScanHit[] | null>(null);
   const [openItemId, setOpenItemId] = useState<string | null>(null);
   const [filter, setFilter] = useState<Department | 'kruiden' | 'bijna' | null>(null);
+  // Opruimen: tikken gooit weg in plaats van openen. Vegen is van de tabs.
+  const [opruimen, setOpruimen] = useState(false);
+  useEffect(() => { if (pantry.length === 0) setOpruimen(false); }, [pantry.length]);
   const [overLimit, setOverLimit] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -154,6 +157,18 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
             </div>
             <button
               type="button"
+              onClick={() => setOpruimen((aan) => !aan)}
+              aria-pressed={opruimen}
+              aria-label={opruimen ? t('Klaar met opruimen') : t('Opruimen')}
+              title={opruimen ? t('Klaar met opruimen') : t('Opruimen')}
+              className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition-colors duration-150 ease-smooth ${
+                opruimen ? 'border-destructive bg-destructive text-destructive-foreground' : 'border-border-strong text-foreground hover:bg-muted'
+              }`}
+            >
+              {opruimen ? <Check className="h-4 w-4" /> : <Trash2 className="h-4 w-4" />}
+            </button>
+            <button
+              type="button"
               onClick={() => { setZoeken((aan) => !aan); setZoekterm(''); }}
               aria-label={zoeken ? t("Zoeken sluiten") : t("Zoeken in je kast")}
               aria-pressed={zoeken}
@@ -172,6 +187,12 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
               {scanning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
             </Button>
           </header>
+
+          {opruimen && (
+            <p className="rounded-[12px] border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-foreground">
+              {t('Tik op een potje om het weg te gooien. Ongedaan maken kan meteen.')}
+            </p>
+          )}
 
           {zoeken && (
             <Input
@@ -318,7 +339,12 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
           )}
           <div className="grid grid-cols-2 gap-1.5">
             {plank.items.map((item) => (
-              <PantryTile key={item.id} item={item} onOpen={() => setOpenItemId(item.id)} />
+              <PantryTile
+                key={item.id}
+                item={item}
+                opruimen={opruimen}
+                onOpen={() => (opruimen ? weggooien(item.id) : setOpenItemId(item.id))}
+              />
             ))}
           </div>
         </section>
