@@ -95,6 +95,68 @@ const BROWSER_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36
 // Supabase stops a request after 150s; keep a margin for building the response.
 const REQUEST_BUDGET_MS = 140_000;
 
+// Photos are copied into our own bucket: Instagram and TikTok sign their picture
+// links with an expiry of a few days, so the link alone stops working within a week.
+const IMAGE_BUCKET = 'recipe-images';
+const IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+const IMAGE_TYPES: Record<string, string> = {
+  'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif', 'image/avif': 'avif',
+};
+
+/**
+ * Downloads a photo and stores it in the recipe-images bucket; returns its public
+ * address there. Returns null when anything fails, so the caller keeps the original link.
+ */
+async function storeImage(imageUrl: string | null, budgetMs: number): Promise<string | null> {
+  if (!imageUrl || budgetMs < 5_000) return null;
+  const supabaseUrl = env('SUPABASE_URL');
+  const key = env('SUPABASE_SERVICE_ROLE_KEY');
+  if (!supabaseUrl || !key) return null;
+  // Already ours.
+  if (imageUrl.startsWith(`${supabaseUrl}/storage/v1/object/public/${IMAGE_BUCKET}/`)) return imageUrl;
+  try {
+    const response = await fetch(imageUrl, {
+      headers: { 'User-Agent': BROWSER_UA, Accept: 'image/*' },
+      redirect: 'follow',
+      signal: AbortSignal.timeout(Math.min(20_000, budgetMs - 3_000)),
+    });
+    if (!response.ok) {
+      console.error('Image download failed:', response.status, imageUrl.slice(0, 100));
+      return null;
+    }
+    const type = (response.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+    const extension = IMAGE_TYPES[type];
+    if (!extension) {
+      console.error('Not an image:', type || '(no content-type)', imageUrl.slice(0, 100));
+      return null;
+    }
+    const bytes = await response.arrayBuffer();
+    if (bytes.byteLength === 0 || bytes.byteLength > IMAGE_MAX_BYTES) {
+      console.error('Image size out of bounds:', bytes.byteLength);
+      return null;
+    }
+    const objectPath = `${crypto.randomUUID()}.${extension}`;
+    const upload = await fetch(`${supabaseUrl}/storage/v1/object/${IMAGE_BUCKET}/${objectPath}`, {
+      method: 'POST',
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        'Content-Type': type,
+        'Cache-Control': 'max-age=31536000',
+      },
+      body: bytes,
+    });
+    if (!upload.ok) {
+      console.error('Image upload failed:', upload.status, (await upload.text()).slice(0, 200));
+      return null;
+    }
+    return `${supabaseUrl}/storage/v1/object/public/${IMAGE_BUCKET}/${objectPath}`;
+  } catch (e) {
+    console.error('Image store failed:', e);
+    return null;
+  }
+}
+
 type Macros = { calories: number; protein: number; carbs: number; fat: number; fiber: number };
 
 type RecipeData = {
@@ -328,8 +390,9 @@ function ogImage(html: string): string | null {
 }
 
 // Firecrawl renders JavaScript-heavy pages; a plain fetch is the fallback.
-async function scrapePage(url: string): Promise<{ content: string; imageUrl: string | null }> {
-  const firecrawlKey = Deno.env.get('FIRECRAWL_API_KEY');
+async function scrapePage(url: string, { plain = false } = {}): Promise<{ content: string; imageUrl: string | null }> {
+  // A plain fetch is enough for the og:image; Firecrawl costs a credit per page.
+  const firecrawlKey = plain ? '' : Deno.env.get('FIRECRAWL_API_KEY');
   if (firecrawlKey) {
     try {
       console.log('Using Firecrawl to scrape:', url);
@@ -489,24 +552,26 @@ async function recipeFromYouTube(videoId: string, deadline: number): Promise<Ext
   return { recipe: { ...recipe, name: recipe.name || title }, imageUrl, extractedFrom: 'none' };
 }
 
-async function recipeFromTikTok(url: string, deadline: number): Promise<Extraction> {
-  let caption = '';
-  let imageUrl: string | null = null;
+/** Caption and thumbnail from TikTok's oEmbed endpoint. */
+async function tikTokPost(url: string): Promise<{ caption: string; imageUrl: string | null }> {
   try {
     // Short links (vm.tiktok.com) need resolving before oEmbed accepts them.
     const resolved = (await fetch(url, { headers: { 'User-Agent': BROWSER_UA }, redirect: 'follow' })).url || url;
     const response = await fetch(`https://www.tiktok.com/oembed?url=${encodeURIComponent(resolved)}`);
     if (response.ok) {
       const data = await response.json();
-      caption = data.title || '';
-      imageUrl = data.thumbnail_url || null;
-    } else {
-      console.error('TikTok oEmbed error:', response.status);
+      return { caption: data.title || '', imageUrl: data.thumbnail_url || null };
     }
+    console.error('TikTok oEmbed error:', response.status);
   } catch (e) {
     console.error('TikTok oEmbed failed:', e);
   }
-  return recipeFromCaption(caption, imageUrl, deadline);
+  return { caption: '', imageUrl: null };
+}
+
+async function recipeFromTikTok(url: string, deadline: number): Promise<Extraction> {
+  const post = await tikTokPost(url);
+  return recipeFromCaption(post.caption, post.imageUrl, deadline);
 }
 
 function decodeEntities(text: string): string {
@@ -679,6 +744,18 @@ async function recipeFromSearch(dish: string, maker: string, imageUrl: string | 
   return null;
 }
 
+const isTikTok = (url: string) => /tiktok\.com\//i.test(url);
+const isInstagram = (url: string) => /instagram\.com\/(?:[\w.]+\/)?(?:p|reels?)\//i.test(url);
+
+/** Only the picture of a post or page, for a recipe whose photo link has expired. */
+async function imageForUrl(url: string): Promise<string | null> {
+  const videoId = youTubeVideoId(url);
+  if (videoId) return `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
+  if (isTikTok(url)) return (await tikTokPost(url)).imageUrl;
+  if (isInstagram(url)) return (await instagramCaption(url)).imageUrl;
+  return (await scrapePage(url, { plain: true })).imageUrl;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -692,14 +769,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const quota = await consumeAi(user.id, 'recept', FREE_LIMIT);
-    if (!quota.allowed) {
-      return new Response(JSON.stringify({ error: 'limiet', feature: 'recept', used: quota.used, quota: quota.quota }), {
-        status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    const { url, text } = await req.json();
+    const { url, text, imageOnly } = await req.json();
     if (!url && !text) {
       return new Response(JSON.stringify({ error: 'URL or text is required' }), {
         status: 400,
@@ -708,6 +778,22 @@ Deno.serve(async (req) => {
     }
 
     const deadline = Date.now() + REQUEST_BUDGET_MS;
+
+    // Just the photo again, for a recipe whose link expired. No model runs, so no quota.
+    if (imageOnly) {
+      const found = url ? await imageForUrl(String(url)) : null;
+      const imageUrl = (await storeImage(found, deadline - Date.now())) ?? found;
+      return new Response(JSON.stringify({ imageUrl }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const quota = await consumeAi(user.id, 'recept', FREE_LIMIT);
+    if (!quota.allowed) {
+      return new Response(JSON.stringify({ error: 'limiet', feature: 'recept', used: quota.used, quota: quota.quota }), {
+        status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     const videoId = url ? youTubeVideoId(url) : null;
     let result: Extraction;
     // Instagram only: whether the post text itself could be read.
@@ -718,9 +804,9 @@ Deno.serve(async (req) => {
       result = await recipeFromCaption(String(text).slice(0, 20000), null, deadline);
     } else if (videoId) {
       result = await recipeFromYouTube(videoId, deadline);
-    } else if (/tiktok\.com\//i.test(url)) {
+    } else if (isTikTok(url)) {
       result = await recipeFromTikTok(url, deadline);
-    } else if (/instagram\.com\/(?:[\w.]+\/)?(?:p|reels?)\//i.test(url)) {
+    } else if (isInstagram(url)) {
       const post = await instagramCaption(url);
       captionFound = Boolean(post.caption || post.videoUrl);
       result = await recipeFromCaption(post.caption, post.imageUrl, deadline);
@@ -744,8 +830,10 @@ Deno.serve(async (req) => {
 
     console.log('Extracted from:', result.extractedFrom);
     const { recipe } = result;
+    // Our own copy of the photo; the original link when copying fails.
+    const imageUrl = (await storeImage(result.imageUrl, deadline - Date.now())) ?? result.imageUrl;
     return new Response(JSON.stringify({
-      imageUrl: result.imageUrl,
+      imageUrl,
       title: recipe.name,
       description: recipe.description,
       ingredients: recipe.ingredients,
