@@ -30,6 +30,15 @@ supabase functions deploy             # edge functions
 supabase secrets set OPENAI_API_KEY=sk-...
 ```
 
+Weigert `supabase db push` de verbinding (de tijdelijke loginrol wordt niet
+aangemaakt), voer de migratie dan uit via de Management API met het token van
+`supabase login`:
+
+```sh
+scripts/supabase-sql.sh < supabase/migrations/<bestand>.sql
+scripts/supabase-sql.sh "select count(*) from recipes"
+```
+
 Edge functions in `supabase/functions/`:
 `suggest-recipes`, `suggest-meal-plan`, `translate-recipe`, `fetch-url-meta`,
 `calculate-macros`. Ze gebruiken `OPENAI_API_KEY` (optioneel `FIRECRAWL_API_KEY`
