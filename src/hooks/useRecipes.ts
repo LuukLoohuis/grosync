@@ -171,7 +171,10 @@ export const useRecipes = ({ userId }: UseRecipesOptions = {}) => {
   }, [recipes]);
 
   const updateRecipeImage = useCallback(async (id: string, imageUrl: string) => {
-    await supabase.from('recipes').update({ image_url: imageUrl }).eq('id', id);
+    // Meteen in beeld; de database volgt, en de realtime-melding bevestigt het.
+    setRecipes((prev) => prev.map((r) => (r.id === id ? { ...r, imageUrl } : r)));
+    const { error } = await supabase.from('recipes').update({ image_url: imageUrl }).eq('id', id);
+    if (error) console.error('Failed to save recipe image:', error);
   }, []);
 
   return { recipes, loading, addRecipe, updateRecipe, removeRecipe, updateRecipeImage, toggleFavorite };

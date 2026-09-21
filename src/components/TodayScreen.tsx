@@ -12,6 +12,7 @@ import { useAppContext } from '@/contexts/AppContext';
 import { useMealPlanner } from '@/hooks/useMealPlanner';
 import { leesBonusGeheugen } from '@/lib/bonusMemory';
 import { splitAmount } from '@/lib/itemAmount';
+import { repairRecipeImage } from '@/lib/recipeImageRepair';
 import type { GroceryItem, Recipe } from '@/types';
 import { locale, t } from '@/lib/i18n';
 
@@ -31,7 +32,14 @@ const dagIndex = (datum = new Date()) => (datum.getDay() + 6) % 7;
 
 /** Het openingsscherm: wat er vanavond gegeten wordt, en wat er nog gehaald moet worden. */
 const TodayScreen = ({ onNavigate }: { onNavigate: (tab: TodayTarget) => void }) => {
-  const { userId, recipes, groceryItems, usuals, pantry, loading, addGroceryItem, setGroceryItemChecked, trackPurchase } = useAppContext();
+  const { userId, recipes, groceryItems, usuals, pantry, loading, addGroceryItem, setGroceryItemChecked, trackPurchase, updateRecipeImage } = useAppContext();
+  // Een verlopen foto: onthoud welke link faalde en laat de server een verse halen.
+  const [failedPhotos, setFailedPhotos] = useState<Record<string, string>>({});
+  const photoOf = (r: Recipe | null | undefined) => (r?.imageUrl && failedPhotos[r.id] !== r.imageUrl ? r.imageUrl : null);
+  const photoFailed = (r: Recipe) => {
+    setFailedPhotos((prev) => ({ ...prev, [r.id]: r.imageUrl ?? '' }));
+    repairRecipeImage(r, updateRecipeImage);
+  };
   const planner = useMealPlanner(userId, recipes);
   const [addRecipe, setAddRecipe] = useState<Recipe | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -135,8 +143,8 @@ const TodayScreen = ({ onNavigate }: { onNavigate: (tab: TodayTarget) => void })
         {dinner && (
           <>
             <div className="mt-3.5 flex items-center gap-3 rounded-[14px] bg-primary-deep px-3.5 py-3 dark:bg-card">
-              {recipe?.imageUrl ? (
-                <img src={recipe.imageUrl} alt="" className="h-[62px] w-[62px] shrink-0 rounded-[10px] object-cover" />
+              {photoOf(recipe) ? (
+                <img src={photoOf(recipe)!} alt="" className="h-[62px] w-[62px] shrink-0 rounded-[10px] object-cover" onError={() => recipe && photoFailed(recipe)} />
               ) : (
                 <span aria-hidden="true" className="flex h-[62px] w-[62px] shrink-0 items-center justify-center rounded-[10px] bg-primary text-primary-muted dark:bg-muted">
                   <ChefHat className="h-6 w-6" strokeWidth={1.8} />
@@ -381,8 +389,8 @@ const TodayScreen = ({ onNavigate }: { onNavigate: (tab: TodayTarget) => void })
                     onClick={() => void kiesAvondeten(option)}
                     className="flex min-h-14 w-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-2 text-left transition-colors hover:border-border-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
-                    {option.imageUrl ? (
-                      <img src={option.imageUrl} alt="" loading="lazy" className="h-11 w-11 shrink-0 rounded-[10px] object-cover" />
+                    {photoOf(option) ? (
+                      <img src={photoOf(option)!} alt="" loading="lazy" className="h-11 w-11 shrink-0 rounded-[10px] object-cover" onError={() => photoFailed(option)} />
                     ) : (
                       <span aria-hidden="true" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[10px] bg-primary-soft text-primary">
                         <ChefHat className="h-5 w-5" strokeWidth={1.8} />

@@ -9,6 +9,7 @@ import { useAppContext } from '@/contexts/AppContext';
 import { findCategory } from '@/lib/recipeCategories';
 import { splitSteps } from '@/lib/recipeSteps';
 import { isEstimated, withoutEstimate } from '@/lib/recipeImport';
+import { repairRecipeImage } from '@/lib/recipeImageRepair';
 import type { Recipe } from '@/types';
 import { t } from '@/lib/i18n';
 
@@ -23,8 +24,11 @@ interface RecipeDetailSheetProps {
 
 /** The whole recipe, one swipe away from the grid. */
 const RecipeDetailSheet = ({ recipe, onClose, onAddToList, onEdit, onMacros, onCategories }: RecipeDetailSheetProps) => {
-  const { recipeCategories, removeRecipe, toggleFavorite } = useAppContext();
+  const { recipeCategories, removeRecipe, toggleFavorite, updateRecipeImage } = useAppContext();
   const [shown, setShown] = useState<Recipe | null>(recipe);
+  // Een verlopen foto: onthoud welke link faalde en laat de server een verse halen.
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const photo = shown?.imageUrl && shown.imageUrl !== failedUrl ? shown.imageUrl : null;
   // Keep showing the recipe while the sheet slides away.
   if (recipe && recipe !== shown) setShown(recipe);
   const open = Boolean(recipe);
@@ -68,9 +72,14 @@ const RecipeDetailSheet = ({ recipe, onClose, onAddToList, onEdit, onMacros, onC
 
         {/* Foto en kop scrollen mee, zodat de ingrediënten en de bereiding de ruimte krijgen. */}
         <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-4">
-        {shown?.imageUrl && (
+        {photo && (
           <div className="aspect-[16/9] w-full shrink-0 overflow-hidden rounded-t-[20px] bg-muted">
-            <img src={shown.imageUrl} alt="" className="h-full w-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+            <img
+              src={photo}
+              alt=""
+              className="h-full w-full object-cover"
+              onError={() => { setFailedUrl(photo); if (shown) repairRecipeImage(shown, updateRecipeImage); }}
+            />
           </div>
         )}
         <SheetHeader className="px-5 pb-3 pr-14 pt-5 text-left">

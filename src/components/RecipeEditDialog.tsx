@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 import { useAppContext } from '@/contexts/AppContext';
-import { supabase } from '@/integrations/supabase/client';
+import { fetchRecipeImage } from '@/services/recipeApi';
 import { Recipe } from '@/types';
 import { normalizeSteps } from '@/lib/recipeSteps';
 import CategoryPicker from '@/components/CategoryPicker';
@@ -63,8 +63,8 @@ const RecipeEditDialog = ({ recipe, open: openProp, onOpenChange }: RecipeEditDi
 
     if (urlChanged && trimmedUrl) {
       try {
-        const { data, error } = await supabase.functions.invoke('fetch-url-meta', { body: { url: trimmedUrl } });
-        if (!error && data?.imageUrl) updateRecipeImage(recipe.id, data.imageUrl);
+        const { imageUrl } = await fetchRecipeImage(trimmedUrl);
+        if (imageUrl) await updateRecipeImage(recipe.id, imageUrl);
       } catch (e) { console.error('Failed to fetch image:', e); }
     }
 

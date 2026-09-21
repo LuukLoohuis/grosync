@@ -20,6 +20,7 @@ import AddToListSheet from '@/components/AddToListSheet';
 import { SOURCE_LABELS, detectImportInput, isEstimated, progressLabel, withoutEstimate, type SourceKey } from '@/lib/recipeImport';
 import CategoryPicker from '@/components/CategoryPicker';
 import RecipeTile from '@/components/RecipeTile';
+import { repairRecipeImage } from '@/lib/recipeImageRepair';
 import RecipeDetailSheet from '@/components/RecipeDetailSheet';
 import RecipeCategorySheet from '@/components/RecipeCategorySheet';
 import { PRESETS, countPerCategory, dotOf, findCategory, sameName, suggestCategories, tintOf, usedCategories } from '@/lib/recipeCategories';
@@ -707,6 +708,7 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
                     onOpen={() => setDetailId(recipe.id)}
                     onAddToList={() => setListRecipeId(recipe.id)}
                     onToggleFavorite={() => void toggleFavorite(recipe.id)}
+                    onImageBroken={() => repairRecipeImage(recipe, updateRecipeImage)}
                   />
                 </div>
               );

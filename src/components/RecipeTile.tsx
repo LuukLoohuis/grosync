@@ -17,6 +17,8 @@ interface RecipeTileProps {
   onOpen: () => void;
   onAddToList: () => void;
   onToggleFavorite: () => void;
+  /** De foto laadt niet; de lijst kan dan een verse laten ophalen. */
+  onImageBroken?: () => void;
 }
 
 /** De eerste paar ingrediënten, zonder hoeveelheid: waar het gerecht van gemaakt is. */
@@ -28,24 +30,26 @@ const wordsOf = (recipe: Recipe, hoeveel: number) =>
  * het er geen, dan vertelt een vlak met de ingrediënten waar het over gaat — dat
  * zegt meer dan een beginletter, en de helft van wat je plakt heeft geen foto.
  */
-const RecipeTile = ({ recipe, categories, cookCount = 0, reason = null, wide = false, onOpen, onAddToList, onToggleFavorite }: RecipeTileProps) => {
+const RecipeTile = ({ recipe, categories, cookCount = 0, reason = null, wide = false, onOpen, onAddToList, onToggleFavorite, onImageBroken }: RecipeTileProps) => {
   const labels = recipe.categories ?? [];
   const first = labels.length > 0 ? findCategory(categories, labels[0]) : null;
   const count = recipe.ingredients.length;
   const words = wordsOf(recipe, wide ? 4 : 3);
   // Een foto die het niet doet laat een gat achter; dan liever het woordvlak.
-  const [broken, setBroken] = useState(false);
+  // Onthoud wélke link faalde: komt er een nieuwe, dan krijgt die een kans.
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const photo = recipe.imageUrl && recipe.imageUrl !== failedUrl ? recipe.imageUrl : null;
 
   return (
     <article className="group relative overflow-hidden rounded-[14px] border border-border bg-card transition-shadow duration-150 ease-smooth hover:shadow-soft">
       <button type="button" onClick={onOpen} className="block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-        {recipe.imageUrl && !broken ? (
+        {photo ? (
           <img
-            src={recipe.imageUrl}
+            src={photo}
             alt=""
             loading="lazy"
             className={`w-full bg-muted object-cover ${wide ? 'h-[7.5rem]' : 'h-24'}`}
-            onError={() => setBroken(true)}
+            onError={() => { setFailedUrl(photo); onImageBroken?.(); }}
           />
         ) : (
           <div

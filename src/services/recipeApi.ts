@@ -49,6 +49,11 @@ export async function fetchRecipeFromText(text: string) {
   return callFunction<FetchedRecipe>('fetch-url-meta', { text });
 }
 
+/** Alleen de foto achter een link: geen taalmodel, en het telt niet mee voor het tegoed. */
+export async function fetchRecipeImage(url: string) {
+  return callFunction<{ imageUrl: string | null }>('fetch-url-meta', { url, imageOnly: true });
+}
+
 export async function translateRecipe(recipe: RecipeData) {
   try {
     const response = await fetch(`${FUNCTIONS_URL}/translate-recipe`, {
