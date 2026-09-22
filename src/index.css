@@ -1,25 +1,155 @@
 @import 'tailwindcss';
+@import 'tw-animate-css';
 
-@plugin 'tailwindcss-animate';
-
+/* next-themes zet de klasse "dark" op <html>. */
 @custom-variant dark (&:is(.dark *));
 
-@utility container {
-  margin-inline: auto;
-  padding-inline: 2rem;
-  @media (width >= --theme(--breakpoint-sm)) {
-    max-width: none;
-  }
-  @media (width >= 1400px) {
-    max-width: 1400px;
-  }
+/*
+  Design system "Voorraadkast": warm cream ground, deep green as a plane, orange for action.
+  De kleuren staan als HSL-tripletten, zodat TypeScript ze ook als hsl(var(--x)) kan gebruiken.
+*/
+:root {
+  --background: 48 33% 94%;      /* #F4F2EA warm cream */
+  --foreground: 108 19% 7%;      /* #10160F near-black green ink */
+  --card: 0 0% 100%;
+  --card-foreground: 108 19% 7%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 108 19% 7%;
+
+  --primary: 160 69% 18%;        /* #0E4D38 deep green, 9.9:1 on white */
+  --primary-foreground: 150 20% 94%;
+  --primary-deep: 160 70% 14%;   /* #0B3F2E plane within the green plane */
+  --primary-soft: 158 25% 91%;   /* #E3EFE9 badges, active tab */
+  --primary-muted: 152 26% 69%;  /* #9DC4B2 secondary text on the green plane */
+
+  --secondary: 26 87% 56%;       /* #F07A2E warm orange */
+  --secondary-foreground: 26 82% 9%;
+  --accent: 26 87% 56%;
+  --accent-foreground: 26 82% 9%;
+  --accent-ink: 22 84% 37%;      /* #B04A0F orange as text on cream (AA) */
+  --accent-soft: 26 82% 94%;     /* #FDEDE1 */
+
+  --muted: 48 20% 90%;           /* #EDEBE1 */
+  --muted-foreground: 102 6% 39%;/* #5F6A5C, 5.6:1 on cream */
+  --destructive: 3 71% 41%;      /* #B3261E */
+  --destructive-foreground: 48 33% 96%;
+
+  --border: 47 21% 85%;          /* #E1DECF */
+  --border-strong: 48 15% 75%;   /* #C9C5B4 outlines that must read as controls */
+  --input: 47 21% 85%;
+  --ring: 160 69% 18%;
+  --radius: 0.75rem;
+
+  --ah-basket: 198 100% 44%;     /* #00A0E2, Albert Heijn basket actions only */
+  --ah-bonus: 28 100% 50%;       /* #FF7900, Bonus label only */
+  --info: 223 42% 34%;           /* #31437A offline, queued */
+  --info-soft: 225 30% 93%;      /* #E6E9F2 */
+
+  --sidebar-background: 48 33% 94%;
+  --sidebar-foreground: 108 19% 7%;
+  --sidebar-primary: 160 69% 18%;
+  --sidebar-primary-foreground: 150 20% 94%;
+  --sidebar-accent: 48 20% 90%;
+  --sidebar-accent-foreground: 108 19% 7%;
+  --sidebar-border: 47 21% 85%;
+  --sidebar-ring: 160 69% 18%;
+
+  /* One quiet hue per shop department, for the headings in "Op afdeling". */
+  --dept-groente: 152 45% 30%;
+  --dept-brood: 32 55% 38%;
+  --dept-vlees: 8 55% 42%;
+  --dept-zuivel: 218 45% 40%;
+  --dept-maaltijden: 96 35% 32%;
+  --dept-pasta: 22 60% 38%;
+  --dept-houdbaar: 40 18% 38%;
+  --dept-drinken: 188 45% 32%;
+  --dept-huishouden: 258 25% 42%;
+  --dept-diepvries: 200 50% 36%;
+
+  /* One hue per recipe category, from the same earthy family as the departments. */
+  --cat-groen: 152 45% 30%;
+  --cat-terracotta: 8 55% 42%;
+  --cat-blauw: 205 48% 36%;
+  --cat-amber: 32 55% 38%;
+  --cat-olijf: 96 35% 32%;
+  --cat-paars: 258 25% 42%;
+  --cat-teal: 188 45% 32%;
+  --cat-roze: 340 40% 44%;
+
+  --shadow-flat: 0 1px 2px hsl(108 19% 7% / .06);
+  --shadow-soft: 0 4px 14px -6px hsl(108 19% 7% / .18);
+  --shadow-sheet: 0 -8px 30px -10px hsl(108 19% 7% / .25);
+  --motion-smooth: cubic-bezier(.2, .8, .2, 1);
+  --dur-tap: 150ms;
+  --dur-sheet: 220ms;
 }
 
-@theme {
-  --font-display: Space Grotesk, system-ui, sans-serif;
-  --font-sans: IBM Plex Sans, system-ui, sans-serif;
-  --font-body: IBM Plex Sans, system-ui, sans-serif;
-  --font-mono: IBM Plex Mono, ui-monospace, monospace;
+.dark {
+  --background: 120 8% 8%;       /* #131711 */
+  --foreground: 48 20% 92%;      /* #F0EEE4 */
+  --card: 120 7% 12%;            /* #1D211B */
+  --card-foreground: 48 20% 92%;
+  --popover: 120 7% 12%;
+  --popover-foreground: 48 20% 92%;
+
+  --primary: 158 44% 44%;        /* #3FA37B */
+  --primary-foreground: 160 60% 8%;
+  --primary-deep: 160 40% 16%;
+  --primary-soft: 158 26% 18%;
+  --primary-muted: 150 14% 68%;
+
+  --secondary: 24 78% 57%;       /* #E8803C */
+  --secondary-foreground: 26 82% 9%;
+  --accent: 24 78% 57%;
+  --accent-foreground: 26 82% 9%;
+  --accent-ink: 26 90% 68%;      /* #FFA95C */
+  --accent-soft: 24 30% 16%;
+
+  --muted: 120 6% 16%;
+  --muted-foreground: 100 8% 66%;/* #A7AFA3 */
+  --destructive: 3 62% 48%;
+  --destructive-foreground: 48 20% 92%;
+
+  --border: 120 6% 17%;          /* #2A2E26 */
+  --border-strong: 90 8% 23%;    /* #3A3F35 */
+  --input: 120 6% 17%;
+  --ring: 158 44% 44%;
+
+  --ah-basket: 198 85% 52%;
+  --ah-bonus: 28 100% 62%;
+  --info: 223 40% 72%;
+  --info-soft: 223 25% 18%;
+
+  --dept-groente: 152 40% 62%;
+  --dept-brood: 32 55% 66%;
+  --dept-vlees: 8 55% 68%;
+  --dept-zuivel: 218 50% 70%;
+  --dept-maaltijden: 96 32% 62%;
+  --dept-pasta: 22 65% 66%;
+  --dept-houdbaar: 40 15% 66%;
+  --dept-drinken: 188 42% 62%;
+  --dept-huishouden: 258 35% 72%;
+  --dept-diepvries: 200 50% 66%;
+
+  --cat-groen: 152 40% 62%;
+  --cat-terracotta: 8 55% 68%;
+  --cat-blauw: 205 50% 68%;
+  --cat-amber: 32 55% 66%;
+  --cat-olijf: 96 32% 62%;
+  --cat-paars: 258 35% 72%;
+  --cat-teal: 188 42% 62%;
+  --cat-roze: 340 45% 72%;
+}
+
+/*
+  Wat Tailwind van de tokens maakt. "inline" zet de waarde in de utility zelf,
+  zodat hsl(var(--x)) per element wordt uitgerekend en de dark-variant klopt.
+*/
+@theme inline {
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-body: 'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
 
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
@@ -70,12 +200,14 @@
   --color-sidebar-border: hsl(var(--sidebar-border));
   --color-sidebar-ring: hsl(var(--sidebar-ring));
 
-  --ease-smooth: var(--ease-out);
+  --ease-smooth: var(--motion-smooth);
 
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
+}
 
+@theme {
   --animate-accordion-down: accordion-down 0.2s ease-out;
   --animate-accordion-up: accordion-up 0.2s ease-out;
   --animate-fade-in: fade-in 0.3s ease-out;
@@ -84,101 +216,60 @@
   --animate-tab-in-left: tab-in-left 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
 
   @keyframes accordion-down {
-    from {
-      height: 0;
-    }
-    to {
-      height: var(--radix-accordion-content-height);
-    }
+    from { height: 0; }
+    to { height: var(--radix-accordion-content-height); }
   }
   @keyframes accordion-up {
-    from {
-      height: var(--radix-accordion-content-height);
-    }
-    to {
-      height: 0;
-    }
+    from { height: var(--radix-accordion-content-height); }
+    to { height: 0; }
   }
   @keyframes fade-in {
-    from {
-      opacity: 0;
-      transform: translateY(8px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
   }
   @keyframes check-bounce {
-    0% {
-      transform: scale(1);
-    }
-    50% {
-      transform: scale(1.2);
-    }
-    100% {
-      transform: scale(1);
-    }
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
   }
   @keyframes tab-in-right {
-    from {
-      opacity: 0.4;
-      transform: translateX(44px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
+    from { opacity: 0.4; transform: translateX(44px); }
+    to { opacity: 1; transform: translateX(0); }
   }
   @keyframes tab-in-left {
-    from {
-      opacity: 0.4;
-      transform: translateX(-44px);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0);
-    }
+    from { opacity: 0.4; transform: translateX(-44px); }
+    to { opacity: 1; transform: translateX(0); }
   }
 }
 
-/*
-  The default border color has changed to `currentcolor` in Tailwind CSS v4,
-  so we've added these compatibility styles to make sure everything still
-  looks the same as it did with Tailwind CSS v3.
-
-  If we ever want to remove these styles, we need to add an explicit border
-  color utility to any element that depends on these defaults.
-*/
 @layer base {
-  *,
-  ::after,
-  ::before,
-  ::backdrop,
-  ::file-selector-button {
-    border-color: var(--color-gray-200, currentcolor);
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+  }
+
+  h1, h2, h3 {
+    @apply font-display;
+  }
+
+  /* Tailwind v4 zet de cursor op knoppen op "default"; hier blijft het een hand. */
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
   }
 }
 
+/* Parked above the tab bar; drops down with it once the bar steps aside. */
 @utility above-tabbar {
-  /* Parked above the tab bar; drops down with it once the bar steps aside. */
-  transition: transform var(--dur-sheet) var(--ease-out);
+  transition: transform var(--dur-sheet) var(--motion-smooth);
   .tabbar-hidden & {
     transform: translateY(calc(4rem + 1px));
   }
-  @media (min-width: 640px) {
+  @media (width >= 640px) {
     .tabbar-hidden & {
-      transform: none;
-    }
-  }
-}
-
-@utility tabbar-hidden {
-  & .above-tabbar {
-    transform: translateY(calc(4rem + 1px));
-  }
-  @media (min-width: 640px) {
-    & .above-tabbar {
       transform: none;
     }
   }
@@ -187,173 +278,14 @@
 @utility shadow-flat {
   box-shadow: var(--shadow-flat);
 }
-
 @utility shadow-soft {
   box-shadow: var(--shadow-soft);
 }
-
 @utility shadow-card {
   box-shadow: var(--shadow-soft);
 }
-
 @utility shadow-sheet {
   box-shadow: var(--shadow-sheet);
-}
-
-/* Design system "Voorraadkast": warm cream ground, deep green as a plane, orange for action. */
-@layer base {
-  :root {
-    --background: 48 33% 94%;      /* #F4F2EA warm cream */
-    --foreground: 108 19% 7%;      /* #10160F near-black green ink */
-    --card: 0 0% 100%;
-    --card-foreground: 108 19% 7%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 108 19% 7%;
-
-    --primary: 160 69% 18%;        /* #0E4D38 deep green, 9.9:1 on white */
-    --primary-foreground: 150 20% 94%;
-    --primary-deep: 160 70% 14%;   /* #0B3F2E plane within the green plane */
-    --primary-soft: 158 25% 91%;   /* #E3EFE9 badges, active tab */
-    --primary-muted: 152 26% 69%;  /* #9DC4B2 secondary text on the green plane */
-
-    --secondary: 26 87% 56%;       /* #F07A2E warm orange */
-    --secondary-foreground: 26 82% 9%;
-    --accent: 26 87% 56%;
-    --accent-foreground: 26 82% 9%;
-    --accent-ink: 22 84% 37%;      /* #B04A0F orange as text on cream (AA) */
-    --accent-soft: 26 82% 94%;     /* #FDEDE1 */
-
-    --muted: 48 20% 90%;           /* #EDEBE1 */
-    --muted-foreground: 102 6% 39%;/* #5F6A5C, 5.6:1 on cream */
-    --destructive: 3 71% 41%;      /* #B3261E */
-    --destructive-foreground: 48 33% 96%;
-
-    --border: 47 21% 85%;          /* #E1DECF */
-    --border-strong: 48 15% 75%;   /* #C9C5B4 outlines that must read as controls */
-    --input: 47 21% 85%;
-    --ring: 160 69% 18%;
-    --radius: 0.75rem;
-
-    --ah-basket: 198 100% 44%;     /* #00A0E2, Albert Heijn basket actions only */
-    --ah-bonus: 28 100% 50%;       /* #FF7900, Bonus label only */
-    --info: 223 42% 34%;           /* #31437A offline, queued */
-    --info-soft: 225 30% 93%;      /* #E6E9F2 */
-
-    --sidebar-background: 48 33% 94%;
-    --sidebar-foreground: 108 19% 7%;
-    --sidebar-primary: 160 69% 18%;
-    --sidebar-primary-foreground: 150 20% 94%;
-    --sidebar-accent: 48 20% 90%;
-    --sidebar-accent-foreground: 108 19% 7%;
-    --sidebar-border: 47 21% 85%;
-    --sidebar-ring: 160 69% 18%;
-
-    /* One quiet hue per shop department, for the headings in "Op afdeling". */
-    --dept-groente: 152 45% 30%;
-    --dept-brood: 32 55% 38%;
-    --dept-vlees: 8 55% 42%;
-    --dept-zuivel: 218 45% 40%;
-    --dept-maaltijden: 96 35% 32%;
-    --dept-pasta: 22 60% 38%;
-    --dept-houdbaar: 40 18% 38%;
-    --dept-drinken: 188 45% 32%;
-    --dept-huishouden: 258 25% 42%;
-    --dept-diepvries: 200 50% 36%;
-
-    /* One hue per recipe category, from the same earthy family as the departments. */
-    --cat-groen: 152 45% 30%;
-    --cat-terracotta: 8 55% 42%;
-    --cat-blauw: 205 48% 36%;
-    --cat-amber: 32 55% 38%;
-    --cat-olijf: 96 35% 32%;
-    --cat-paars: 258 25% 42%;
-    --cat-teal: 188 45% 32%;
-    --cat-roze: 340 40% 44%;
-
-    --font-display: 'Space Grotesk', system-ui, sans-serif;
-    --font-body: 'IBM Plex Sans', system-ui, sans-serif;
-    --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
-
-    --shadow-flat: 0 1px 2px hsl(108 19% 7% / .06);
-    --shadow-soft: 0 4px 14px -6px hsl(108 19% 7% / .18);
-    --shadow-sheet: 0 -8px 30px -10px hsl(108 19% 7% / .25);
-    --ease-out: cubic-bezier(.2, .8, .2, 1);
-    --dur-tap: 150ms;
-    --dur-sheet: 220ms;
-  }
-
-  .dark {
-    --background: 120 8% 8%;       /* #131711 */
-    --foreground: 48 20% 92%;      /* #F0EEE4 */
-    --card: 120 7% 12%;            /* #1D211B */
-    --card-foreground: 48 20% 92%;
-    --popover: 120 7% 12%;
-    --popover-foreground: 48 20% 92%;
-
-    --primary: 158 44% 44%;        /* #3FA37B */
-    --primary-foreground: 160 60% 8%;
-    --primary-deep: 160 40% 16%;
-    --primary-soft: 158 26% 18%;
-    --primary-muted: 150 14% 68%;
-
-    --secondary: 24 78% 57%;       /* #E8803C */
-    --secondary-foreground: 26 82% 9%;
-    --accent: 24 78% 57%;
-    --accent-foreground: 26 82% 9%;
-    --accent-ink: 26 90% 68%;      /* #FFA95C */
-    --accent-soft: 24 30% 16%;
-
-    --muted: 120 6% 16%;
-    --muted-foreground: 100 8% 66%;/* #A7AFA3 */
-    --destructive: 3 62% 48%;
-    --destructive-foreground: 48 20% 92%;
-
-    --border: 120 6% 17%;          /* #2A2E26 */
-    --border-strong: 90 8% 23%;    /* #3A3F35 */
-    --input: 120 6% 17%;
-    --ring: 158 44% 44%;
-
-    --ah-basket: 198 85% 52%;
-    --ah-bonus: 28 100% 62%;
-    --info: 223 40% 72%;
-    --info-soft: 223 25% 18%;
-
-    --dept-groente: 152 40% 62%;
-    --dept-brood: 32 55% 66%;
-    --dept-vlees: 8 55% 68%;
-    --dept-zuivel: 218 50% 70%;
-    --dept-maaltijden: 96 32% 62%;
-    --dept-pasta: 22 65% 66%;
-    --dept-houdbaar: 40 15% 66%;
-    --dept-drinken: 188 42% 62%;
-    --dept-huishouden: 258 35% 72%;
-    --dept-diepvries: 200 50% 66%;
-
-    --cat-groen: 152 40% 62%;
-    --cat-terracotta: 8 55% 68%;
-    --cat-blauw: 205 50% 68%;
-    --cat-amber: 32 55% 66%;
-    --cat-olijf: 96 32% 62%;
-    --cat-paars: 258 35% 72%;
-    --cat-teal: 188 42% 62%;
-    --cat-roze: 340 45% 72%;
-  }
-}
-
-@layer base {
-  * {
-    @apply border-border;
-  }
-
-  body {
-    @apply bg-background text-foreground;
-    font-family: var(--font-body);
-    -webkit-font-smoothing: antialiased;
-  }
-
-  h1, h2, h3 {
-    font-family: var(--font-display);
-  }
 }
 
 /* Respect the system setting for less motion: sheets, dialogs and toasts appear without sliding. */
