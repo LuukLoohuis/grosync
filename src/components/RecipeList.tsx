@@ -515,13 +515,13 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
       {!loading && recipes.length === 0 && (
         <section className="space-y-4">
           <div className="grid grid-cols-2 gap-2" aria-hidden="true">
-            <div className={`col-span-2 flex h-[4.5rem] items-end rounded-[14px] px-3 py-2.5 ${tintOf('groen')}`}>
+            <div className={`col-span-2 flex h-18 items-end rounded-[14px] px-3 py-2.5 ${tintOf('groen')}`}>
               <span className="font-display text-[0.9375rem] font-semibold">{t("courgette · pesto · penne")}</span>
             </div>
-            <div className={`flex h-[4.5rem] items-end rounded-[14px] px-3 py-2.5 ${tintOf('blauw')}`}>
+            <div className={`flex h-18 items-end rounded-[14px] px-3 py-2.5 ${tintOf('blauw')}`}>
               <span className="font-display text-[0.84375rem] font-semibold">{t("kip · broccoli")}</span>
             </div>
-            <div className={`flex h-[4.5rem] items-end rounded-[14px] px-3 py-2.5 ${tintOf('paars')}`}>
+            <div className={`flex h-18 items-end rounded-[14px] px-3 py-2.5 ${tintOf('paars')}`}>
               <span className="font-display text-[0.84375rem] font-semibold">{t("zalm · citroen")}</span>
             </div>
           </div>

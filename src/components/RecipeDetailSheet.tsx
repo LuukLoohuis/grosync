@@ -60,7 +60,7 @@ const RecipeDetailSheet = ({ recipe, onClose, onAddToList, onEdit, onMacros, onC
             onClick={() => void toggleFavorite(shown.id)}
             aria-label={shown.favorite ? t('Uit je favorieten halen') : t('Favoriet maken')}
             aria-pressed={shown.favorite === true}
-            className="absolute right-[3.75rem] top-3 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background/90 text-foreground shadow-flat backdrop-blur transition-colors hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="absolute right-15 top-3 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background/90 text-foreground shadow-flat backdrop-blur-sm transition-colors hover:bg-background focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Heart
               className={`h-[18px] w-[18px] ${shown.favorite ? 'text-destructive' : 'text-muted-foreground'}`}
@@ -73,7 +73,7 @@ const RecipeDetailSheet = ({ recipe, onClose, onAddToList, onEdit, onMacros, onC
         {/* Foto en kop scrollen mee, zodat de ingrediënten en de bereiding de ruimte krijgen. */}
         <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto overscroll-contain pb-4">
         {photo && (
-          <div className="aspect-[16/9] w-full shrink-0 overflow-hidden rounded-t-[20px] bg-muted">
+          <div className="aspect-video w-full shrink-0 overflow-hidden rounded-t-[20px] bg-muted">
             <img
               src={photo}
               alt=""

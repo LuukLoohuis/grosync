@@ -74,7 +74,7 @@ const PlusSheet = ({ feature, onClose }: PlusSheetProps) => {
               type="button"
               onClick={() => afrekenen(plan)}
               disabled={bezig !== null}
-              className={`flex min-h-[4.5rem] flex-col items-center justify-center rounded-[12px] px-2 text-center transition-transform duration-150 ease-smooth active:scale-[.98] disabled:opacity-60 ${
+              className={`flex min-h-18 flex-col items-center justify-center rounded-[12px] px-2 text-center transition-transform duration-150 ease-smooth active:scale-[.98] disabled:opacity-60 ${
                 plan === 'jaar' ? 'bg-primary text-primary-foreground' : 'border-[1.5px] border-border-strong bg-card text-foreground'
               }`}
             >

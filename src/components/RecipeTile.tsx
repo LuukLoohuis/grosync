@@ -42,20 +42,20 @@ const RecipeTile = ({ recipe, categories, cookCount = 0, reason = null, wide = f
 
   return (
     <article className="group relative overflow-hidden rounded-[14px] border border-border bg-card transition-shadow duration-150 ease-smooth hover:shadow-soft">
-      <button type="button" onClick={onOpen} className="block w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+      <button type="button" onClick={onOpen} className="block w-full text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring">
         {photo ? (
           <img
             src={photo}
             alt=""
             loading="lazy"
-            className={`w-full bg-muted object-cover ${wide ? 'h-[7.5rem]' : 'h-24'}`}
+            className={`w-full bg-muted object-cover ${wide ? 'h-30' : 'h-24'}`}
             onError={() => { setFailedUrl(photo); onImageBroken?.(); }}
           />
         ) : (
           <div
-            className={`flex items-end px-3 py-2.5 ${wide ? 'h-[7.5rem]' : 'h-24'} ${first ? tintOf(first.color) : 'bg-muted text-muted-foreground'}`}
+            className={`flex items-end px-3 py-2.5 ${wide ? 'h-30' : 'h-24'} ${first ? tintOf(first.color) : 'bg-muted text-muted-foreground'}`}
           >
-            <span className={`font-display font-semibold leading-[1.25] tracking-[-0.01em] ${wide ? 'text-[1rem]' : 'text-[0.84375rem]'}`}>
+            <span className={`font-display font-semibold leading-tight tracking-[-0.01em] ${wide ? 'text-[1rem]' : 'text-[0.84375rem]'}`}>
               {words.length > 0 ? words.join(' · ') : recipe.name.toLowerCase()}
             </span>
           </div>
@@ -89,7 +89,7 @@ const RecipeTile = ({ recipe, categories, cookCount = 0, reason = null, wide = f
         onClick={onToggleFavorite}
         aria-label={recipe.favorite ? t('Haal {0} uit je favorieten', [recipe.name]) : t('Maak {0} favoriet', [recipe.name])}
         aria-pressed={recipe.favorite === true}
-        className="absolute left-1.5 top-1.5 flex h-10 w-10 items-center justify-center rounded-full bg-background/85 text-foreground shadow-flat backdrop-blur transition-colors duration-150 ease-smooth hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="absolute left-1.5 top-1.5 flex h-10 w-10 items-center justify-center rounded-full bg-background/85 text-foreground shadow-flat backdrop-blur-sm transition-colors duration-150 ease-smooth hover:bg-background focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
       >
         <Heart
           className={`h-4 w-4 transition-colors ${recipe.favorite ? 'text-destructive' : 'text-muted-foreground'}`}
@@ -102,7 +102,7 @@ const RecipeTile = ({ recipe, categories, cookCount = 0, reason = null, wide = f
         type="button"
         onClick={onAddToList}
         aria-label={t("Zet {0} op je lijst", [recipe.name])}
-        className="absolute right-1.5 top-1.5 flex h-10 w-10 items-center justify-center rounded-full bg-background/85 text-foreground shadow-flat backdrop-blur transition-colors duration-150 ease-smooth hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="absolute right-1.5 top-1.5 flex h-10 w-10 items-center justify-center rounded-full bg-background/85 text-foreground shadow-flat backdrop-blur-sm transition-colors duration-150 ease-smooth hover:bg-background focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
       >
         <ShoppingCart className="h-4 w-4" />
       </button>

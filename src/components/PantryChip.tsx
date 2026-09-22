@@ -22,7 +22,7 @@ const PantryChip = ({ item, shelf, onOpen }: PantryChipProps) => {
       type="button"
       onClick={onOpen}
       aria-label={t("{0} openen", [item.name])}
-      className={`inline-flex min-h-11 items-center gap-2 rounded-full border px-3.5 text-[0.9375rem] transition-[background-color,border-color,transform] duration-150 ease-smooth active:scale-[.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+      className={`inline-flex min-h-11 items-center gap-2 rounded-full border px-3.5 text-[0.9375rem] transition-[background-color,border-color,transform] duration-150 ease-smooth active:scale-[.98] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring ${
         out
           ? 'border-destructive/35 bg-destructive/10 text-destructive'
           : item.low

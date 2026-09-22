@@ -59,7 +59,7 @@ const CategoryPicker = ({ value, onChange }: CategoryPickerProps) => {
               type="button"
               onClick={() => toggle(category.name)}
               aria-pressed={on}
-              className={`inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 font-display text-xs font-bold tracking-[-0.01em] transition-colors duration-150 ease-smooth focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+              className={`inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 font-display text-xs font-bold tracking-[-0.01em] transition-colors duration-150 ease-smooth focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
                 on ? tintOf(category.color) : 'border border-border text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -73,7 +73,7 @@ const CategoryPicker = ({ value, onChange }: CategoryPickerProps) => {
           <button
             type="button"
             onClick={() => setCreating(true)}
-            className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-dashed border-border-strong px-3 font-display text-xs font-bold text-muted-foreground transition-colors duration-150 ease-smooth hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-dashed border-border-strong px-3 font-display text-xs font-bold text-muted-foreground transition-colors duration-150 ease-smooth hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Plus className="h-3.5 w-3.5" /> {t("Eigen categorie")}
           </button>
@@ -133,7 +133,7 @@ const CategoryPicker = ({ value, onChange }: CategoryPickerProps) => {
               key={preset.name}
               type="button"
               onClick={() => create(preset.name, preset.color)}
-              className="inline-flex min-h-11 items-center gap-1 rounded-full px-2.5 font-display text-xs font-bold text-muted-foreground transition-colors duration-150 ease-smooth hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="inline-flex min-h-11 items-center gap-1 rounded-full px-2.5 font-display text-xs font-bold text-muted-foreground transition-colors duration-150 ease-smooth hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
             >
               <Plus className="h-3 w-3" /> {preset.name}
             </button>

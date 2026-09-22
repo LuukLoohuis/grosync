@@ -77,7 +77,7 @@ const handleGoogleLogin = async () => {
           <img
             src={couplecartLogo}
             alt={t("CoupleCart")}
-            className="-mb-[32%] -mt-[28%] w-[min(23rem,90vw)] max-w-full"
+            className="mb-[-32%] mt-[-28%] w-[min(23rem,90vw)] max-w-full"
             width={1024}
             height={1024}
             fetchPriority="high"
@@ -89,7 +89,7 @@ const handleGoogleLogin = async () => {
           <button
             type="button"
             onClick={handleGoogleLogin}
-            className="flex min-h-[52px] w-full items-center justify-center gap-3 rounded-xl border-[1.5px] border-border-strong bg-white text-[0.9375rem] font-semibold text-[#1F1F1F] shadow-flat transition-[background-color,box-shadow,transform] duration-150 ease-smooth hover:shadow-soft active:scale-[.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            className="flex min-h-[52px] w-full items-center justify-center gap-3 rounded-xl border-[1.5px] border-border-strong bg-white text-[0.9375rem] font-semibold text-[#1F1F1F] shadow-flat transition-[background-color,box-shadow,transform] duration-150 ease-smooth hover:shadow-soft active:scale-[.99] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
@@ -130,7 +130,7 @@ const handleGoogleLogin = async () => {
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 aria-label={showPassword ? t("Verberg wachtwoord") : t("Toon wachtwoord")}
-                className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-xl text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="absolute right-1 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-xl text-muted-foreground hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -166,7 +166,7 @@ const handleGoogleLogin = async () => {
             }
           }}
           disabled={loading}
-          className="mt-6 min-h-11 w-full rounded-xl text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+          className="mt-6 min-h-11 w-full rounded-xl text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
         >
           {loading ? t("Even geduld…") : t("Doorgaan zonder account")}
         </button>

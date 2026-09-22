@@ -165,7 +165,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
     const bonus = item.ahProduct?.isBonus;
     return (
       <SwipeToCheck key={item.id} onSwipe={() => checkOff(item)}>
-        <div className="flex min-h-[3.5rem] items-center gap-1 rounded-[14px] border border-border bg-card pl-1 pr-3">
+        <div className="flex min-h-14 items-center gap-1 rounded-[14px] border border-border bg-card pl-1 pr-3">
           <button
             onClick={() => checkOff(item)}
             aria-label={t("Vink {0} af", [item.name])}
@@ -179,7 +179,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
             type="button"
             onClick={() => setSheetItemId(item.id)}
             aria-label={t("Opties voor {0}", [item.name])}
-            className="flex min-w-0 flex-1 items-center gap-2 py-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="flex min-w-0 flex-1 items-center gap-2 py-2 text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
           >
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[0.9375rem] font-medium text-foreground">{name}</span>
@@ -441,7 +441,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
           {showChecked && (
             <>
               {checked.map((item) => (
-                <div key={item.id} className="group flex min-h-[3.5rem] items-center gap-1 rounded-[14px] border border-border/70 bg-background pl-1 pr-3">
+                <div key={item.id} className="group flex min-h-14 items-center gap-1 rounded-[14px] border border-border/70 bg-background pl-1 pr-3">
                   <button
                     onClick={() => { void setGroceryItemChecked(item.id, false); }}
                     aria-label={t("Zet {0} terug op je lijst", [item.name])}

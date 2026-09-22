@@ -40,7 +40,7 @@ const Vorm = ({ vorm, klein = false }: { vorm: string | null; klein?: boolean })
   if (!vorm) return null;
   return (
     <span
-      className={`block font-display ${klein ? 'text-[0.625rem]' : 'text-[0.625rem]'} font-semibold uppercase tracking-[0.05em] ${
+      className={`block font-display ${klein ? 'text-[0.625rem]' : 'text-[0.625rem]'} font-semibold uppercase tracking-wider ${
         zegtIets(vorm) ? 'text-[hsl(var(--ah-bonus))]' : 'text-muted-foreground'
       }`}
     >
@@ -456,7 +456,7 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
           </h2>
           <ul className="mt-1.5 space-y-1.5">
             {aanbiedingen.slice(0, toonAlles ? 24 : 6).map((offer) => (
-              <li key={offer.title} className="flex min-h-[3.25rem] items-center gap-3 rounded-[12px] border border-border bg-card px-3 py-2">
+              <li key={offer.title} className="flex min-h-13 items-center gap-3 rounded-[12px] border border-border bg-card px-3 py-2">
                 <Foto url={offer.image_url ?? null} formaat={40} />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[0.90625rem] font-medium leading-tight text-foreground">{offer.title}</span>

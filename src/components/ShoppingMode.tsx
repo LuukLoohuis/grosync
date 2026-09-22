@@ -52,7 +52,7 @@ const ShoppingMode = ({ items, onCheck, onClose }: ShoppingModeProps) => {
 
   // Buiten de lijst hangen, zodat niets van het scherm eronder meedoet.
   return createPortal(
-    <div className="fixed inset-0 z-50 flex h-[100dvh] w-screen flex-col bg-background">
+    <div className="fixed inset-0 z-50 flex h-dvh w-screen flex-col bg-background">
       <header className="shrink-0 bg-primary px-5 pb-5 pt-[calc(1rem+env(safe-area-inset-top))] text-primary-foreground">
         <div className="mx-auto flex max-w-lg items-start gap-3">
           <div className="min-w-0 flex-1">
@@ -99,7 +99,7 @@ const ShoppingMode = ({ items, onCheck, onClose }: ShoppingModeProps) => {
             const { name, amount } = splitAmount(item.name);
             return (
               <SwipeToCheck key={item.id} onSwipe={() => onCheck(item)}>
-                <div className="flex min-h-[4.5rem] items-center gap-2 rounded-[14px] border border-border bg-card pl-1 pr-4">
+                <div className="flex min-h-18 items-center gap-2 rounded-[14px] border border-border bg-card pl-1 pr-4">
                   <button
                     onClick={() => onCheck(item)}
                     aria-label={t("Vink {0} af", [item.name])}

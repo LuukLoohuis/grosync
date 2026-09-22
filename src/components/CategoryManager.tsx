@@ -61,7 +61,7 @@ const CategoryManager = () => {
                 type="button"
                 onClick={() => setDoomed(category)}
                 aria-label={t("{0} verwijderen", [category.name])}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-destructive transition-colors duration-150 ease-smooth hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-destructive transition-colors duration-150 ease-smooth hover:bg-destructive/10 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <Trash2 className="h-4 w-4" />
               </button>

@@ -282,12 +282,12 @@ const TodayScreen = ({ onNavigate }: { onNavigate: (tab: TodayTarget) => void })
           ) : (
             <ul className="mt-2.5 divide-y divide-border">
               {teHalen.map((item) => (
-                <li key={item.id} className="flex min-h-[3.25rem] items-center gap-1.5 py-1">
+                <li key={item.id} className="flex min-h-13 items-center gap-1.5 py-1">
                   <button
                     type="button"
                     onClick={() => vinkAf(item)}
                     aria-label={t("Vink {0} af", [item.name])}
-                    className="group/check flex h-11 w-11 shrink-0 items-center justify-center rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="group/check flex h-11 w-11 shrink-0 items-center justify-center rounded-xl focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <span className="h-6 w-6 rounded-[8px] border-2 border-primary transition-colors group-hover/check:bg-primary-soft" />
                   </button>
@@ -387,7 +387,7 @@ const TodayScreen = ({ onNavigate }: { onNavigate: (tab: TodayTarget) => void })
                     key={option.id}
                     type="button"
                     onClick={() => void kiesAvondeten(option)}
-                    className="flex min-h-14 w-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-2 text-left transition-colors hover:border-border-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="flex min-h-14 w-full items-center gap-3 rounded-xl border border-border bg-card px-3 py-2 text-left transition-colors hover:border-border-strong focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     {photoOf(option) ? (
                       <img src={photoOf(option)!} alt="" loading="lazy" className="h-11 w-11 shrink-0 rounded-[10px] object-cover" onError={() => photoFailed(option)} />

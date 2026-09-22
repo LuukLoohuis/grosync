@@ -141,7 +141,7 @@ const Index = () => {
               key={key}
               onClick={() => kies(key)}
               aria-current={tab === key ? 'page' : undefined}
-              className={`flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-[10px] text-[0.8125rem] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+              className={`flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-[10px] text-[0.8125rem] font-semibold transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring ${
                 tab === key ? 'bg-primary-soft text-primary' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
@@ -191,7 +191,7 @@ const Index = () => {
                 key={key}
                 onClick={() => kies(key)}
                 aria-current={active ? 'page' : undefined}
-                className={`relative flex flex-col items-center justify-center gap-1 rounded-xl text-[0.625rem] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                className={`relative flex flex-col items-center justify-center gap-1 rounded-xl text-[0.625rem] font-semibold transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring ${
                   active ? 'text-primary' : 'text-muted-foreground'
                 }`}
               >
