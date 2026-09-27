@@ -83,7 +83,7 @@ const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
             </a>
           </DropdownMenuItem>
           <DropdownMenuItem asChild className="gap-2 min-h-11 cursor-pointer">
-            <a href="https://www.buymeacoffee.com/luukloohuis" target="_blank" rel="noopener noreferrer">
+            <a href="https://ko-fi.com/couplecart" target="_blank" rel="noopener noreferrer">
               <Heart className="h-4 w-4" /> {t("Steun CoupleCart")}
             </a>
           </DropdownMenuItem>
