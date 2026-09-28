@@ -95,7 +95,7 @@ export const AppProvider = ({
   const pantry = usePantryStaples(userId);
   const categoryHook = useRecipeCategories({ userId });
   const pantryHook = usePantry({ userId });
-  // Tegoed is van jou; of Plus geldt, beslist de server voor het hele huishouden.
+  // Tegoed en Plus gelden voor het hele huishouden; dat rekent de server uit.
   const entitlements = useEntitlements({ userId: selfId });
 
   // Wat bijna op of op is hoort op de boodschappenlijst; staat het weer vol, dan

@@ -539,7 +539,7 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
           </div>
           {!plus && (
             <p className="text-center text-xs text-muted-foreground">
-              {t("Vijf per maand gratis · zelf typen kan altijd")}
+              {t('{0} per maand gratis · zelf typen kan altijd', [FREE_LIMIT])}
             </p>
           )}
         </section>

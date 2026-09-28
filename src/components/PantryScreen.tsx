@@ -316,7 +316,7 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
             <Button variant="outline" className="mt-2 min-h-[50px] w-full" onClick={() => document.getElementById('kast-zelf-typen')?.focus()}>
               {t("Zelf typen")}
             </Button>
-            <p className="mt-3 text-xs text-muted-foreground">{t("Vijf foto’s per maand gratis")}</p>
+            <p className="mt-3 text-xs text-muted-foreground">{t('{0} foto’s per maand gratis', [FREE_LIMIT])}</p>
           </section>
 
           <p className="text-center text-xs text-muted-foreground">

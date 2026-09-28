@@ -19,6 +19,9 @@ import ShoppingMode from '@/components/ShoppingMode';
 import EmptyState from '@/components/EmptyState';
 import DepartmentHeading, { DEPARTMENT_CHIP, DEPARTMENT_DOT } from '@/components/DepartmentHeading';
 import AhProductSheet from '@/components/AhProductSheet';
+import PlusSheet from '@/components/PlusSheet';
+import { FREE_LIMIT } from '@/hooks/useEntitlements';
+import { QuotaError } from '@/services/functions';
 import { sortByStoreRoute, type Department } from '@/lib/storeRouteSort';
 import { splitAmount } from '@/lib/itemAmount';
 import { translateForSearch } from '@/lib/groceryTranslations';
@@ -62,10 +65,11 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
   const [clearOpen, setClearOpen] = useState(false);
   const [shopping, setShopping] = useState(false);
   const [pricing, setPricing] = useState(false);
+  const [overLimit, setOverLimit] = useState(false);
   const [showChecked, setShowChecked] = useState(false);
   const barRef = useRef<HTMLDivElement>(null);
   const [barHeight, setBarHeight] = useState(0);
-  const { loading, groceryItems, addGroceryItem, setGroceryItemChecked, removeGroceryItem, clearCheckedItems, clearAllItems, mergeDuplicateItems, applyAhMatches, frequentItems, trackPurchase } = useAppContext();
+  const { loading, groceryItems, addGroceryItem, setGroceryItemChecked, removeGroceryItem, clearCheckedItems, clearAllItems, mergeDuplicateItems, applyAhMatches, frequentItems, trackPurchase, plus, remaining, refreshEntitlements } = useAppContext();
 
   const handleAdd = (name?: string) => {
     const item = (name || newItem).trim();
@@ -97,9 +101,13 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
     i.priceBefore != null && i.price != null && i.priceBefore > i.price ? sum + (i.priceBefore - i.price) : sum
   ), 0);
 
+  // Het karretje vullen bij AH telt mee in het tegoed, verversen ook.
+  const mandjeOp = !plus && remaining('mandje') === 0;
+
   const fetchAhPrices = async () => {
     const batch = unchecked.slice(0, AH_MAX_ITEMS);
     if (batch.length === 0) return;
+    if (mandjeOp) { setOverLimit(true); return; }
     setPricing(true);
     try {
       const { matches, unmatched } = await matchAhProducts(batch.map(({ id, name }) => ({ id, name })));
@@ -108,11 +116,16 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
         ? t("Alle {0} boodschappen gevonden bij AH", [matches.length])
         : t('{0} van {1} boodschappen gevonden bij AH', [matches.length, batch.length]));
     } catch (e) {
-      console.error('AH prices failed:', e);
-      toast.error(t("AH-prijzen ophalen lukte niet. Controleer je verbinding en probeer het opnieuw."), {
-        action: { label: t("Opnieuw proberen"), onClick: () => { void fetchAhPrices(); } },
-      });
+      if (e instanceof QuotaError) {
+        setOverLimit(true);
+      } else {
+        console.error('AH prices failed:', e);
+        toast.error(t("AH-prijzen ophalen lukte niet. Controleer je verbinding en probeer het opnieuw."), {
+          action: { label: t("Opnieuw proberen"), onClick: () => { void fetchAhPrices(); } },
+        });
+      }
     } finally {
+      void refreshEntitlements();
       setPricing(false);
     }
   };
@@ -480,6 +493,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
         onPickProduct={(id) => setProductItemId(id)}
       />
       <AhProductSheet item={productItem} onClose={() => setProductItemId(null)} />
+      <PlusSheet feature={overLimit ? 'mandje' : null} onClose={() => setOverLimit(false)} />
 
       {/* Room for the fixed price bar */}
       {showBar && <div aria-hidden="true" style={{ height: barHeight }} />}
@@ -525,15 +539,27 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
                   </Button>
                 </div>
                 <p className="mt-1 text-[11px] text-muted-foreground">
-                  <span className="tabular-nums">{t('{0} van {1} gevonden', [pricedItems.length, unchecked.length])}</span> {t("· Je bestelt bij AH, in de app of op ah.nl.")}
+                  <span className="tabular-nums">{t('{0} van {1} gevonden', [pricedItems.length, unchecked.length])}</span>{' '}
+                  {plus
+                    ? t("· Je bestelt bij AH, in de app of op ah.nl.")
+                    : t('· nog {0} van {1} karretjes deze maand', [remaining('mandje'), FREE_LIMIT])}
                 </p>
               </>
             ) : (
-              <Button type="button" onClick={fetchAhPrices} disabled={pricing} className="min-h-11 w-full gap-2">
-                {pricing
-                  ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("Prijzen zoeken…")}</>
-                  : <><Tag className="h-4 w-4" /> {t("Bekijk wat het kost bij AH")}</>}
-              </Button>
+              <>
+                <Button type="button" onClick={fetchAhPrices} disabled={pricing} className="min-h-11 w-full gap-2">
+                  {pricing
+                    ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("Prijzen zoeken…")}</>
+                    : <><Tag className="h-4 w-4" /> {mandjeOp ? t("Tegoed op") : t("Bekijk wat het kost bij AH")}</>}
+                </Button>
+                {!plus && (
+                  <p className="mt-1 text-center text-[11px] tabular-nums text-muted-foreground">
+                    {mandjeOp
+                      ? t("Je karretjes van deze maand zijn op")
+                      : t('Nog {0} van {1} karretjes deze maand', [remaining('mandje'), FREE_LIMIT])}
+                  </p>
+                )}
+              </>
             )}
           </div>
         </div>

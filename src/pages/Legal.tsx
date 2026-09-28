@@ -2,7 +2,7 @@ import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { taal } from '@/lib/i18n';
 
-const HERZIEN = '16 september 2026';
+const HERZIEN = '28 september 2026';
 const MAIL = 'couplecart@gmail.com';
 
 interface Deel {
@@ -51,9 +51,9 @@ const DELEN: Record<string, Deel> = {
         <H2>Wat je krijgt</H2>
         <P>
           Een gedeelde boodschappenlijst, een receptenboek, een voorraadkast en een overzicht van de
-          bonus bij Albert Heijn. De gratis versie kent een maandelijkse grens voor het ophalen van
-          recepten en het scannen van je kast; CoupleCart Plus haalt die grens weg voor het hele
-          huishouden.
+          bonus bij Albert Heijn. De gratis versie kent een maandelijkse grens per huishouden voor het
+          ophalen van recepten, het scannen van je kast en het vullen van je karretje bij Albert Heijn;
+          CoupleCart Plus haalt die grens weg voor het hele huishouden.
         </P>
 
         <H2>Prijzen en betalen</H2>

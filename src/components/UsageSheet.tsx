@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Camera, ExternalLink, Link2, Loader2, Sparkles } from 'lucide-react';
+import { Camera, ExternalLink, Link2, Loader2, ShoppingBasket, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -14,8 +14,9 @@ interface UsageSheetProps {
 }
 
 const METERS: { feature: MeteredFeature; label: string; icon: typeof Camera }[] = [
-  { feature: 'recept', label: 'Recepten ophalen', icon: Link2 },
-  { feature: 'kastfoto', label: 'Kast scannen', icon: Camera },
+  { feature: 'recept', label: t('Recepten ophalen'), icon: Link2 },
+  { feature: 'kastfoto', label: t('Kast scannen'), icon: Camera },
+  { feature: 'mandje', label: t('Karretje vullen bij AH'), icon: ShoppingBasket },
 ];
 
 const resetDate = () => {
@@ -52,7 +53,7 @@ const UsageSheet = ({ open, onOpenChange }: UsageSheetProps) => {
           <SheetDescription>
             {plus
               ? t("Je hebt Plus: alles onbeperkt, voor jullie samen.")
-              : t("Elke maand vijf van allebei. Op {0} staat de teller weer op nul.", [resetDate()])}
+              : t("Elke maand {0} van elk, voor het hele huishouden samen. Op {1} staat de teller weer op nul.", [FREE_LIMIT, resetDate()])}
           </SheetDescription>
         </SheetHeader>
 
@@ -88,7 +89,7 @@ const UsageSheet = ({ open, onOpenChange }: UsageSheetProps) => {
               <Sparkles className="h-4 w-4 text-accent-ink" /> {t("CoupleCart Plus")}
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
-              {t("Onbeperkt recepten ophalen en scannen, voor het hele huishouden. Binnenkort te koop.")}
+              {t("Onbeperkt recepten ophalen, scannen en karretjes vullen, voor het hele huishouden. Binnenkort te koop.")}
             </p>
           </div>
         )}

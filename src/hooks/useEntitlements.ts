@@ -2,14 +2,16 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { t } from '@/lib/i18n';
 
-/** The two things that cost real money; the rest is free for everyone. */
-export type MeteredFeature = 'recept' | 'kastfoto';
+/** The three things that cost real money; the rest is free for everyone. */
+export type MeteredFeature = 'recept' | 'kastfoto' | 'mandje';
 
-export const FREE_LIMIT = 5;
+/** Per month, per household; the edge functions hold the same number. */
+export const FREE_LIMIT = 3;
 
 export const FEATURE_LABEL: Record<MeteredFeature, string> = {
   recept: t('recepten ophalen'),
   kastfoto: t('kastfoto’s'),
+  mandje: t('karretjes'),
 };
 
 /** The month the meter runs in, in Dutch time, as the database writes it. */
@@ -23,7 +25,7 @@ interface UseEntitlementsOptions {
   userId?: string | null;
 }
 
-/** Plus, and what is left of this month's free allowance. */
+/** Plus, and what is left of this month's free allowance for the household. */
 export const useEntitlements = ({ userId }: UseEntitlementsOptions = {}) => {
   const [plus, setPlus] = useState(false);
   const [used, setUsed] = useState<Record<string, number>>({});
@@ -32,12 +34,12 @@ export const useEntitlements = ({ userId }: UseEntitlementsOptions = {}) => {
   const load = useCallback(async () => {
     if (!userId) { setPlus(false); setUsed({}); setIsAdmin(false); return; }
 
-    // my_plus kijkt ook naar je partner; staat nog niet in de gegenereerde typen.
-    // Via de client aanroepen, anders raakt rpc zijn `this` kwijt.
+    // my_plus en my_usage kijken naar het hele huishouden; ze staan nog niet in de
+    // gegenereerde typen. Via de client aanroepen, anders raakt rpc zijn `this` kwijt.
     const client = supabase as unknown as { rpc: (fn: string) => PromiseLike<{ data: unknown; error: unknown }> };
-    const [plusRpc, usage, admin] = await Promise.all([
+    const [plusRpc, usageRpc, admin] = await Promise.all([
       client.rpc('my_plus'),
-      supabase.from('ai_usage').select('feature, count').eq('user_id', userId).eq('period', currentPeriod()),
+      client.rpc('my_usage'),
       supabase.rpc('is_admin'),
     ]);
 
@@ -47,8 +49,14 @@ export const useEntitlements = ({ userId }: UseEntitlementsOptions = {}) => {
       const { data: row } = await supabase.from('plus_members').select('expires_at').eq('user_id', userId).maybeSingle();
       plusNu = Boolean(row) && (!row?.expires_at || new Date(row.expires_at) > new Date());
     }
+    let usage = usageRpc.data as { feature: string; count: number }[] | null;
+    if (usageRpc.error) {
+      // Migratie nog niet gedraaid: dan alleen je eigen teller.
+      const { data } = await supabase.from('ai_usage').select('feature, count').eq('user_id', userId).eq('period', currentPeriod());
+      usage = data;
+    }
     setPlus(plusNu);
-    setUsed(Object.fromEntries((usage.data ?? []).map((item) => [item.feature, item.count])));
+    setUsed(Object.fromEntries((usage ?? []).map((item) => [item.feature, item.count])));
     setIsAdmin(admin.data === true);
   }, [userId]);
 

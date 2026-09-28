@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Camera, Check, Link2, Loader2, Sparkles, Tag } from 'lucide-react';
+import { Camera, Check, Link2, Loader2, ShoppingBasket, Sparkles, Tag } from 'lucide-react';
 import { toast } from 'sonner';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,7 @@ const resetDate = () => {
 const PERKS = [
   { icon: Link2, text: t('Onbeperkt recepten ophalen uit een link of video') },
   { icon: Camera, text: t('Onbeperkt je kast scannen met een foto') },
+  { icon: ShoppingBasket, text: t('Onbeperkt je karretje vullen bij AH') },
   { icon: Sparkles, text: t('Bonuschef, receptsuggesties en voedingswaarden') },
   { icon: Tag, text: t('Eén keer voor jullie samen, ook voor je partner') },
 ];

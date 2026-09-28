@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { callFunction } from '@/services/functions';
 
 export interface AhMatch {
   itemId: string;
@@ -31,10 +32,9 @@ export interface AhAlternative {
 // The edge function accepts at most this many items per call.
 export const AH_MAX_ITEMS = 40;
 
-export async function matchAhProducts(items: { id: string; name: string }[]) {
-  const { data, error } = await supabase.functions.invoke('ah-products', { body: { items } });
-  if (error) throw error;
-  return data as { matches: AhMatch[]; unmatched: string[] };
+// Filling the basket counts against the monthly allowance; a 402 becomes a QuotaError.
+export function matchAhProducts(items: { id: string; name: string }[]) {
+  return callFunction<{ matches: AhMatch[]; unmatched: string[] }>('ah-products', { items });
 }
 
 // Other products from the same AH search, without the one already chosen.
