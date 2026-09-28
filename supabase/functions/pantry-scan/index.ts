@@ -67,8 +67,8 @@ async function consumeAi(userId: string, feature: string, limit: number): Promis
   return { allowed: row?.allowed !== false, used: row?.used ?? 0, quota: row?.quota ?? limit, plus: row?.plus === true };
 }
 
-/** Free gets five a month of the two that cost real money; Plus gets everything. */
-const FREE_LIMIT = 5;
+/** Free gets three a month of each thing that costs real money, per household; Plus gets everything. */
+const FREE_LIMIT = 3;
 
 const PROMPT = `Je kijkt naar een foto van een voorraadkast, koelkast of aanrecht in een Nederlands huishouden.
 Noem alles wat eetbaar is en wat je op de foto kunt aanwijzen. Kijk de hele foto af: elke plank van

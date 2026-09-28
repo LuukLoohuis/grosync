@@ -44,16 +44,55 @@ type Match = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
+const env = (name: string) => Deno.env.get(name) ?? '';
+
 // Only signed-in users (guests included) may use this, otherwise the public key
 // turns it into a free AH proxy running on our OpenAI account.
-async function isSignedIn(req: Request): Promise<boolean> {
+async function signedInUser(req: Request): Promise<{ id: string } | null> {
   const token = req.headers.get('Authorization')?.replace(/^Bearer\s+/i, '');
-  const url = Deno.env.get('SUPABASE_URL');
-  const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
-  if (!token || !url || !anonKey) return false;
-  const response = await fetch(`${url}/auth/v1/user`, { headers: { apikey: anonKey, Authorization: `Bearer ${token}` } });
-  return response.ok;
+  if (!token || !env('SUPABASE_URL') || !env('SUPABASE_ANON_KEY')) return null;
+  const response = await fetch(`${env('SUPABASE_URL')}/auth/v1/user`, {
+    headers: { apikey: env('SUPABASE_ANON_KEY'), Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) return null;
+  const user = await response.json().catch(() => null);
+  return user?.id ? { id: user.id } : null;
 }
+
+type Quota = { allowed: boolean; used: number; quota: number; plus: boolean };
+
+const rpc = (fn: string, args: unknown) =>
+  fetch(`${env('SUPABASE_URL')}/rest/v1/rpc/${fn}`, {
+    method: 'POST',
+    headers: {
+      apikey: env('SUPABASE_SERVICE_ROLE_KEY'),
+      Authorization: `Bearer ${env('SUPABASE_SERVICE_ROLE_KEY')}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(args),
+  });
+
+/** Counts this use and says whether it was within the monthly allowance. */
+async function consumeAi(userId: string, feature: string, limit: number): Promise<Quota> {
+  const response = await rpc('consume_ai', { _user: userId, _feature: feature, _limit: limit });
+  if (!response.ok) {
+    console.error('consume_ai failed:', response.status, (await response.text()).slice(0, 200));
+    // A broken meter must not lock people out of what they paid for.
+    return { allowed: true, used: 0, quota: limit, plus: false };
+  }
+  const rows = await response.json();
+  const row = Array.isArray(rows) ? rows[0] : rows;
+  return { allowed: row?.allowed !== false, used: row?.used ?? 0, quota: row?.quota ?? limit, plus: row?.plus === true };
+}
+
+/** Gives the use back when the work itself failed; with three a month every one counts. */
+async function releaseAi(userId: string, feature: string) {
+  const response = await rpc('release_ai', { _user: userId, _feature: feature }).catch(() => null);
+  if (!response?.ok) console.error('release_ai failed:', response?.status);
+}
+
+/** Free gets three a month of each thing that costs real money, per household; Plus gets everything. */
+const FREE_LIMIT = 3;
 
 let cachedToken: { value: string; expiresAt: number } | null = null;
 
@@ -273,8 +312,12 @@ function toAlternative(candidate: Candidate) {
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
+  // Set once a fill of the basket has been counted, so a failure can give it back.
+  let counted: { userId: string; plus: boolean } | null = null;
+
   try {
-    if (!(await isSignedIn(req))) return json({ error: 'Sign in required' }, 401);
+    const user = await signedInUser(req);
+    if (!user) return json({ error: 'Sign in required' }, 401);
 
     const body = await req.json();
 
@@ -300,6 +343,13 @@ Deno.serve(async (req) => {
       .slice(0, MAX_ITEMS);
     if (list.length === 0) return json({ error: 'items is required' }, 400);
 
+    // Filling the basket counts; picking another product for one line does not.
+    const quota = await consumeAi(user.id, 'mandje', FREE_LIMIT);
+    if (!quota.allowed) {
+      return json({ error: 'limiet', feature: 'mandje', used: quota.used, quota: quota.quota }, 402);
+    }
+    counted = { userId: user.id, plus: quota.plus };
+
     const terms = await searchTerms(list);
     const lines = await mapWithConcurrency(list, SEARCH_CONCURRENCY, async (item) => {
       const term = terms.get(item.id);
@@ -323,9 +373,12 @@ Deno.serve(async (req) => {
 
     const matched = new Set(matches.map((m) => m.itemId));
     console.log('AH matches:', matches.length, 'of', list.length);
+    // Nothing found means nothing went in the basket; that fill does not count.
+    if (matches.length === 0 && !quota.plus) await releaseAi(user.id, 'mandje');
     return json({ matches, unmatched: list.filter((item) => !matched.has(item.id)).map((item) => item.id) });
   } catch (error) {
     console.error('ah-products failed:', error);
+    if (counted && !counted.plus) await releaseAi(counted.userId, 'mandje');
     return json({ error: 'Failed to match AH products' }, 500);
   }
 });

@@ -40,8 +40,8 @@ async function consumeAi(userId: string, feature: string, limit: number): Promis
   return { allowed: row?.allowed !== false, used: row?.used ?? 0, quota: row?.quota ?? limit, plus: row?.plus === true };
 }
 
-/** Free gets five a month of the two that cost real money; Plus gets everything. */
-const FREE_LIMIT = 5;
+/** Free gets three a month of each thing that costs real money, per household; Plus gets everything. */
+const FREE_LIMIT = 3;
 
 // Tekstmodel: standaard OpenAI, maar zet DEEPSEEK_API_KEY en alles wat tekst is
 // loopt via DeepSeek (dezelfde API-vorm, een stuk goedkoper). Beelden en video
