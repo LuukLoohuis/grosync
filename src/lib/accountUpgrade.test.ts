@@ -120,8 +120,10 @@ describe('leesAuthTerugkeer', () => {
 });
 
 describe('Engelse teksten', () => {
-  it('vertalen alles wat het account-scherm toont', () => {
-    const bron = ['src/components/AccountSheet.tsx'].map((pad) => readFileSync(pad, 'utf8')).join('\n');
+  it('vertalen alles wat het account-scherm en de uitlogvraag tonen', () => {
+    const bron = ['src/components/AccountSheet.tsx', 'src/components/GastUitlogDialog.tsx']
+      .map((pad) => readFileSync(pad, 'utf8'))
+      .join('\n');
     const teksten = [...bron.matchAll(/\bt\((['"])((?:(?!\1)[^\\]|\\.)*)\1/g)].map((m) => m[2]);
     expect(teksten.length > 10).toBe(true);
     expect(teksten.filter((tekst) => !EN[tekst])).toEqual([]);

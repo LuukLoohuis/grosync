@@ -4,6 +4,7 @@ import { useTheme } from 'next-themes';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppContext } from '@/contexts/AppContext';
 import AccountSheet, { AccountMenuItem } from '@/components/AccountSheet';
+import GastUitlogDialog from '@/components/GastUitlogDialog';
 import KoppelSheet from '@/components/KoppelSheet';
 import UsageSheet from '@/components/UsageSheet';
 import {
@@ -32,6 +33,7 @@ const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
   const [shareOpen, setShareOpen] = useState(false);
   const [usageOpen, setUsageOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [uitlogVraag, setUitlogVraag] = useState(false);
   const gast = isGast(session?.user);
 
   const iconButton = `h-11 w-11 shrink-0 flex items-center justify-center rounded-xl transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 ${
@@ -94,12 +96,13 @@ const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <button type="button" onClick={signOut} aria-label={t("Uitloggen")} title={t("Uitloggen")} className={iconButton}>
+      <button type="button" onClick={gast ? () => setUitlogVraag(true) : signOut} aria-label={t("Uitloggen")} title={t("Uitloggen")} className={iconButton}>
         <LogOut className="h-5 w-5" strokeWidth={1.9} />
       </button>
       <KoppelSheet open={shareOpen} onOpenChange={setShareOpen} />
       <UsageSheet open={usageOpen} onOpenChange={setUsageOpen} />
       <AccountSheet open={accountOpen} onOpenChange={setAccountOpen} />
+      <GastUitlogDialog open={uitlogVraag} onOpenChange={setUitlogVraag} onSignOut={signOut} onCreateAccount={() => setAccountOpen(true)} />
     </div>
   );
 };
