@@ -103,8 +103,8 @@ const UsageSheet = ({ open, onOpenChange }: UsageSheetProps) => {
 
         <p className="mt-4 text-center text-xs text-muted-foreground">
           {t("Hulp nodig?")}{' '}
-          <a className="font-medium text-primary hover:underline" href="mailto:couplecart@gmail.com?subject=Hulp%20bij%20CoupleCart">
-            couplecart@gmail.com
+          <a className="font-medium text-primary hover:underline" href="mailto:info.couplecart@gmail.com?subject=Hulp%20bij%20CoupleCart">
+            info.couplecart@gmail.com
           </a>
         </p>
 

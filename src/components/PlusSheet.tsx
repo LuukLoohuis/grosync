@@ -37,7 +37,7 @@ const PlusSheet = ({ feature, onClose }: PlusSheetProps) => {
       await startCheckout(plan);
     } catch (error) {
       if (error instanceof BetalenUitError) {
-        toast(t("Plus is er bijna"), { description: t('Betalen staat nog niet aan. Mail couplecart@gmail.com als je het eerder wil.') });
+        toast(t("Plus is er bijna"), { description: t('Betalen staat nog niet aan. Mail info.couplecart@gmail.com als je het eerder wil.') });
       } else {
         console.error('Afrekenen mislukt:', error);
         toast.error(t("Afrekenen lukte niet. Probeer het zo nog eens."));
@@ -100,8 +100,8 @@ const PlusSheet = ({ feature, onClose }: PlusSheetProps) => {
 
       <p className="mt-4 text-center text-xs text-muted-foreground">
         {t("Hulp nodig?")}{' '}
-        <a className="font-medium text-primary hover:underline" href="mailto:couplecart@gmail.com?subject=Hulp%20bij%20CoupleCart">
-          couplecart@gmail.com
+        <a className="font-medium text-primary hover:underline" href="mailto:info.couplecart@gmail.com?subject=Hulp%20bij%20CoupleCart">
+          info.couplecart@gmail.com
         </a>
       </p>
 

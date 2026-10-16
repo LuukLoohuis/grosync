@@ -3,7 +3,7 @@ import { ArrowLeft } from 'lucide-react';
 import { taal } from '@/lib/i18n';
 
 const HERZIEN = '28 september 2026';
-const MAIL = 'couplecart@gmail.com';
+const MAIL = 'info.couplecart@gmail.com';
 
 interface Deel {
   titel: string;
@@ -227,7 +227,7 @@ const Legal = () => {
       <main className="mx-auto max-w-2xl px-4 pb-16 pt-4">
         {taal() === 'en' && (
           <p className="mb-4 rounded-[12px] border border-border bg-card px-3 py-2 text-sm text-muted-foreground">
-            These terms, privacy and cookie notes are available in Dutch only. Questions? Email couplecart@gmail.com.
+            These terms, privacy and cookie notes are available in Dutch only. Questions? Email info.couplecart@gmail.com.
           </p>
         )}
         <nav aria-label="Juridisch" className="flex flex-wrap gap-2">

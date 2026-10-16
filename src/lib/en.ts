@@ -582,7 +582,7 @@ export const EN: Record<string, string> = {
   'Nu even niet': 'Not now',
   'Plus is er bijna': 'Plus is almost here',
   'Betalen staat nog niet aan': 'Payments are not switched on yet',
-  'Betalen staat nog niet aan. Mail couplecart@gmail.com als je het eerder wil.': 'Payments are not switched on yet. Email couplecart@gmail.com if you want it sooner.',
+  'Betalen staat nog niet aan. Mail info.couplecart@gmail.com als je het eerder wil.': 'Payments are not switched on yet. Email info.couplecart@gmail.com if you want it sooner.',
   'Afrekenen lukte niet. Probeer het zo nog eens.': 'Checkout failed. Try again in a moment.',
   'Geen betaalpagina gekregen': 'No payment page received',
   'Geen klantportaal gekregen': 'No customer portal received',

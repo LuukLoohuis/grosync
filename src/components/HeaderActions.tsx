@@ -78,7 +78,7 @@ const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
             <a href="#/info/voorwaarden"><FileText className="h-4 w-4" /> {t("Voorwaarden en privacy")}</a>
           </DropdownMenuItem>
           <DropdownMenuItem asChild className="gap-2 min-h-11 cursor-pointer">
-            <a href="mailto:couplecart@gmail.com?subject=Hulp%20bij%20CoupleCart">
+            <a href="mailto:info.couplecart@gmail.com?subject=Hulp%20bij%20CoupleCart">
               <LifeBuoy className="h-4 w-4" /> {t("Hulp nodig?")}
             </a>
           </DropdownMenuItem>
