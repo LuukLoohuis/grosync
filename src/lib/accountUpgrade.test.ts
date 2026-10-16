@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { EN } from '@/lib/en';
 import {
@@ -114,6 +115,15 @@ describe('leesAuthTerugkeer', () => {
       expect(leesAuthTerugkeer(`${SITE}${route}`)).toBeNull();
     }
     expect(leesAuthTerugkeer('geen url')).toBeNull();
+  });
+});
+
+describe('Engelse teksten', () => {
+  it('vertalen alles wat het account-scherm toont', () => {
+    const bron = ['src/components/AccountSheet.tsx'].map((pad) => readFileSync(pad, 'utf8')).join('\n');
+    const teksten = [...bron.matchAll(/\bt\((['"])((?:(?!\1)[^\\]|\\.)*)\1/g)].map((m) => m[2]);
+    expect(teksten.length > 10).toBe(true);
+    expect(teksten.filter((tekst) => !EN[tekst])).toEqual([]);
   });
 });
 
