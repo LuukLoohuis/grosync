@@ -117,6 +117,17 @@ export const markeerGoogleKoppeling = () => {
   }
 };
 
+/** Leest en wist het merkteken: is deze tab net terug van Google? */
+export const vergeetGoogleKoppeling = (): boolean => {
+  try {
+    const viaGoogle = sessionStorage.getItem(GOOGLE_SLEUTEL) === '1';
+    sessionStorage.removeItem(GOOGLE_SLEUTEL);
+    return viaGoogle;
+  } catch {
+    return false;
+  }
+};
+
 export interface AccountTerugkeer {
   terugkeer: AuthTerugkeer;
   viaGoogle: boolean;
@@ -132,13 +143,7 @@ let bewaard: AccountTerugkeer | null = null;
  */
 export const vangAuthTerugkeer = () => {
   if (typeof window === 'undefined') return;
-  let viaGoogle = false;
-  try {
-    viaGoogle = sessionStorage.getItem(GOOGLE_SLEUTEL) === '1';
-    sessionStorage.removeItem(GOOGLE_SLEUTEL);
-  } catch {
-    // Geen opslag: dan weten we niet of dit een terugkeer van Google is.
-  }
+  const viaGoogle = vergeetGoogleKoppeling();
   const terugkeer = leesAuthTerugkeer(window.location.href);
   if (!terugkeer) return;
   bewaard = { terugkeer, viaGoogle };

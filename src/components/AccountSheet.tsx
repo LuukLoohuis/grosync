@@ -9,7 +9,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import {
-  accountFoutmelding, accountStap, isGast, markeerGoogleKoppeling, neemAuthTerugkeer,
+  accountFoutmelding, accountStap, isGast, markeerGoogleKoppeling, neemAuthTerugkeer, vergeetGoogleKoppeling,
 } from '@/lib/accountUpgrade';
 import { t } from '@/lib/i18n';
 
@@ -84,6 +84,18 @@ const AccountSheet = ({ open, onOpenChange }: AccountSheetProps) => {
       toast.success(t('Je account is klaar. Je lijst blijft gewoon van jou.'));
     }
   }, [loading, user, onOpenChange]);
+
+  // Met "terug" van Google zet Safari de pagina uit zijn cache terug zoals hij was: met
+  // een draaiende Google-knop en het merkteken nog in de tab.
+  useEffect(() => {
+    const terugUitCache = (e: PageTransitionEvent) => {
+      if (!e.persisted) return;
+      vergeetGoogleKoppeling();
+      setBezig(null);
+    };
+    window.addEventListener('pageshow', terugUitCache);
+    return () => window.removeEventListener('pageshow', terugUitCache);
+  }, []);
 
   // Wacht er een bevestiging, dan kijken we bij openen en bij terugkomen in de app of de
   // link al open is — ook als dat op een ander toestel of in een andere browser gebeurde.

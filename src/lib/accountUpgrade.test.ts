@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { EN } from '@/lib/en';
 import {
-  type AccountRoute, accountFoutmelding, accountStap, isGast, leesAuthTerugkeer, zonderAuthFout,
+  type AccountRoute, accountFoutmelding, accountStap, isGast, leesAuthTerugkeer, markeerGoogleKoppeling,
+  vergeetGoogleKoppeling, zonderAuthFout,
 } from '@/lib/accountUpgrade';
 
 const SITE = 'https://www.couplecart.nl/';
@@ -124,6 +125,15 @@ describe('Engelse teksten', () => {
     const teksten = [...bron.matchAll(/\bt\((['"])((?:(?!\1)[^\\]|\\.)*)\1/g)].map((m) => m[2]);
     expect(teksten.length > 10).toBe(true);
     expect(teksten.filter((tekst) => !EN[tekst])).toEqual([]);
+  });
+});
+
+describe('Google-merkteken', () => {
+  it('meldt een terugkeer van Google precies één keer', () => {
+    expect(vergeetGoogleKoppeling()).toBe(false);
+    markeerGoogleKoppeling();
+    expect(vergeetGoogleKoppeling()).toBe(true);
+    expect(vergeetGoogleKoppeling()).toBe(false);
   });
 });
 
