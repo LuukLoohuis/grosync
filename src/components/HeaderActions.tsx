@@ -1,10 +1,13 @@
 import { useState } from 'react';
-import { Heart, LogOut, MoreVertical, Gauge, PieChart, LifeBuoy, FileText, Link2 } from 'lucide-react';
+import { Heart, LogOut, MoreVertical, Gauge, PieChart, LifeBuoy, FileText, Link2, SquarePlus } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useAuth } from '@/hooks/useAuth';
+import { useInstallHint } from '@/hooks/useInstallHint';
 import { useAppContext } from '@/contexts/AppContext';
+import InstallSheet from '@/components/InstallSheet';
 import KoppelSheet from '@/components/KoppelSheet';
 import UsageSheet from '@/components/UsageSheet';
+import { isIos } from '@/lib/installHint';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup,
   DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -29,6 +32,8 @@ const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
   const { theme, setTheme } = useTheme();
   const [shareOpen, setShareOpen] = useState(false);
   const [usageOpen, setUsageOpen] = useState(false);
+  const install = useInstallHint();
+  const [installOpen, setInstallOpen] = useState(false);
 
   const iconButton = `h-11 w-11 shrink-0 flex items-center justify-center rounded-xl transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 ${
     onDark
@@ -69,6 +74,11 @@ const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
           <DropdownMenuItem className="gap-2 min-h-11 cursor-pointer" onSelect={() => setUsageOpen(true)}>
             <PieChart className="h-4 w-4" /> {t("Je tegoed")}
           </DropdownMenuItem>
+          {install.offer && (
+            <DropdownMenuItem className="gap-2 min-h-11 cursor-pointer" onSelect={() => setInstallOpen(true)}>
+              <SquarePlus className="h-4 w-4" /> {isIos(install.way) ? t("Zet op beginscherm") : t("Installeer als app")}
+            </DropdownMenuItem>
+          )}
           {isAdmin && (
             <DropdownMenuItem asChild className="gap-2 min-h-11 cursor-pointer">
               <a href="#/admin"><Gauge className="h-4 w-4" /> {t("Beheer")}</a>
@@ -94,6 +104,7 @@ const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
       </button>
       <KoppelSheet open={shareOpen} onOpenChange={setShareOpen} />
       <UsageSheet open={usageOpen} onOpenChange={setUsageOpen} />
+      <InstallSheet open={installOpen} onOpenChange={setInstallOpen} way={install.way} canPrompt={install.canPrompt} />
     </div>
   );
 };

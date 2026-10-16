@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { Separator } from '@/components/ui/separator';
+import InstallTip from '@/components/InstallTip';
 import { t } from '@/lib/i18n';
 
 const Auth = () => {
@@ -84,6 +85,8 @@ const handleGoogleLogin = async () => {
           />
           <p className="font-display text-[1.375rem] font-bold tracking-[-0.01em] text-foreground">{t("Two People. One Cart.")}</p>
         </div>
+
+        <InstallTip className="mt-6" />
 
         <div className="mt-7 space-y-3">
           <button

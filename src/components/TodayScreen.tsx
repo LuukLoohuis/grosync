@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import AddToListSheet from '@/components/AddToListSheet';
 import HeaderActions from '@/components/HeaderActions';
+import InstallCard from '@/components/InstallCard';
 import OfflineBanner from '@/components/OfflineBanner';
 import RecipeViewDialog from '@/components/RecipeViewDialog';
 import { useAppContext } from '@/contexts/AppContext';
@@ -234,6 +235,7 @@ const TodayScreen = ({ onNavigate }: { onNavigate: (tab: TodayTarget) => void })
 
       <div className="space-y-2.5 px-[18px] pt-4">
         <OfflineBanner />
+        <InstallCard />
 
         <section className="rounded-[14px] border border-border bg-card p-3.5">
           <div className="flex items-baseline justify-between gap-2">

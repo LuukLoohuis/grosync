@@ -1,6 +1,10 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import { watchInstallPrompt } from "./lib/installHint";
+
+// Chrome offers its install prompt early on; listen before the app renders.
+watchInstallPrompt();
 
 createRoot(document.getElementById("root")!).render(<App />);
 
