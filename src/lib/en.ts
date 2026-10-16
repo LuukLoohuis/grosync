@@ -588,6 +588,20 @@ export const EN: Record<string, string> = {
   'Geen klantportaal gekregen': 'No customer portal received',
   'Je gratis tegoed voor deze maand is op': 'Your free allowance for this month is used up',
 
+  // Account maken als gast
+  'Dit e-mailadres hoort al bij een ander CoupleCart-account. Accounts samenvoegen kan niet: kies een ander e-mailadres.': 'This email address already belongs to another CoupleCart account. Accounts cannot be merged, so please choose a different address.',
+  'Het e-mailadres van dit Google-account hoort al bij een ander CoupleCart-account. Accounts samenvoegen kan niet: kies een ander Google-account of maak je account met e-mail.': "This Google account's email address already belongs to another CoupleCart account. Accounts cannot be merged, so choose a different Google account or create your account with email.",
+  'Dit Google-account hoort al bij een ander CoupleCart-account. Accounts samenvoegen kan niet: kies een ander Google-account of maak je account met e-mail.': 'This Google account already belongs to another CoupleCart account. Accounts cannot be merged, so choose a different Google account or create your account with email.',
+  'Een account maken met Google kan nog niet. Gebruik voorlopig je e-mailadres.': 'Creating an account with Google is not available yet. Please use your email address for now.',
+  'We kunnen nu geen mail naar dit adres sturen. Probeer het later opnieuw of gebruik Google.': "We can't send email to this address right now. Try again later or use Google.",
+  'Er zijn net te veel mails verstuurd. Probeer het over een paar minuten opnieuw.': 'Too many emails were sent just now. Please try again in a few minutes.',
+  'Dit e-mailadres klopt niet. Kijk het nog even na.': "This email address doesn't look right. Please check it.",
+  'Kies een sterker wachtwoord van minstens 6 tekens.': 'Choose a stronger password of at least 6 characters.',
+  'Deze bevestigingslink is verlopen of al gebruikt. Vraag een nieuwe aan.': 'This confirmation link has expired or was already used. Please request a new one.',
+  'Bevestig eerst je e-mailadres via de mail die we je stuurden.': 'Please confirm your email address first, using the email we sent you.',
+  'Koppelen met Google is afgebroken. Er is niets veranderd.': 'Linking with Google was cancelled. Nothing has changed.',
+  'Er ging iets mis. Probeer het opnieuw.': 'Something went wrong. Please try again.',
+
   // Weekplan
   'Maaltijd': 'Meal',
   '“{0}” uit je weekplan gehaald': '“{0}” removed from your week plan',
