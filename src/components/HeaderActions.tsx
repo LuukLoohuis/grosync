@@ -5,6 +5,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { useInstallHint } from '@/hooks/useInstallHint';
 import { useAppContext } from '@/contexts/AppContext';
 import InstallSheet from '@/components/InstallSheet';
+import AccountSheet, { AccountMenuItem } from '@/components/AccountSheet';
+import GastUitlogDialog from '@/components/GastUitlogDialog';
 import KoppelSheet from '@/components/KoppelSheet';
 import UsageSheet from '@/components/UsageSheet';
 import { isIos } from '@/lib/installHint';
@@ -13,6 +15,7 @@ import {
   DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { type Taal, setTaal, t, taal } from '@/lib/i18n';
+import { isGast } from '@/lib/accountUpgrade';
 
 const THEMES = [
   ['system', t('Zoals je telefoon')],
@@ -27,13 +30,16 @@ const TALEN: [Taal, string][] = [
 
 /** Share, theme menu and sign out. `onDark` styles them for the green plane on "Vandaag". */
 const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
-  const { signOut } = useAuth();
+  const { session, signOut } = useAuth();
   const { isAdmin } = useAppContext();
   const { theme, setTheme } = useTheme();
   const [shareOpen, setShareOpen] = useState(false);
   const [usageOpen, setUsageOpen] = useState(false);
   const install = useInstallHint();
   const [installOpen, setInstallOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [uitlogVraag, setUitlogVraag] = useState(false);
+  const gast = isGast(session?.user);
 
   const iconButton = `h-11 w-11 shrink-0 flex items-center justify-center rounded-xl transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 ${
     onDark
@@ -53,6 +59,7 @@ const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
+          {gast && <AccountMenuItem onSelect={() => setAccountOpen(true)} />}
           <DropdownMenuLabel>{t("Thema")}</DropdownMenuLabel>
           <DropdownMenuRadioGroup value={theme ?? 'system'} onValueChange={setTheme}>
             {THEMES.map(([value, label]) => (
@@ -99,12 +106,14 @@ const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <button type="button" onClick={signOut} aria-label={t("Uitloggen")} title={t("Uitloggen")} className={iconButton}>
+      <button type="button" onClick={gast ? () => setUitlogVraag(true) : signOut} aria-label={t("Uitloggen")} title={t("Uitloggen")} className={iconButton}>
         <LogOut className="h-5 w-5" strokeWidth={1.9} />
       </button>
       <KoppelSheet open={shareOpen} onOpenChange={setShareOpen} />
       <UsageSheet open={usageOpen} onOpenChange={setUsageOpen} />
       <InstallSheet open={installOpen} onOpenChange={setInstallOpen} way={install.way} canPrompt={install.canPrompt} />
+      <AccountSheet open={accountOpen} onOpenChange={setAccountOpen} />
+      <GastUitlogDialog open={uitlogVraag} onOpenChange={setUitlogVraag} onSignOut={signOut} onCreateAccount={() => setAccountOpen(true)} />
     </div>
   );
 };
