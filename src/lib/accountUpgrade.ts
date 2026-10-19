@@ -137,9 +137,10 @@ let bewaard: AccountTerugkeer | null = null;
 
 /**
  * Eén keer bij het laden, vóór React rendert: bewaart wat Supabase Auth na
- * een redirect meegaf, zodat het account-scherm het kan tonen. Een fout gaat
- * meteen uit de URL — anders leest de HashRouter "#error=…" als route en toont
- * hij de 404-pagina. Een sessie in de URL blijft staan; die leest Supabase zelf.
+ * een redirect meegaf, zodat het account-scherm het kan tonen (uitgelogd doet
+ * SignedOutAuthError in App.tsx dat). Een fout gaat meteen uit de URL, zodat de
+ * HashRouter "#error=…" niet als route leest. Een sessie in de URL blijft
+ * staan; die leest Supabase zelf, en AuthReturn in App.tsx wacht daarop.
  */
 export const vangAuthTerugkeer = () => {
   if (typeof window === 'undefined') return;

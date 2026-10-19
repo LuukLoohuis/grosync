@@ -7,8 +7,8 @@ import { watchInstallPrompt } from "./lib/installHint";
 // Chrome offers its install prompt early on; listen before the app renders.
 watchInstallPrompt();
 
-// Before the first render: an auth error in the URL (#error=…) would otherwise
-// be read as a route by the HashRouter and show the 404 page.
+// Before the first render: an auth error in the URL (#error=…) leaves the URL, so the
+// HashRouter never reads it as a route, and waits for AccountSheet or App.tsx to report it.
 vangAuthTerugkeer();
 
 createRoot(document.getElementById("root")!).render(<App />);
