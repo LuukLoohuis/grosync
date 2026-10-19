@@ -21,10 +21,14 @@ export interface Household {
 export const useHousehold = (selfId: string | null): Household => {
   const [ownerId, setOwnerId] = useState<string | null>(selfId);
   const [rol, setRol] = useState<Rol>('geen');
-  const [loading, setLoading] = useState(Boolean(selfId));
+  // Voor wie het huishouden gelezen is. De sessie komt pas na de eerste render
+  // binnen; tot het huishouden van die nieuwe selfId er is, telt dat als laden.
+  // Anders toont de app één render lang je eigen lijst en begint daarna opnieuw.
+  const [gelezenVoor, setGelezenVoor] = useState<string | null>(null);
+  const loading = Boolean(selfId) && gelezenVoor !== selfId;
 
   const refresh = useCallback(async () => {
-    if (!selfId) { setOwnerId(null); setRol('geen'); setLoading(false); return; }
+    if (!selfId) { setOwnerId(null); setRol('geen'); setGelezenVoor(null); return; }
     const [lid, eigenaar] = await Promise.all([
       supabase
         .from('shared_list_members')
@@ -48,13 +52,12 @@ export const useHousehold = (selfId: string | null): Household => {
       setOwnerId(selfId);
       setRol((eigenaar.count ?? 0) > 0 ? 'eigenaar' : 'geen');
     }
-    setLoading(false);
+    setGelezenVoor(selfId);
   }, [selfId]);
 
   useEffect(() => {
-    setLoading(Boolean(selfId));
     void refresh();
-  }, [refresh, selfId]);
+  }, [refresh]);
 
   const leave = useCallback(async () => {
     if (!selfId) return false;
