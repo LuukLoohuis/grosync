@@ -650,6 +650,8 @@ export const EN: Record<string, string> = {
   'Google login mislukt': 'Google sign-in failed',
   'Er ging iets mis': 'Something went wrong',
   'Er ging iets mis bij het starten als gast': 'Something went wrong starting as a guest',
+  'Deze link is verlopen of al gebruikt. Log in met je e-mailadres en wachtwoord.': 'This link has expired or was already used. Sign in with your email and password.',
+  'Inloggen lukte niet. Probeer het nog eens.': 'Signing in did not work. Please try again.',
   'Voorwaarden': 'Terms',
   'Privacy': 'Privacy',
   'Cookies': 'Cookies',

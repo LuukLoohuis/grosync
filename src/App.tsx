@@ -1,9 +1,14 @@
+import { useEffect } from "react";
 import { ThemeProvider } from "next-themes";
+import { toast } from "sonner";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { HashRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { HashRouter, Routes, Route, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { PENDING_IMPORT_KEY } from "@/lib/recipeImport";
+import { readAuthReturn } from "@/lib/authReturn";
+import { t } from "@/lib/i18n";
 import { useAuth } from "@/hooks/useAuth";
 import { useHousehold } from "@/hooks/useHousehold";
 import { AppProvider } from "@/contexts/AppContext";
@@ -35,6 +40,37 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
+/**
+ * Back from Google or from a confirmation mail (see readAuthReturn). Supabase reads the link
+ * itself and, when it worked, clears it from the address bar, which lands on "/". Until then
+ * this shows nothing instead of "Deze pagina bestaat niet"; when it failed, it says why.
+ */
+const AuthReturn = ({ errorCode }: { errorCode: string | null }) => {
+  const navigate = useNavigate();
+  useEffect(() => {
+    let gone = false;
+    void (async () => {
+      const { error } = await supabase.auth.initialize();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (gone) return;
+      if (error) {
+        toast.error(errorCode === "otp_expired"
+          ? t("Deze link is verlopen of al gebruikt. Log in met je e-mailadres en wachtwoord.")
+          : t("Inloggen lukte niet. Probeer het nog eens."));
+      }
+      navigate(session ? "/" : "/auth", { replace: true });
+    })();
+    return () => { gone = true; };
+  }, [errorCode, navigate]);
+  return null;
+};
+
+const UnknownRoute = () => {
+  const { pathname } = useLocation();
+  const authReturn = readAuthReturn(pathname);
+  return authReturn ? <AuthReturn errorCode={authReturn.errorCode} /> : <NotFound />;
+};
+
 // Follows the phone's light or dark setting unless you pick one under "Thema".
 const App = () => (
   <ThemeProvider attribute="class" defaultTheme="system" enableSystem storageKey="couplecart-theme" disableTransitionOnChange>
@@ -56,7 +92,7 @@ const App = () => (
             <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="/info/:deel" element={<Legal />} />
             <Route path="/info" element={<Legal />} />
-            <Route path="*" element={<NotFound />} />
+            <Route path="*" element={<UnknownRoute />} />
           </Routes>
         </HashRouter>
       </TooltipProvider>
