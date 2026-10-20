@@ -8,6 +8,7 @@ import { HashRouter, Routes, Route, Navigate, useLocation, useNavigate } from "r
 import { supabase } from "@/integrations/supabase/client";
 import { PENDING_IMPORT_KEY } from "@/lib/recipeImport";
 import { readAuthReturn } from "@/lib/authReturn";
+import { neemAuthTerugkeer } from "@/lib/accountUpgrade";
 import { t } from "@/lib/i18n";
 import { useAuth } from "@/hooks/useAuth";
 import { useHousehold } from "@/hooks/useHousehold";
@@ -40,10 +41,18 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
+const authReturnFailed = (errorCode: string | null) => {
+  toast.error(errorCode === "otp_expired"
+    ? t("Deze link is verlopen of al gebruikt. Log in met je e-mailadres en wachtwoord.")
+    : t("Inloggen lukte niet. Probeer het nog eens."));
+};
+
 /**
  * Back from Google or from a confirmation mail (see readAuthReturn). Supabase reads the link
  * itself and, when it worked, clears it from the address bar, which lands on "/". Until then
  * this shows nothing instead of "Deze pagina bestaat niet"; when it failed, it says why.
+ * An error Supabase sends along (#error=…) rarely gets here: main.tsx takes it out of the URL
+ * before the first render (vangAuthTerugkeer) and AccountSheet or SignedOutAuthError reports it.
  */
 const AuthReturn = ({ errorCode }: { errorCode: string | null }) => {
   const navigate = useNavigate();
@@ -53,15 +62,26 @@ const AuthReturn = ({ errorCode }: { errorCode: string | null }) => {
       const { error } = await supabase.auth.initialize();
       const { data: { session } } = await supabase.auth.getSession();
       if (gone) return;
-      if (error) {
-        toast.error(errorCode === "otp_expired"
-          ? t("Deze link is verlopen of al gebruikt. Log in met je e-mailadres en wachtwoord.")
-          : t("Inloggen lukte niet. Probeer het nog eens."));
-      }
+      if (error) authReturnFailed(errorCode);
       navigate(session ? "/" : "/auth", { replace: true });
     })();
     return () => { gone = true; };
   }, [errorCode, navigate]);
+  return null;
+};
+
+/**
+ * The error main.tsx took out of the URL. Signed in, AccountSheet reports it (in the sheet for a
+ * guest); signed out there is no AccountSheet, so this says why the link or Google did not work.
+ */
+const SignedOutAuthError = () => {
+  const { session, loading } = useAuth();
+  const signedIn = Boolean(session);
+  useEffect(() => {
+    if (loading || signedIn) return;
+    const back = neemAuthTerugkeer();
+    if (back?.terugkeer.soort === "fout") authReturnFailed(back.terugkeer.code);
+  }, [loading, signedIn]);
   return null;
 };
 
@@ -84,6 +104,7 @@ const App = () => (
           offset={{ bottom: 'var(--toast-offset, calc(5.5rem + env(safe-area-inset-bottom)))' }}
           mobileOffset={{ bottom: 'var(--toast-offset, calc(5.5rem + env(safe-area-inset-bottom)))' }}
         />
+        <SignedOutAuthError />
         <HashRouter>
           <Routes>
             <Route path="/auth" element={<Auth />} />

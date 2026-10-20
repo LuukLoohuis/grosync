@@ -1,6 +1,7 @@
 // CoupleCart service worker: keeps the app itself available without signal.
 // The list data is stored separately, in localStorage, by useGroceryItems.
-const CACHE = 'couplecart-app-v1';
+// Raise the version when favicon.png changes: it is kept under the same name.
+const CACHE = 'couplecart-app-v2';
 const MAX_ASSETS = 40;
 
 self.addEventListener('install', (event) => {
