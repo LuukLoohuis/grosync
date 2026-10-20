@@ -177,7 +177,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
     const { name, amount } = splitAmount(item.name);
     const bonus = item.ahProduct?.isBonus;
     return (
-      <SwipeToCheck key={item.id} onSwipe={() => checkOff(item)}>
+      <SwipeToCheck key={item.id} onSwipe={() => checkOff(item)} onRemove={() => removeGroceryItem(item.id)}>
         <div className="flex min-h-14 items-center gap-1 rounded-[14px] border border-border bg-card pl-1 pr-3">
           <button
             onClick={() => checkOff(item)}
