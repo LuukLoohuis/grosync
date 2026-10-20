@@ -39,7 +39,7 @@ export const AccountMenuItem = ({ onSelect }: { onSelect: () => void }) => (
       <UserPlus className="h-4 w-4 shrink-0 text-primary" />
       <span className="flex flex-col">
         <span className="font-semibold">{t('Account aanmaken')}</span>
-        <span className="text-xs text-muted-foreground">{t('Houd je lijst, ook op andere toestellen')}</span>
+        <span className="text-xs opacity-70">{t('Houd je lijst, ook op andere toestellen')}</span>
       </span>
     </DropdownMenuItem>
     <DropdownMenuSeparator />
@@ -189,7 +189,7 @@ const AccountSheet = ({ open, onOpenChange }: AccountSheetProps) => {
           <SheetDescription>{uitleg}</SheetDescription>
         </SheetHeader>
 
-        <div className="flex-1 space-y-3 overflow-y-auto px-5 pb-5">
+        <div className="flex-1 space-y-3 overflow-y-auto px-5 pb-5 pt-1">
           {fout && stap !== 'klaar' && (
             <p role="alert" className="rounded-[12px] border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-sm text-destructive">
               {fout}
