@@ -12,7 +12,9 @@ import { neemAuthTerugkeer } from "@/lib/accountUpgrade";
 import { t } from "@/lib/i18n";
 import { useAuth } from "@/hooks/useAuth";
 import { useHousehold } from "@/hooks/useHousehold";
+import { useWachtwoordHerstel } from "@/hooks/useWachtwoordHerstel";
 import { AppProvider } from "@/contexts/AppContext";
+import NieuwWachtwoord from "@/components/NieuwWachtwoord";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import SharedList from "./pages/SharedList";
@@ -27,6 +29,8 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   // Gekoppeld aan iemand? Dan draait de hele app op diens lijst, recepten en kast.
   const household = useHousehold(session?.user.id ?? null);
+  // Signed in through the link from "Wachtwoord vergeten?": a new password comes first.
+  const nieuwWachtwoord = useWachtwoordHerstel(session?.user.id);
   if (loading || household.loading) return null;
   if (!session) {
     // Keep a link shared into the app (iOS shortcut, Android share) across the login screen.
@@ -34,6 +38,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
     if (pending) sessionStorage.setItem(PENDING_IMPORT_KEY, pending);
     return <Navigate to="/auth" replace />;
   }
+  if (nieuwWachtwoord) return <NieuwWachtwoord email={session.user.email} />;
   return (
     <AppProvider userId={household.ownerId ?? session.user.id} selfId={session.user.id} household={household}>
       {children}
@@ -43,7 +48,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 
 const authReturnFailed = (errorCode: string | null) => {
   toast.error(errorCode === "otp_expired"
-    ? t("Deze link is verlopen of al gebruikt. Log in met je e-mailadres en wachtwoord.")
+    ? t("Deze link is verlopen of al gebruikt. Log in, of vraag via ‘Wachtwoord vergeten?’ een nieuwe aan.")
     : t("Inloggen lukte niet. Probeer het nog eens."));
 };
 

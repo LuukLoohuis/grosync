@@ -683,7 +683,7 @@ export const EN: Record<string, string> = {
   'Google login mislukt': 'Google sign-in failed',
   'Er ging iets mis': 'Something went wrong',
   'Er ging iets mis bij het starten als gast': 'Something went wrong starting as a guest',
-  'Deze link is verlopen of al gebruikt. Log in met je e-mailadres en wachtwoord.': 'This link has expired or was already used. Sign in with your email and password.',
+  'Deze link is verlopen of al gebruikt. Log in, of vraag via ‘Wachtwoord vergeten?’ een nieuwe aan.': 'This link has expired or was already used. Sign in, or request a new one via ‘Forgot password?’.',
   'Inloggen lukte niet. Probeer het nog eens.': 'Signing in did not work. Please try again.',
   // Wat er misging (authFout.ts)
   'E-mailadres of wachtwoord klopt niet. Maakte je je account met Google? Kies dan ‘Doorgaan met Google’.': 'Wrong email address or password. Did you create your account with Google? Then choose ‘Continue with Google’.',
@@ -700,6 +700,14 @@ export const EN: Record<string, string> = {
   'Stuur de link': 'Send the link',
   'Hoort {0} bij een account, dan krijg je een mail met een link om een nieuw wachtwoord te kiezen.': 'If {0} belongs to an account, you’ll get an email with a link to choose a new password.',
   'Terug naar inloggen': 'Back to sign in',
+  // Nieuw wachtwoord na de link uit de mail
+  'Kies een nieuw wachtwoord': 'Choose a new password',
+  'Voor {0}. Hiermee log je voortaan in.': 'For {0}. From now on, you sign in with it.',
+  'Hiermee log je voortaan in.': 'From now on, you sign in with it.',
+  'Nieuw wachtwoord': 'New password',
+  'Wachtwoord opslaan': 'Save password',
+  'Annuleren en uitloggen': 'Cancel and sign out',
+  'Je nieuwe wachtwoord is opgeslagen.': 'Your new password has been saved.',
   'Voorwaarden': 'Terms',
   'Privacy': 'Privacy',
   'Cookies': 'Cookies',
