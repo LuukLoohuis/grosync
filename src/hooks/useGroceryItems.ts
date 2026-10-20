@@ -207,7 +207,7 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
     const item = groceryItems[index];
     if (!item) return;
     deleteWithUndo({
-      message: `“${item.name}” verwijderd`,
+      message: t('“{0}” verwijderd', [item.name]),
       remove: () => setGroceryItems((prev) => prev.filter((i) => i.id !== id)),
       restore: () => setGroceryItems((prev) => (
         prev.some((i) => i.id === id) ? prev : [...prev.slice(0, index), item, ...prev.slice(index)]

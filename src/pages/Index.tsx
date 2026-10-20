@@ -49,11 +49,14 @@ const Index = () => {
     el.style.transform = px ? `translateX(${px}px)` : '';
   };
   const veegStart = (e: TouchEvent<HTMLElement>) => {
+    // De winkelmodus en de vellen hangen in een portaal buiten dit scherm. React
+    // stuurt hun veeg toch hierlangs; dat is geen tabwissel.
+    if (!e.currentTarget.contains(e.target as Node)) { veeg.current = null; return; }
     const vinger = e.touches[0];
     let el = e.target as HTMLElement | null;
     let laat = false;
     while (el && el !== e.currentTarget) {
-      // Iets dat zelf zijwaarts schuift, of een tegel die je kunt wegvegen, gaat voor.
+      // Iets dat zelf zijwaarts schuift, of een tegel of boodschap die je kunt wegvegen, gaat voor.
       if (el.dataset?.veeg === 'item') { laat = true; break; }
       if (el.scrollWidth > el.clientWidth + 2 && /auto|scroll/.test(getComputedStyle(el).overflowX)) { laat = true; break; }
       el = el.parentElement;
