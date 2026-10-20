@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Mail, Eye, EyeOff } from 'lucide-react';
-import couplecartLogo from '@/assets/couplecart-logo.png';
+import Logo from '@/components/Logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
@@ -72,18 +72,8 @@ const handleGoogleLogin = async () => {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-5 py-10">
       <div className="w-full max-w-sm">
-        <div className="flex flex-col items-center text-center">
-          {/* The artwork fills only the middle 29% of a square PNG; the negative
-              margins crop the empty space so the logo itself can be big. */}
-          <img
-            src={couplecartLogo}
-            alt={t("CoupleCart")}
-            className="mb-[-32%] mt-[-28%] w-[min(23rem,90vw)] max-w-full"
-            width={1024}
-            height={1024}
-            fetchPriority="high"
-          />
-          <p className="font-display text-[1.375rem] font-bold tracking-[-0.01em] text-foreground">{t("Two People. One Cart.")}</p>
+        <div className="flex justify-center">
+          <Logo className="h-auto w-[min(16rem,70vw)]" />
         </div>
 
         <InstallTip className="mt-6" />
