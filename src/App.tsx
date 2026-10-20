@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { lazy, useEffect } from "react";
 import { ThemeProvider } from "next-themes";
 import { toast } from "sonner";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -13,13 +13,16 @@ import { t } from "@/lib/i18n";
 import { useAuth } from "@/hooks/useAuth";
 import { useHousehold } from "@/hooks/useHousehold";
 import { AppProvider } from "@/contexts/AppContext";
+import { LazyBoundary } from "@/components/LazyBoundary";
 import Splash from "@/components/Splash";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
-import SharedList from "./pages/SharedList";
-import Admin from "./pages/Admin";
-import Legal from "./pages/Legal";
 import NotFound from "./pages/NotFound";
+
+// Pages you rarely open load on demand, each in its own chunk; the list and the login screen don't wait for them.
+const SharedList = lazy(() => import("./pages/SharedList"));
+const Admin = lazy(() => import("./pages/Admin"));
+const Legal = lazy(() => import("./pages/Legal"));
 
 const queryClient = new QueryClient();
 
@@ -107,15 +110,17 @@ const App = () => (
         />
         <SignedOutAuthError />
         <HashRouter>
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/shared/:shareCode" element={<SharedList />} />
-            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-            <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
-            <Route path="/info/:deel" element={<Legal />} />
-            <Route path="/info" element={<Legal />} />
-            <Route path="*" element={<UnknownRoute />} />
-          </Routes>
+          <LazyBoundary fallback={<Splash />}>
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/shared/:shareCode" element={<SharedList />} />
+              <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+              <Route path="/admin" element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+              <Route path="/info/:deel" element={<Legal />} />
+              <Route path="/info" element={<Legal />} />
+              <Route path="*" element={<UnknownRoute />} />
+            </Routes>
+          </LazyBoundary>
         </HashRouter>
       </TooltipProvider>
     </QueryClientProvider>

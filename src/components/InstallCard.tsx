@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { ArrowRight, SquarePlus, X } from 'lucide-react';
-import InstallSheet from '@/components/InstallSheet';
+import { LazySheet } from '@/components/LazyBoundary';
 import { useInstallHint } from '@/hooks/useInstallHint';
 import { isIos, promptInstall } from '@/lib/installHint';
+import { lazyPart } from '@/lib/lazyPart';
 import { t } from '@/lib/i18n';
+
+const InstallSheet = lazyPart(() => import('@/components/InstallSheet'));
 
 /** A one-off card on "Vandaag": put CoupleCart on the home screen. The ✕ hides it for good; the menu keeps it. */
 const InstallCard = () => {
@@ -49,7 +52,9 @@ const InstallCard = () => {
       >
         <X className="h-4 w-4" />
       </button>
-      <InstallSheet open={open} onOpenChange={setOpen} way={way} canPrompt={canPrompt} />
+      <LazySheet open={open} onClose={() => setOpen(false)}>
+        <InstallSheet open={open} onOpenChange={setOpen} way={way} canPrompt={canPrompt} />
+      </LazySheet>
     </section>
   );
 };

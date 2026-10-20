@@ -1,23 +1,26 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, ChefHat, Plus, ShoppingCart } from 'lucide-react';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import AddToListSheet from '@/components/AddToListSheet';
 import HeaderActions from '@/components/HeaderActions';
 import InstallCard from '@/components/InstallCard';
+import { LazySheet } from '@/components/LazyBoundary';
 import OfflineBanner from '@/components/OfflineBanner';
 import RecipeViewDialog from '@/components/RecipeViewDialog';
 import { useAppContext } from '@/contexts/AppContext';
 import { useMealPlanner } from '@/hooks/useMealPlanner';
 import { leesBonusGeheugen } from '@/lib/bonusMemory';
 import { splitAmount } from '@/lib/itemAmount';
+import { lazyPart, preloadWhenIdle } from '@/lib/lazyPart';
 import { repairRecipeImage } from '@/lib/recipeImageRepair';
 import type { GroceryItem, Recipe } from '@/types';
 import { locale, t } from '@/lib/i18n';
 
 type TodayTarget = 'list' | 'recipes' | 'bonus';
+
+const AddToListSheet = lazyPart(() => import('@/components/AddToListSheet'));
 
 const euro = new Intl.NumberFormat(locale(), { style: 'currency', currency: 'EUR' });
 
@@ -43,6 +46,7 @@ const TodayScreen = ({ onNavigate }: { onNavigate: (tab: TodayTarget) => void })
   };
   const planner = useMealPlanner(userId, recipes);
   const [addRecipe, setAddRecipe] = useState<Recipe | null>(null);
+  useEffect(() => preloadWhenIdle([AddToListSheet]), []);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [pickerDag, setPickerDag] = useState(dagIndex());
   const [bonus] = useState(leesBonusGeheugen);
@@ -362,7 +366,9 @@ const TodayScreen = ({ onNavigate }: { onNavigate: (tab: TodayTarget) => void })
         )}
       </div>
 
-      <AddToListSheet recipe={addRecipe} onClose={() => setAddRecipe(null)} onNavigate={() => onNavigate('list')} />
+      <LazySheet open={addRecipe !== null} onClose={() => setAddRecipe(null)}>
+        <AddToListSheet recipe={addRecipe} onClose={() => setAddRecipe(null)} onNavigate={() => onNavigate('list')} />
+      </LazySheet>
 
       <Sheet open={pickerOpen} onOpenChange={setPickerOpen}>
         <SheetContent side="bottom" className="mx-auto flex max-h-[85vh] [@supports(height:100dvh)]:max-h-[85dvh] max-w-lg flex-col gap-0 rounded-t-[20px] p-0 shadow-sheet">

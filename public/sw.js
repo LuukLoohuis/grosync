@@ -2,7 +2,8 @@
 // The list data is stored separately, in localStorage, by useGroceryItems.
 // Raise the version when favicon.png changes: it is kept under the same name.
 const CACHE = 'couplecart-app-v2';
-const MAX_ASSETS = 40;
+// One version is ~30 files since parts of the app load on demand; this keeps the current one whole.
+const MAX_ASSETS = 80;
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(['/', '/favicon.png'])));

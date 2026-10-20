@@ -1,21 +1,25 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Heart, LogOut, MoreVertical, Gauge, PieChart, LifeBuoy, FileText, Link2, SquarePlus } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useAuth } from '@/hooks/useAuth';
 import { useInstallHint } from '@/hooks/useInstallHint';
 import { useAppContext } from '@/contexts/AppContext';
-import InstallSheet from '@/components/InstallSheet';
 import AccountSheet, { AccountMenuItem } from '@/components/AccountSheet';
 import GastUitlogDialog from '@/components/GastUitlogDialog';
-import KoppelSheet from '@/components/KoppelSheet';
-import UsageSheet from '@/components/UsageSheet';
+import { LazySheet } from '@/components/LazyBoundary';
 import { isIos } from '@/lib/installHint';
+import { lazyPart, preloadWhenIdle } from '@/lib/lazyPart';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuRadioGroup,
   DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { type Taal, setTaal, t, taal } from '@/lib/i18n';
 import { isGast } from '@/lib/accountUpgrade';
+
+// The sheets behind these buttons load on demand, each in its own chunk.
+const KoppelSheet = lazyPart(() => import('@/components/KoppelSheet'));
+const UsageSheet = lazyPart(() => import('@/components/UsageSheet'));
+const InstallSheet = lazyPart(() => import('@/components/InstallSheet'));
 
 const THEMES = [
   ['system', t('Zoals je telefoon')],
@@ -40,6 +44,8 @@ const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
   const [accountOpen, setAccountOpen] = useState(false);
   const [uitlogVraag, setUitlogVraag] = useState(false);
   const gast = isGast(session?.user);
+
+  useEffect(() => preloadWhenIdle([KoppelSheet, UsageSheet, InstallSheet]), []);
 
   const iconButton = `h-11 w-11 shrink-0 flex items-center justify-center rounded-xl transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 ${
     onDark
@@ -109,9 +115,15 @@ const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
       <button type="button" onClick={gast ? () => setUitlogVraag(true) : signOut} aria-label={t("Uitloggen")} title={t("Uitloggen")} className={iconButton}>
         <LogOut className="h-5 w-5" strokeWidth={1.9} />
       </button>
-      <KoppelSheet open={shareOpen} onOpenChange={setShareOpen} />
-      <UsageSheet open={usageOpen} onOpenChange={setUsageOpen} />
-      <InstallSheet open={installOpen} onOpenChange={setInstallOpen} way={install.way} canPrompt={install.canPrompt} />
+      <LazySheet open={shareOpen} onClose={() => setShareOpen(false)}>
+        <KoppelSheet open={shareOpen} onOpenChange={setShareOpen} />
+      </LazySheet>
+      <LazySheet open={usageOpen} onClose={() => setUsageOpen(false)}>
+        <UsageSheet open={usageOpen} onOpenChange={setUsageOpen} />
+      </LazySheet>
+      <LazySheet open={installOpen} onClose={() => setInstallOpen(false)}>
+        <InstallSheet open={installOpen} onOpenChange={setInstallOpen} way={install.way} canPrompt={install.canPrompt} />
+      </LazySheet>
       <AccountSheet open={accountOpen} onOpenChange={setAccountOpen} />
       <GastUitlogDialog open={uitlogVraag} onOpenChange={setUitlogVraag} onSignOut={signOut} onCreateAccount={() => setAccountOpen(true)} />
     </div>

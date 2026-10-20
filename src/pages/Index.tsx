@@ -1,18 +1,29 @@
 import { useEffect, useRef, useState, type TouchEvent } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ShoppingCart, ChefHat, Boxes, Home, Tag, type LucideIcon } from 'lucide-react';
-import GroceryList from '@/components/GroceryList';
-import RecipeList from '@/components/RecipeList';
-import PantryScreen from '@/components/PantryScreen';
+import { ShoppingCart, ChefHat, Boxes, Home, Tag, Loader2, type LucideIcon } from 'lucide-react';
 import TodayScreen from '@/components/TodayScreen';
-import BonusChef from '@/components/BonusChef';
 import HeaderActions from '@/components/HeaderActions';
 import OfflineBanner from '@/components/OfflineBanner';
+import { LazyBoundary } from '@/components/LazyBoundary';
 import { useAppContext } from '@/contexts/AppContext';
 import { toast } from 'sonner';
 import { useIdleTabBar } from '@/hooks/useIdleTabBar';
 import { PENDING_IMPORT_KEY } from '@/lib/recipeImport';
+import { lazyPart, preloadWhenIdle } from '@/lib/lazyPart';
 import { t } from '@/lib/i18n';
+
+// "Vandaag" opens first; the other tabs load on demand, each in its own chunk.
+const GroceryList = lazyPart(() => import('@/components/GroceryList'));
+const RecipeList = lazyPart(() => import('@/components/RecipeList'));
+const BonusChef = lazyPart(() => import('@/components/BonusChef'));
+const PantryScreen = lazyPart(() => import('@/components/PantryScreen'));
+
+const TabLoading = () => (
+  <div role="status" className="flex justify-center py-16 text-muted-foreground">
+    <Loader2 className="h-6 w-6 animate-spin" aria-hidden="true" />
+    <span className="sr-only">{t("Laden...")}</span>
+  </div>
+);
 
 type AppTab = 'today' | 'list' | 'recipes' | 'bonus' | 'pantry';
 
@@ -32,6 +43,10 @@ const Index = () => {
   const [pendingImport, setPendingImport] = useState<string | null>(null);
   const onToday = tab === 'today';
   const barVisible = useIdleTabBar();
+
+  // Once the first screen is up, fetch the other tabs (the list first, for the store): they
+  // open without waiting, and the service worker has them when there's no signal.
+  useEffect(() => preloadWhenIdle([GroceryList, PantryScreen, RecipeList, BonusChef]), []);
 
   // Vegen tussen de tabs, met de volgorde van de balk. Begint de veeg in iets
   // dat zelf zijwaarts schuift (een rij chips), dan is het geen tabwissel.
@@ -173,10 +188,12 @@ const Index = () => {
         <div key={tab} className={inkomst === 'rechts' ? 'animate-tab-in-right' : inkomst === 'links' ? 'animate-tab-in-left' : ''}>
           {!onToday && <OfflineBanner className="mb-3" />}
           {onToday && <TodayScreen onNavigate={kies} />}
-          {tab === 'list' && <GroceryList onNavigate={kies} />}
-          {tab === 'recipes' && <RecipeList initialImport={pendingImport} onImportConsumed={() => setPendingImport(null)} onNavigate={kies} />}
-          {tab === 'bonus' && <BonusChef onNavigate={kies} />}
-          {tab === 'pantry' && <PantryScreen onNavigate={kies} />}
+          <LazyBoundary fallback={<TabLoading />}>
+            {tab === 'list' && <GroceryList onNavigate={kies} />}
+            {tab === 'recipes' && <RecipeList initialImport={pendingImport} onImportConsumed={() => setPendingImport(null)} onNavigate={kies} />}
+            {tab === 'bonus' && <BonusChef onNavigate={kies} />}
+            {tab === 'pantry' && <PantryScreen onNavigate={kies} />}
+          </LazyBoundary>
         </div>
       </main>
 

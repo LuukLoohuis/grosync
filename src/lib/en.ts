@@ -254,6 +254,7 @@ export const EN: Record<string, string> = {
   'Als PDF': 'As PDF',
   'Via WhatsApp': 'Via WhatsApp',
   'PDF gedownload': 'PDF downloaded',
+  'De PDF kon niet laden. Controleer je verbinding en probeer het opnieuw.': 'The PDF could not load. Check your connection and try again.',
   'Je lijst is leeg, er valt niets te downloaden': 'Your list is empty, there is nothing to download',
   'Je lijst is leeg, er valt niets te sturen': 'Your list is empty, there is nothing to send',
   'Boodschappen': 'Groceries',
@@ -688,4 +689,10 @@ export const EN: Record<string, string> = {
   'Voorwaarden': 'Terms',
   'Privacy': 'Privacy',
   'Cookies': 'Cookies',
+
+  // Onderdelen die later laden
+  'Dit deel van CoupleCart laadt niet': 'This part of CoupleCart did not load',
+  'Controleer je verbinding en laad de app opnieuw.': 'Check your connection and reload the app.',
+  'Opnieuw laden': 'Reload',
+  'Dit kon niet openen. Controleer je verbinding en probeer het opnieuw.': 'This could not open. Check your connection and try again.',
 };
