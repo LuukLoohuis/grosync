@@ -3,6 +3,12 @@ import App from "./App.tsx";
 import { vangAuthTerugkeer } from "./lib/accountUpgrade";
 import "./index.css";
 import { watchInstallPrompt } from "./lib/installHint";
+import { supabase } from "./integrations/supabase/client";
+import { volgWachtwoordHerstel } from "./lib/wachtwoordHerstel";
+
+// Supabase reports the link from a password-reset mail once, right after reading it. Listen
+// before the first render, so the "Nieuw wachtwoord" screen cannot miss it.
+volgWachtwoordHerstel(supabase.auth);
 
 // Chrome offers its install prompt early on; listen before the app renders.
 watchInstallPrompt();
