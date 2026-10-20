@@ -13,6 +13,7 @@ import { t } from "@/lib/i18n";
 import { useAuth } from "@/hooks/useAuth";
 import { useHousehold } from "@/hooks/useHousehold";
 import { AppProvider } from "@/contexts/AppContext";
+import Splash from "@/components/Splash";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import SharedList from "./pages/SharedList";
@@ -27,7 +28,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   // Gekoppeld aan iemand? Dan draait de hele app op diens lijst, recepten en kast.
   const household = useHousehold(session?.user.id ?? null);
-  if (loading || household.loading) return null;
+  if (loading || household.loading) return <Splash />;
   if (!session) {
     // Keep a link shared into the app (iOS shortcut, Android share) across the login screen.
     const pending = new URLSearchParams(location.search).get("import");
@@ -50,7 +51,7 @@ const authReturnFailed = (errorCode: string | null) => {
 /**
  * Back from Google or from a confirmation mail (see readAuthReturn). Supabase reads the link
  * itself and, when it worked, clears it from the address bar, which lands on "/". Until then
- * this shows nothing instead of "Deze pagina bestaat niet"; when it failed, it says why.
+ * this shows the start screen instead of "Deze pagina bestaat niet"; when it failed, it says why.
  * An error Supabase sends along (#error=…) rarely gets here: main.tsx takes it out of the URL
  * before the first render (vangAuthTerugkeer) and AccountSheet or SignedOutAuthError reports it.
  */
@@ -67,7 +68,7 @@ const AuthReturn = ({ errorCode }: { errorCode: string | null }) => {
     })();
     return () => { gone = true; };
   }, [errorCode, navigate]);
-  return null;
+  return <Splash />;
 };
 
 /**
