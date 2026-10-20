@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import type { AuthError } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { Mail, Eye, EyeOff } from 'lucide-react';
+import { Mail, Eye, EyeOff, Loader2, RotateCw } from 'lucide-react';
 import couplecartLogo from '@/assets/couplecart-logo.png';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { Separator } from '@/components/ui/separator';
 import InstallTip from '@/components/InstallTip';
+import { authFoutmelding } from '@/lib/authFout';
 import { t } from '@/lib/i18n';
 
 const Auth = () => {
@@ -17,6 +19,10 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  // What went wrong last time, in Dutch under the form instead of Supabase's English message.
+  // nietBevestigd: the address has no confirmed account yet, so offer the mail again.
+  const [fout, setFout] = useState<{ tekst: string; nietBevestigd?: boolean } | null>(null);
+  const [opnieuwBezig, setOpnieuwBezig] = useState(false);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -48,25 +54,53 @@ const handleGoogleLogin = async () => {
     e.preventDefault();
     if (!email || !password) return;
     setLoading(true);
+    setFout(null);
 
     try {
       if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: { emailRedirectTo: window.location.origin },
         });
         if (error) throw error;
+        // With email confirmation on, Supabase answers an address that already has an account
+        // with a stand-in user without identities instead of an error, and sends no mail.
+        if (data.user?.identities?.length === 0) {
+          setFout({ tekst: t(authFoutmelding({ code: 'user_already_exists' }, 'aanmaken')) });
+          return;
+        }
         toast.success(t("Verificatie e-mail verstuurd! Check je inbox en spamfolder."), { duration: 8000 });
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       }
     } catch (error) {
-      toast.error((error as Error).message || t("Er ging iets mis"));
+      console.warn('Email auth failed:', error);
+      setFout({
+        tekst: t(authFoutmelding(error as AuthError, isSignUp ? 'aanmaken' : 'inloggen')),
+        nietBevestigd: (error as AuthError).code === 'email_not_confirmed',
+      });
     } finally {
       setLoading(false);
     }
+  };
+
+  const stuurBevestigingOpnieuw = async () => {
+    setOpnieuwBezig(true);
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: { emailRedirectTo: window.location.origin },
+    });
+    setOpnieuwBezig(false);
+    if (error) {
+      // Keep the button: after a rate limit, trying again a bit later is exactly what helps.
+      setFout({ tekst: t(authFoutmelding(error, 'inloggen')), nietBevestigd: true });
+      return;
+    }
+    setFout(null);
+    toast.success(t('Nieuwe bevestigingsmail verstuurd. Kijk ook in je spamfolder.'), { duration: 8000 });
   };
 
   return (
@@ -144,6 +178,26 @@ const handleGoogleLogin = async () => {
             </Button>
           </form>
 
+          {fout && (
+            <div className="space-y-2">
+              <p role="alert" className="rounded-[12px] border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-left text-sm text-destructive">
+                {fout.tekst}
+              </p>
+              {fout.nietBevestigd && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-auto min-h-11 w-full whitespace-normal py-2"
+                  onClick={stuurBevestigingOpnieuw}
+                  disabled={opnieuwBezig}
+                >
+                  {opnieuwBezig ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCw className="h-4 w-4" />}
+                  {t('Stuur de bevestigingsmail opnieuw')}
+                </Button>
+              )}
+            </div>
+          )}
+
           {isSignUp && (
             <p className="rounded-xl bg-muted p-3 text-left text-xs leading-[1.45] text-muted-foreground">
               {t('De verificatiemail kan in je spamfolder belanden.')}
@@ -152,7 +206,13 @@ const handleGoogleLogin = async () => {
 
           <p className="text-center text-sm text-muted-foreground">
             {isSignUp ? t("Al een account?") : t("Nog geen account?")}{' '}
-            <button onClick={() => setIsSignUp(!isSignUp)} className="font-semibold text-primary hover:underline">
+            <button
+              onClick={() => {
+                setIsSignUp(!isSignUp);
+                setFout(null);
+              }}
+              className="font-semibold text-primary hover:underline"
+            >
               {isSignUp ? t("Inloggen") : t("Account aanmaken")}
             </button>
           </p>
