@@ -55,7 +55,14 @@
   </head>
 
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- The start screen until React takes over: the same markup as src/components/Splash.tsx,
+           so a phone shows the logo on the page colour from the first frame, light or dark. -->
+      <div role="status" class="fixed inset-0 flex items-center justify-center bg-background">
+        <img src="/favicon.png" alt="" width="96" height="96" class="h-24 w-24" fetchpriority="low">
+        <span class="sr-only">Laden...</span>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

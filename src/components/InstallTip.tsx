@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { Smartphone } from 'lucide-react';
-import InstallSheet from '@/components/InstallSheet';
+import { LazySheet } from '@/components/LazyBoundary';
 import { useInstallHint } from '@/hooks/useInstallHint';
 import { isIos } from '@/lib/installHint';
+import { lazyPart } from '@/lib/lazyPart';
 import { cn } from '@/lib/utils';
 import { t } from '@/lib/i18n';
+
+const InstallSheet = lazyPart(() => import('@/components/InstallSheet'));
 
 /**
  * On the login screen, for iPhone and for the browser inside Instagram and the like: put
@@ -30,7 +33,9 @@ const InstallTip = ({ className }: { className?: string }) => {
           {t("Laat zien hoe")}
         </button>
       </p>
-      <InstallSheet open={open} onOpenChange={setOpen} way={way} canPrompt={canPrompt} />
+      <LazySheet open={open} onClose={() => setOpen(false)}>
+        <InstallSheet open={open} onOpenChange={setOpen} way={way} canPrompt={canPrompt} />
+      </LazySheet>
     </div>
   );
 };

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { FileDown, Link2, Loader2, MessageCircle, Unlink, Users } from 'lucide-react';
 import { toast } from 'sonner';
-import jsPDF from 'jspdf';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -24,6 +23,10 @@ type LinkState =
   | { status: 'ready'; shareCode: string | null; members: number };
 
 const koppelUrl = (code: string) => `${window.location.origin}/#/shared/${code}`;
+
+// jsPDF is big and only needed for "Als PDF", so it loads once this sheet opens. By the time
+// you tap the button it is in, and the tap still counts as the one that starts the download.
+const loadPdf = () => import('jspdf');
 
 const gekoppeldLabel = (count: number) =>
   count === 0
@@ -72,6 +75,10 @@ const KoppelSheet = ({ open, onOpenChange }: KoppelSheetProps) => {
   useEffect(() => {
     if (open && !lid) void load();
   }, [open, lid, load]);
+
+  useEffect(() => {
+    if (open) loadPdf().catch(() => undefined);
+  }, [open]);
 
   const createLink = async () => {
     if (!selfId) return;
@@ -140,9 +147,11 @@ const KoppelSheet = ({ open, onOpenChange }: KoppelSheetProps) => {
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
 
-  const downloadPDF = () => {
+  const downloadPDF = async () => {
     if (uncheckedNames.length === 0) { toast.error(t("Je lijst is leeg, er valt niets te downloaden")); return; }
-    const doc = new jsPDF();
+    const pdf = await loadPdf().catch(() => null);
+    if (!pdf) { toast.error(t("De PDF kon niet laden. Controleer je verbinding en probeer het opnieuw.")); return; }
+    const doc = new pdf.jsPDF();
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(20);
     doc.text('Boodschappenlijst', 20, 25);
@@ -264,7 +273,7 @@ const KoppelSheet = ({ open, onOpenChange }: KoppelSheetProps) => {
               <Button variant="outline" className="min-h-11 gap-2" onClick={shareWhatsApp}>
                 <MessageCircle className="h-4 w-4" /> {t("Via WhatsApp")}
               </Button>
-              <Button variant="outline" className="min-h-11 gap-2" onClick={downloadPDF}>
+              <Button variant="outline" className="min-h-11 gap-2" onClick={() => void downloadPDF()}>
                 <FileDown className="h-4 w-4" /> {t("Als PDF")}
               </Button>
             </div>
