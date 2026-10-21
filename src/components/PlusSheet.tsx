@@ -25,7 +25,7 @@ const PERKS = [
   { icon: Camera, text: t('Onbeperkt je kast scannen met een foto') },
   { icon: ShoppingBasket, text: t('Onbeperkt je karretje vullen bij AH') },
   { icon: Sparkles, text: t('Bonuschef, receptsuggesties en voedingswaarden') },
-  { icon: Tag, text: t('Eén keer voor jullie samen, ook voor je partner') },
+  { icon: Tag, text: t('Eén keer voor de hele Cart Club') },
 ];
 
 const PlusSheet = ({ feature, onClose }: PlusSheetProps) => {

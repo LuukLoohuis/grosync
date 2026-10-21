@@ -500,6 +500,14 @@ export type Database = {
       is_plus: { Args: { _user: string }; Returns: boolean }
       is_valid_shared_list: { Args: { _list_id: string }; Returns: boolean }
       join_shared_list: { Args: { _share_code: string }; Returns: string }
+      cart_club_leden: {
+        Args: Record<PropertyKey, never>
+        Returns: { user_id: string; naam: string | null; eigenaar: boolean; jij: boolean; sinds: string | null }[]
+      }
+      cart_club_uitnodiging: {
+        Args: { _share_code: string }
+        Returns: { eigenaar_naam: string | null; leden: number; al_lid: boolean }[]
+      }
       user_has_shared_list: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Heart, LogOut, MoreVertical, Gauge, PieChart, LifeBuoy, FileText, Link2, SquarePlus } from 'lucide-react';
+import { Heart, LogOut, MoreVertical, Gauge, PieChart, LifeBuoy, FileText, SquarePlus, Users } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useAuth } from '@/hooks/useAuth';
 import { useInstallHint } from '@/hooks/useInstallHint';
@@ -55,8 +55,8 @@ const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
 
   return (
     <div className="-mr-2 flex items-center">
-      <button type="button" onClick={() => setShareOpen(true)} aria-label={t("Koppelen")} title={t("Koppelen")} className={iconButton}>
-        <Link2 className="h-5 w-5" strokeWidth={1.9} />
+      <button type="button" onClick={() => setShareOpen(true)} aria-label={t("Cart Club")} title={t("Cart Club")} className={iconButton}>
+        <Users className="h-5 w-5" strokeWidth={1.9} />
       </button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
