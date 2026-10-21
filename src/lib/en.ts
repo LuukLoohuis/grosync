@@ -751,4 +751,8 @@ export const EN: Record<string, string> = {
   'Controleer je verbinding en laad de app opnieuw.': 'Check your connection and reload the app.',
   'Opnieuw laden': 'Reload',
   'Dit kon niet openen. Controleer je verbinding en probeer het opnieuw.': 'This could not open. Check your connection and try again.',
+  'Aantal pakken': 'Number of packs',
+  'Aantal {0}: {1}. Wijzigen': 'Quantity of {0}: {1}. Change',
+  'Aantal {0}': 'Quantity of {0}',
+  '{0} weggooien': 'Remove {0}',
 };

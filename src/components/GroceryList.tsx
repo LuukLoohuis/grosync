@@ -24,6 +24,8 @@ import { FREE_LIMIT } from '@/hooks/useEntitlements';
 import { QuotaError } from '@/services/functions';
 import { sortByStoreRoute, type Department } from '@/lib/storeRouteSort';
 import { splitAmount } from '@/lib/itemAmount';
+import { countParts } from '@/lib/itemCount';
+import { CountPill, CountQuickPicks, CountStepper, useCountEditor } from '@/components/ItemCount';
 import { translateForSearch } from '@/lib/groceryTranslations';
 import type { GroceryItem } from '@/types';
 import { locale, t } from '@/lib/i18n';
@@ -32,7 +34,7 @@ const euro = new Intl.NumberFormat(locale(), { style: 'currency', currency: 'EUR
 
 // Strip quantity prefix and translate for AH search
 const toSearchQuery = (name: string) => {
-  const stripped = name.replace(/^\d+(?:[.,]\d+)?\s+/, '');
+  const stripped = name.replace(/^\d+(?:[.,]\d+)?(?:\s*[×x])?\s+/, '');
   return encodeURIComponent(translateForSearch(stripped));
 };
 
@@ -69,7 +71,12 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
   const [showChecked, setShowChecked] = useState(false);
   const barRef = useRef<HTMLDivElement>(null);
   const [barHeight, setBarHeight] = useState(0);
-  const { loading, groceryItems, addGroceryItem, setGroceryItemChecked, removeGroceryItem, clearCheckedItems, clearAllItems, mergeDuplicateItems, applyAhMatches, frequentItems, trackPurchase, plus, remaining, refreshEntitlements } = useAppContext();
+  const { loading, groceryItems, addGroceryItem, setGroceryItemChecked, removeGroceryItem, clearCheckedItems, clearAllItems, mergeDuplicateItems, applyAhMatches, setGroceryItemCount, frequentItems, trackPurchase, plus, remaining, refreshEntitlements } = useAppContext();
+
+  const countEditor = useCountEditor(
+    (id, count) => { void setGroceryItemCount(id, count); },
+    removeGroceryItem,
+  );
 
   const handleAdd = (name?: string) => {
     const item = (name || newItem).trim();
@@ -174,61 +181,73 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
   const suggestions = frequentItems.filter((f) => !currentNames.includes(f.name));
 
   const renderItem = (item: GroceryItem) => {
-    const { name, amount } = splitAmount(item.name);
+    // Het aantal staat in de pil; naast de naam blijft alleen gewicht of inhoud ("500 g").
+    const { name, amount } = splitAmount(item.ahProduct ? item.name : countParts(item.name).rest);
     const bonus = item.ahProduct?.isBonus;
+    const editing = countEditor.editing?.id === item.id;
     return (
       <SwipeToCheck key={item.id} onSwipe={() => checkOff(item)} onRemove={() => removeGroceryItem(item.id)}>
-        <div className="flex min-h-14 items-center gap-1 rounded-[14px] border border-border bg-card pl-1 pr-3">
-          <button
-            onClick={() => checkOff(item)}
-            aria-label={t("Vink {0} af", [item.name])}
-            className="group/check flex h-11 w-11 shrink-0 items-center justify-center"
-          >
-            <span className="h-6 w-6 rounded-full border-2 border-border-strong transition-colors duration-150 ease-smooth group-hover/check:border-primary group-hover/check:bg-primary-soft" />
-          </button>
+        <div
+          data-count-editor={item.id}
+          className={`rounded-[14px] border bg-card transition-colors duration-150 ease-smooth ${editing ? 'border-primary/40' : 'border-border'}`}
+        >
+          <div className="flex min-h-14 items-center gap-1 pl-1 pr-1.5">
+            <button
+              onClick={() => checkOff(item)}
+              aria-label={t("Vink {0} af", [item.name])}
+              className="group/check flex h-11 w-11 shrink-0 items-center justify-center"
+            >
+              <span className="h-6 w-6 rounded-full border-2 border-border-strong transition-colors duration-150 ease-smooth group-hover/check:border-primary group-hover/check:bg-primary-soft" />
+            </button>
 
-          {/* De hele regel opent het venster; het vinkje blijft de snelste weg. */}
-          <button
-            type="button"
-            onClick={() => setSheetItemId(item.id)}
-            aria-label={t("Opties voor {0}", [item.name])}
-            className="flex min-w-0 flex-1 items-center gap-2 py-2 text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-[0.9375rem] font-medium text-foreground">{name}</span>
-              {item.fromRecipe && (
-                <span className="block truncate text-xs text-accent-ink">uit {item.fromRecipe}</span>
-              )}
-              {item.ahProduct && (
-                <span className="block truncate text-xs text-muted-foreground">{item.ahProduct.title}</span>
-              )}
-              {!item.ahProduct && item.priceCheckedAt && (
-                <span className="block text-xs text-muted-foreground">{t("niet gevonden bij AH")}</span>
-              )}
-            </span>
+            {/* De hele regel opent het venster; het vinkje blijft de snelste weg. */}
+            <button
+              type="button"
+              onClick={() => setSheetItemId(item.id)}
+              aria-label={t("Opties voor {0}", [item.name])}
+              className="flex min-w-0 flex-1 items-center gap-2 py-2 text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-[0.9375rem] font-medium text-foreground">{name}</span>
+                {item.fromRecipe && (
+                  <span className="block truncate text-xs text-accent-ink">uit {item.fromRecipe}</span>
+                )}
+                {item.ahProduct && (
+                  <span className="block truncate text-xs text-muted-foreground">{item.ahProduct.title}</span>
+                )}
+                {!item.ahProduct && item.priceCheckedAt && (
+                  <span className="block text-xs text-muted-foreground">{t("niet gevonden bij AH")}</span>
+                )}
+              </span>
 
-            <span className="shrink-0 text-right">
-              {item.price != null ? (
-                <>
-                  <span className="block font-display text-[0.9375rem] font-bold tabular-nums text-foreground">
-                    {euro.format(item.price)}
-                  </span>
-                  {item.priceBefore != null && item.priceBefore > item.price && (
-                    <span className="block text-[0.6875rem] tabular-nums text-muted-foreground line-through">
-                      {euro.format(item.priceBefore)}
+              <span className={`shrink-0 text-right ${editing ? 'hidden' : ''}`}>
+                {item.price != null ? (
+                  <>
+                    <span className="block font-display text-[0.9375rem] font-bold tabular-nums text-foreground">
+                      {euro.format(item.price)}
                     </span>
-                  )}
-                  {bonus && (
-                    <span className="mt-0.5 inline-block rounded-md bg-[hsl(var(--ah-bonus))] px-1.5 py-px font-display text-[0.625rem] font-bold uppercase tracking-wide text-white">
-                      {t("Bonus")}
-                    </span>
-                  )}
-                </>
-              ) : amount ? (
-                <span className="block text-[0.8125rem] tabular-nums text-muted-foreground">{amount}</span>
-              ) : null}
-            </span>
-          </button>
+                    {item.priceBefore != null && item.priceBefore > item.price && (
+                      <span className="block text-[0.6875rem] tabular-nums text-muted-foreground line-through">
+                        {euro.format(item.priceBefore)}
+                      </span>
+                    )}
+                    {bonus && (
+                      <span className="mt-0.5 inline-block rounded-md bg-[hsl(var(--ah-bonus))] px-1.5 py-px font-display text-[0.625rem] font-bold uppercase tracking-wide text-white">
+                        {t("Bonus")}
+                      </span>
+                    )}
+                  </>
+                ) : amount ? (
+                  <span className="block text-[0.8125rem] tabular-nums text-muted-foreground">{amount}</span>
+                ) : null}
+              </span>
+            </button>
+
+            {editing
+              ? <CountStepper item={item} editor={countEditor} />
+              : <CountPill item={item} onOpen={() => countEditor.open(item)} />}
+          </div>
+          {editing && <CountQuickPicks editor={countEditor} />}
         </div>
       </SwipeToCheck>
     );

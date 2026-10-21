@@ -7,6 +7,7 @@ import { GroceryItem } from '@/types';
 import { deleteWithUndo } from '@/lib/undoableDelete';
 import { flushGroceryChanges, pendingGroceryChanges, saveGroceryChange, type GroceryChange } from '@/lib/offlineQueue';
 import { t } from '@/lib/i18n';
+import { MAX_COUNT, withCount } from '@/lib/itemCount';
 
 type GroceryRow = Database['public']['Tables']['grocery_items']['Row'];
 type GroceryInsert = Database['public']['Tables']['grocery_items']['Insert'];
@@ -327,6 +328,37 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
     await saveGroceryChange({ kind: 'update', ids: [id], patch: { name: clean, ...CLEARED_AH_MATCH } });
   }, []);
 
+  /**
+   * Aantal wijzigen zonder dat de rest verloren gaat. Met AH-product is het
+   * aantal pakken: prijs schaalt mee, product blijft. Zonder AH-product staat
+   * het aantal in de naam ("2 bananen").
+   */
+  const setGroceryItemCount = useCallback(async (id: string, count: number) => {
+    const item = groceryItems.find((i) => i.id === id);
+    if (!item) return;
+    const next = Math.min(Math.max(Math.round(count), 1), MAX_COUNT);
+
+    if (item.ahProduct) {
+      const was = Math.max(1, item.ahProduct.quantity);
+      if (next === was) return;
+      const scale = (amount: number | null | undefined) => (
+        amount == null ? null : Math.round((amount / was) * next * 100) / 100
+      );
+      const price = scale(item.price);
+      const priceBefore = scale(item.priceBefore);
+      setGroceryItems((prev) => prev.map((i) => (
+        i.id === id && i.ahProduct ? { ...i, price, priceBefore, ahProduct: { ...i.ahProduct, quantity: next } } : i
+      )));
+      await saveGroceryChange({ kind: 'update', ids: [id], patch: { ah_quantity: next, price, price_before: priceBefore } });
+      return;
+    }
+
+    const name = withCount(item.name, next);
+    if (name === item.name) return;
+    setGroceryItems((prev) => prev.map((i) => (i.id === id ? { ...i, name } : i)));
+    await saveGroceryChange({ kind: 'update', ids: [id], patch: { name } });
+  }, [groceryItems]);
+
   const updateGroceryItemPrice = useCallback(async (id: string, price: number | null) => {
     setGroceryItems((prev) => prev.map((i) => (i.id === id ? { ...i, price } : i)));
     await supabase.from('grocery_items').update({ price }).eq('id', id);
@@ -389,6 +421,7 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
     addRecipeToGroceryList,
     mergeDuplicateItems,
     renameGroceryItem,
+    setGroceryItemCount,
     updateGroceryItemPrice,
     applyAhMatches,
   };

@@ -211,7 +211,7 @@ function fromKeywords(itemName: string): Department {
   if (compound) return compound[1];
 
   // Remove leading quantity (e.g. "2 bananen" → "bananen")
-  const withoutQty = lower.replace(/^\d+(?:[.,]\d+)?\s+/, '');
+  const withoutQty = lower.replace(/^\d+(?:[.,]\d+)?(?:\s*[×x])?\s+/, '');
 
   for (const department of DEPARTMENT_ORDER) {
     for (const keyword of DEPARTMENT_KEYWORDS[department]) {

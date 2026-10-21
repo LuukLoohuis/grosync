@@ -169,7 +169,7 @@ export function translateForSearch(name: string): string {
   if (translations[lower]) return translations[lower];
 
   // Try matching the full phrase (without quantity)
-  const stripped = lower.replace(/^\d+(?:[.,]\d+)?\s+/, '');
+  const stripped = lower.replace(/^\d+(?:[.,]\d+)?(?:\s*[×x])?\s+/, '');
   if (translations[stripped]) return translations[stripped];
 
   // Try translating individual words

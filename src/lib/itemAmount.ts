@@ -17,8 +17,17 @@ export interface SplitName {
   amount: string | null;
 }
 
+// "2× Kipfilet (500g)": twee pakken van 500 gram, zoals de aantal-knop het schrijft.
+const TIMES = /^(\d{1,2})\s*[×x]\s+(.+)$/i;
+
 export const splitAmount = (raw: string): SplitName => {
   const text = raw.trim();
+
+  const times = text.match(TIMES);
+  if (times) {
+    const inner = splitAmount(times[2]);
+    return { name: inner.name, amount: `${times[1]}×${inner.amount ? ` ${inner.amount}` : ''}` };
+  }
 
   const brackets = text.match(IN_BRACKETS);
   if (brackets) return { name: brackets[1].trim(), amount: tidy(brackets[2]) };

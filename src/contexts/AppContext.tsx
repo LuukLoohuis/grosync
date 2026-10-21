@@ -41,6 +41,7 @@ interface AppContextType {
   addRecipeToGroceryList: (ingredients: string[], recipeName: string) => Promise<boolean>;
   mergeDuplicateItems: () => Promise<void>;
   renameGroceryItem: (id: string, name: string) => Promise<void>;
+  setGroceryItemCount: (id: string, count: number) => Promise<void>;
   applyAhMatches: (matches: AhMatch[], unmatchedIds?: string[]) => Promise<void>;
   addRecipe: (recipe: Omit<Recipe, 'id'>) => Promise<string | null>;
   updateRecipe: (id: string, updates: Partial<Omit<Recipe, 'id'>>) => Promise<void>;
@@ -153,6 +154,7 @@ export const AppProvider = ({
     addRecipeToGroceryList: grocery.addRecipeToGroceryList,
     mergeDuplicateItems: grocery.mergeDuplicateItems,
     renameGroceryItem: grocery.renameGroceryItem,
+    setGroceryItemCount: grocery.setGroceryItemCount,
     applyAhMatches: grocery.applyAhMatches,
     addRecipe: recipeHook.addRecipe,
     updateRecipe: recipeHook.updateRecipe,

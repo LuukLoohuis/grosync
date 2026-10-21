@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ChevronRight, ExternalLink, Merge, Tag, Trash2 } from 'lucide-react';
+import { ChevronRight, ExternalLink, Merge, Minus, Plus, Tag, Trash2 } from 'lucide-react';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,7 @@ import { useAppContext } from '@/contexts/AppContext';
 import { translateForSearch } from '@/lib/groceryTranslations';
 import type { GroceryItem } from '@/types';
 import { t } from '@/lib/i18n';
+import { MAX_COUNT, countParts, itemCount } from '@/lib/itemCount';
 
 interface GroceryItemSheetProps {
   item: GroceryItem | null;
@@ -17,11 +18,11 @@ interface GroceryItemSheetProps {
 }
 
 const zoekterm = (name: string) =>
-  encodeURIComponent(translateForSearch(name.replace(/^\d+(?:[.,]\d+)?\s+/, '')));
+  encodeURIComponent(translateForSearch(name.replace(/^\d+(?:[.,]\d+)?(?:\s*[×x])?\s+/, '')));
 
 /** Alles wat je met één boodschap kunt doen, op één plek in plaats van in een menu. */
 const GroceryItemSheet = ({ item, department, onClose, onPickProduct }: GroceryItemSheetProps) => {
-  const { renameGroceryItem, removeGroceryItem, mergeDuplicateItems, groceryItems } = useAppContext();
+  const { renameGroceryItem, removeGroceryItem, mergeDuplicateItems, setGroceryItemCount, groceryItems } = useAppContext();
   const [shown, setShown] = useState<GroceryItem | null>(item);
   const [name, setName] = useState('');
 
@@ -43,19 +44,51 @@ const GroceryItemSheet = ({ item, department, onClose, onPickProduct }: GroceryI
     await renameGroceryItem(shown.id, typed);
   };
 
+  const count = itemCount(shown);
+  const stapKnop = 'flex h-11 w-11 items-center justify-center rounded-full border border-border-strong text-foreground transition-transform duration-100 ease-smooth active:scale-90 disabled:opacity-30';
+
   const rij = 'flex min-h-14 w-full items-center gap-3 border-t border-border px-1 text-left text-[0.9375rem] text-foreground';
 
   return (
     <Sheet open={Boolean(item)} onOpenChange={(open) => { if (!open) onClose(); }}>
       <SheetContent side="bottom" className="mx-auto max-h-[85vh] [@supports(height:100dvh)]:max-h-[85dvh] max-w-lg overflow-y-auto rounded-t-[20px]">
         <SheetHeader className="pr-10 text-left">
-          <SheetTitle className="font-display text-xl">{shown.name}</SheetTitle>
+          <SheetTitle className="font-display text-xl">{shown.ahProduct ? shown.name : countParts(shown.name).rest}</SheetTitle>
           <SheetDescription className="text-accent-ink">
             {[shown.fromRecipe ? t('uit {0}', [shown.fromRecipe]) : null, department].filter(Boolean).join(' · ') || t("Op je lijst")}
           </SheetDescription>
         </SheetHeader>
 
-        <div className="mt-4">
+        <div className="mt-4 flex min-h-[60px] items-center justify-between">
+          <span className="text-[0.9375rem] text-foreground">
+            {shown.ahProduct ? t('Aantal pakken') : t('Aantal')}
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setGroceryItemCount(shown.id, count - 1)}
+              disabled={count <= 1}
+              aria-label={t('Eén minder')}
+              className={stapKnop}
+            >
+              <Minus className="h-4 w-4" />
+            </button>
+            <span aria-live="polite" className="min-w-10 text-center font-display text-[1.1875rem] font-bold tabular-nums text-foreground">
+              {count}
+            </span>
+            <button
+              type="button"
+              onClick={() => setGroceryItemCount(shown.id, count + 1)}
+              disabled={count >= MAX_COUNT}
+              aria-label={t('Eén meer')}
+              className={stapKnop}
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-2">
           <label htmlFor="boodschap-naam" className="mb-1 block text-sm text-muted-foreground">{t("Naam")}</label>
           <Input
             id="boodschap-naam"
