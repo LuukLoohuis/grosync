@@ -3,7 +3,9 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/compone
 import type { GroceryItem } from '@/types';
 import { t } from '@/lib/i18n';
 import { itemThumb } from '@/lib/itemThumb';
-import { productIcoon } from '@/lib/productIcoon';
+import { beginletter, productIcoon } from '@/lib/productIcoon';
+import { departmentOf } from '@/lib/storeRouteSort';
+import { DEPARTMENT_COUNT } from '@/components/DepartmentHeading';
 
 interface ItemThumbProps {
   item: GroceryItem;
@@ -23,7 +25,16 @@ const ItemThumb = ({ item, label, className = 'h-12 w-12', vergroot = true }: It
   const src = itemThumb(item);
   const vak = `flex shrink-0 items-center justify-center overflow-hidden rounded-lg ${className}`;
   if (!src) {
-    return <span aria-hidden="true" className={`${vak} bg-muted/70 text-[1.35em] leading-none`}>{productIcoon(item.name)}</span>;
+    const icoon = productIcoon(item.name);
+    if (icoon) {
+      return <span aria-hidden="true" className={`${vak} border border-border bg-card leading-none`}><span className="text-[1.5em]">{icoon}</span></span>;
+    }
+    // Onbekend product: de beginletter in de kleur van de afdeling, geen plaatje dat iets anders zegt.
+    return (
+      <span aria-hidden="true" className={`${vak} ${DEPARTMENT_COUNT[departmentOf(item.name)]} font-display font-bold leading-none`}>
+        {beginletter(item.name)}
+      </span>
+    );
   }
   const plaatje = <img src={src} alt="" loading="lazy" className={`h-full w-full ${item.photo ? 'object-cover' : 'object-contain'}`} />;
   if (!vergroot) return <span aria-hidden="true" className={`${vak} border border-border bg-white`}>{plaatje}</span>;

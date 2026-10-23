@@ -208,7 +208,7 @@ const ShoppingMode = ({ items, weg, onCheck, onClose, startWinkel }: ShoppingMod
                   >
                     <CheckCircle on={weg.has(item.id)} large />
                   </button>
-                  <ItemThumb item={item} label={name} className="h-14 w-14" />
+                  <ItemThumb item={item} label={name} className="h-14 w-14 rounded-xl text-xl" />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-display text-lg font-bold tracking-[-0.01em] text-foreground">{name}</span>
                     {item.note && <span className="block text-sm leading-snug text-foreground/80">{item.note}</span>}

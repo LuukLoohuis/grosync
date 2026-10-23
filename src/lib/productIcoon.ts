@@ -1,9 +1,8 @@
 import { countParts } from '@/lib/itemCount';
-import { departmentOf, type Department } from '@/lib/storeRouteSort';
+
 
 /**
- * Een pictogram per boodschap: 🍌 bij bananen. Eerst het product zelf, anders
- * de afdeling, zodat elke regel er een heeft. De volgorde telt: specifieke
+ * Een pictogram per boodschap: 🍌 bij bananen. De volgorde telt: specifieke
  * woorden ("pindakaas", "kokosmelk") staan voor de algemene ("kaas", "melk").
  */
 const PRODUCTEN: [RegExp, string][] = [
@@ -28,7 +27,8 @@ const PRODUCTEN: [RegExp, string][] = [
   [/ananas/, '🍍'],
   [/kiwi/, '🥝'],
   [/avocado/, '🥑'],
-  [/tomaat|tomaten|passata/, '🍅'],
+  [/saus|passata|pesto|tomatenblokjes|tomatenpuree/, '🥫'],
+  [/tomaat|tomaten/, '🍅'],
   [/aubergine/, '🍆'],
   [/broccoli|bloemkool/, '🥦'],
   [/sla\b|salade|spinazie|andijvie|rucola|kool\b|boerenkool|prei/, '🥬'],
@@ -41,16 +41,17 @@ const PRODUCTEN: [RegExp, string][] = [
   [/\bui\b|uien|sjalot/, '🧅'],
   [/zoete aardappel/, '🍠'],
   [/aardappel|krieler|friet|patat/, '🥔'],
-  [/champignon|paddenstoel/, '🍄'],
+  [/champignon|paddenstoel|zwam|shiitake|portobello|cantharel|eekhoorntjesbrood/, '🍄'],
   [/croissant/, '🥐'],
   [/stokbrood|baguette/, '🥖'],
   [/brood|boterham|pistolet|bolletje|beschuit/, '🍞'],
   [/pannenkoek|poffertje/, '🥞'],
-  [/kaas|parmezaan|mozzarella|feta/, '🧀'],
+  [/kaas|parmezaan|parmigiano|gran padano|pecorino|gorgonzola|fontina|mozzarella|burrata|ricotta|mascarpone|feta|halloumi|brie|camembert|gouda|cheddar|emmentaler|gruy[eè]re|manchego|taleggio/, '🧀'],
   [/\bei\b|eieren/, '🥚'],
   [/boter|margarine/, '🧈'],
   [/yoghurt|kwark|vla|melk|karnemelk|room\b|slagroom/, '🥛'],
-  [/spek|bacon/, '🥓'],
+  [/spek|bacon|prosciutto|parmaham|serrano|pancetta|coppa|bresaola/, '🥓'],
+  [/mortadella|salami|chorizo|rosbief|pastrami|rookvlees|fricandeau|leverworst|paté/, '🍖'],
   [/kip|kalkoen/, '🍗'],
   [/gehakt|biefstuk|steak|rund|varken|lam\b|vlees/, '🥩'],
   [/worst|frikandel|knakworst/, '🌭'],
@@ -90,20 +91,17 @@ const PRODUCTEN: [RegExp, string][] = [
   [/bloemen|tulpen|rozen/, '💐'],
 ];
 
-const PER_AFDELING: Record<Department, string> = {
-  groente_fruit: '🥬',
-  brood: '🍞',
-  vlees_vis: '🥩',
-  zuivel: '🥛',
-  maaltijden: '🥗',
-  pasta_rijst: '🍝',
-  houdbaar: '🥫',
-  drinken: '🥤',
-  huishouden: '🧴',
-  diepvries: '🧊',
+/**
+ * Het pictogram, of null als we het product niet kennen. Dan liever een
+ * letter (zie ItemThumb) dan een plaatje dat iets anders zegt dan er staat.
+ */
+export const productIcoon = (naam: string): string | null => {
+  const kaal = countParts(naam).rest.toLocaleLowerCase('nl');
+  return PRODUCTEN.find(([patroon]) => patroon.test(kaal))?.[1] ?? null;
 };
 
-export const productIcoon = (naam: string): string => {
-  const kaal = countParts(naam).rest.toLocaleLowerCase('nl');
-  return PRODUCTEN.find(([patroon]) => patroon.test(kaal))?.[1] ?? PER_AFDELING[departmentOf(kaal)];
+/** De eerste letter van de naam, zonder aantal: "2 Gran padano" → "G". */
+export const beginletter = (naam: string): string => {
+  const letter = countParts(naam).rest.match(/\p{L}/u)?.[0] ?? '?';
+  return letter.toLocaleUpperCase('nl');
 };

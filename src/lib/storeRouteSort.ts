@@ -69,6 +69,7 @@ const DEPARTMENT_KEYWORDS: Record<Department, string[]> = {
     'avocado', 'tomaat', 'tomat', 'komkommer', 'paprika', 'ui', 'uien', 'knoflook',
     'wortel', 'peen', 'broccoli', 'bloemkool', 'spinazie', 'sla', 'ijsbergsla', 'rucola',
     'andijvie', 'witlof', 'prei', 'courgette', 'aubergine', 'champignon', 'paddenstoel',
+    'oesterzwam', 'shiitake', 'portobello', 'cantharel', 'eekhoorntjesbrood',
     'radijs', 'biet', 'bieten', 'mais', 'sperziebonen', 'snijbonen', 'boontjes',
     'groente', 'fruit', 'basilicum', 'peterselie', 'bieslook',
     'munt', 'gember', 'aardappel', 'aardappelen', 'zoete aardappel', 'krieltjes',
@@ -103,6 +104,8 @@ const DEPARTMENT_KEYWORDS: Record<Department, string[]> = {
     'kabeljauw', 'tilapia', 'pangasius', 'vleesvervanger', 'tofu', 'tempeh', 'kipstukjes',
     'drumstick', 'varkens', 'runder', 'lams', 'kalf', 'rosbief', 'leverworst', 'paté',
     'shoarma', 'gyros', 'burger', 'saucijs',
+    'prosciutto', 'parmaham', 'serranoham', 'mortadella', 'pancetta', 'coppa', 'bresaola',
+    'pastrami', 'rookvlees', 'fricandeau', 'kalkoen',
     // English
     'meat', 'chicken', 'chicken breast', 'ground beef', 'minced meat', 'sausage',
     'fish', 'salmon', 'shrimp', 'prawns', 'cod',
@@ -112,6 +115,9 @@ const DEPARTMENT_KEYWORDS: Record<Department, string[]> = {
     'crème fraîche', 'creme fraiche', 'zuivel', 'ei', 'eieren', 'mozzarella', 'brie', 'camembert',
     'geitenkaas', 'oude kaas', 'jong belegen', 'plakken kaas', 'geraspte kaas',
     'cottage cheese', 'hummus', 'tzatziki',
+    'gran padano', 'parmezaan', 'parmigiano', 'pecorino', 'gorgonzola', 'fontina', 'ricotta',
+    'mascarpone', 'burrata', 'halloumi', 'feta', 'gouda', 'cheddar', 'emmentaler', 'gruyère',
+    'manchego', 'taleggio',
     // English
     'milk', 'cheese', 'yogurt', 'butter', 'cream', 'whipped cream',
     'dairy', 'egg', 'eggs', 'goat cheese', 'grated cheese', 'sliced cheese',
@@ -205,6 +211,8 @@ const COMPOUNDS: [RegExp, Department][] = [
   [/\bshampoo\b/, 'huishouden'],
   [/tandpasta/, 'huishouden'],
   [/\bhagelslag\b/, 'houdbaar'],
+  // "tomaten" in tomatensaus: een saus staat in het schap, niet bij de groente.
+  [/saus\b|\bpassata\b|\bpesto\b|tomatenpuree|tomatenblokjes/, 'houdbaar'],
   [/\btheelicht(je|jes)?\b/, 'huishouden'],
 ];
 

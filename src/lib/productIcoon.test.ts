@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { productIcoon } from '@/lib/productIcoon';
+import { beginletter, productIcoon } from '@/lib/productIcoon';
 
 describe('productIcoon', () => {
   it('geeft het product zelf', () => {
@@ -18,8 +18,17 @@ describe('productIcoon', () => {
     expect(productIcoon('tandpasta')).toBe('🪥');
   });
 
-  it('valt terug op de afdeling', () => {
-    expect(productIcoon('olijfolie')).toBe('🥫');
-    expect(productIcoon('iets onbekends')).toBe('🥫');
+  it('kent Italiaanse kaas, vleeswaren, paddenstoelen en sauzen', () => {
+    expect(productIcoon('gran padano 2x')).toBe('🧀');
+    expect(productIcoon('prosciutto')).toBe('🥓');
+    expect(productIcoon('mortadella')).toBe('🍖');
+    expect(productIcoon('oesterzwammen')).toBe('🍄');
+    expect(productIcoon('tomatensaus italiaans merk')).toBe('🥫');
+  });
+
+  it('geeft niets bij een onbekend product, wel een beginletter', () => {
+    expect(productIcoon('olijfolie')).toBe(null);
+    expect(beginletter('2 gran padano')).toBe('G');
+    expect(beginletter('12')).toBe('?');
   });
 });
