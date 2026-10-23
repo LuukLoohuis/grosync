@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
-import { ChevronRight, ExternalLink, Merge, Minus, Plus, Tag, Trash2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
+import { Camera, ChevronRight, ExternalLink, Loader2, Merge, Minus, Plus, Tag, Trash2 } from 'lucide-react';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,8 @@ import { translateForSearch } from '@/lib/groceryTranslations';
 import type { GroceryItem } from '@/types';
 import { t } from '@/lib/i18n';
 import { MAX_COUNT, countParts, itemCount } from '@/lib/itemCount';
+import { toThumbDataUrl } from '@/lib/photo';
+import { itemThumb } from '@/lib/itemThumb';
 
 interface GroceryItemSheetProps {
   item: GroceryItem | null;
@@ -22,15 +25,25 @@ const zoekterm = (name: string) =>
 
 /** Alles wat je met één boodschap kunt doen, op één plek in plaats van in een menu. */
 const GroceryItemSheet = ({ item, department, onClose, onPickProduct }: GroceryItemSheetProps) => {
-  const { renameGroceryItem, removeGroceryItem, mergeDuplicateItems, setGroceryItemCount, groceryItems } = useAppContext();
+  const { renameGroceryItem, removeGroceryItem, mergeDuplicateItems, setGroceryItemCount, setGroceryItemDetails, groceryItems } = useAppContext();
   const [shown, setShown] = useState<GroceryItem | null>(item);
   const [name, setName] = useState('');
+  const [note, setNote] = useState('');
+  const [fotoBezig, setFotoBezig] = useState(false);
+  const fotoInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!item) return;
     setShown(item);
     setName(item.name);
   }, [item]);
+
+  // De notitie alleen bij een ander item opnieuw vullen: anders wist een
+  // realtime-update van je partner wat je net aan het typen bent.
+  useEffect(() => {
+    if (item) setNote(item.note ?? '');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item?.id]);
 
   if (!shown) return null;
 
@@ -44,6 +57,26 @@ const GroceryItemSheet = ({ item, department, onClose, onPickProduct }: GroceryI
     await renameGroceryItem(shown.id, typed);
   };
 
+  const saveNote = async () => {
+    const typed = note.trim();
+    if (typed === (shown.note ?? '')) return;
+    await setGroceryItemDetails(shown.id, { note: typed });
+  };
+
+  const kiesFoto = async (file: File | undefined) => {
+    if (!file) return;
+    setFotoBezig(true);
+    try {
+      await setGroceryItemDetails(shown.id, { photo: await toThumbDataUrl(file) });
+    } catch {
+      toast.error(t("Foto lezen lukte niet"));
+    } finally {
+      setFotoBezig(false);
+      if (fotoInput.current) fotoInput.current.value = '';
+    }
+  };
+
+  const thumb = itemThumb(shown);
   const count = itemCount(shown);
   const stapKnop = 'flex h-11 w-11 items-center justify-center rounded-full border border-border-strong text-foreground transition-transform duration-100 ease-smooth active:scale-90 disabled:opacity-30';
 
@@ -104,6 +137,58 @@ const GroceryItemSheet = ({ item, department, onClose, onPickProduct }: GroceryI
             </p>
           )}
         </div>
+
+        <section aria-labelledby="dit-merk" className="mt-5">
+          <h3 id="dit-merk" className="font-display text-[0.9375rem] font-bold text-foreground">{t("Dit merk")}</h3>
+          <p className="mb-2 text-xs text-muted-foreground">{t("Zodat de ander precies weet welke je bedoelt.")}</p>
+          <div className="flex items-start gap-3">
+            <button
+              type="button"
+              onClick={() => fotoInput.current?.click()}
+              disabled={fotoBezig}
+              aria-label={shown.photo ? t("Andere foto kiezen") : t("Foto toevoegen")}
+              className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-dashed border-border-strong bg-white text-muted-foreground"
+            >
+              {thumb
+                ? <img src={thumb} alt="" className={`h-full w-full ${shown.photo ? 'object-cover' : 'object-contain'}`} />
+                : <Camera className="h-5 w-5" />}
+              {fotoBezig && (
+                <span className="absolute inset-0 flex items-center justify-center bg-background/70">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                </span>
+              )}
+            </button>
+            <div className="min-w-0 flex-1">
+              <label htmlFor="boodschap-notitie" className="sr-only">{t("Notitie")}</label>
+              <Input
+                id="boodschap-notitie"
+                value={note}
+                maxLength={120}
+                placeholder={t("Bijv. Optimel, de blauwe")}
+                onChange={(e) => setNote(e.target.value)}
+                onBlur={saveNote}
+                onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+              />
+              <div className="mt-1 flex flex-wrap gap-x-4">
+                <button type="button" onClick={() => fotoInput.current?.click()} disabled={fotoBezig} className="min-h-9 text-sm font-medium text-primary">
+                  {shown.photo ? t("Andere foto") : t("Foto maken")}
+                </button>
+                {shown.photo && (
+                  <button type="button" onClick={() => setGroceryItemDetails(shown.id, { photo: null })} className="min-h-9 text-sm text-muted-foreground">
+                    {t("Foto weghalen")}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+          <input
+            ref={fotoInput}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => { void kiesFoto(e.target.files?.[0]); }}
+          />
+        </section>
 
         <div className="mt-4">
           {shown.ahProduct ? (

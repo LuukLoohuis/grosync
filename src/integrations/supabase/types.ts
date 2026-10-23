@@ -53,6 +53,8 @@ export type Database = {
           from_recipe: string | null
           id: string
           name: string
+          note: string | null
+          photo: string | null
           price: number | null
           price_before: number | null
           price_checked_at: string | null
@@ -71,6 +73,8 @@ export type Database = {
           from_recipe?: string | null
           id?: string
           name: string
+          note?: string | null
+          photo?: string | null
           price?: number | null
           price_before?: number | null
           price_checked_at?: string | null
@@ -89,6 +93,8 @@ export type Database = {
           from_recipe?: string | null
           id?: string
           name?: string
+          note?: string | null
+          photo?: string | null
           price?: number | null
           price_before?: number | null
           price_checked_at?: string | null

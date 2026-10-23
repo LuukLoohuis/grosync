@@ -38,7 +38,7 @@ export function matchAhProducts(items: { id: string; name: string }[]) {
 }
 
 // Other products from the same AH search, without the one already chosen.
-export async function fetchAhAlternatives(item: { id: string; name: string }, currentProductId?: number) {
+export async function fetchAhAlternatives(item: { id: string; name: string; note?: string | null }, currentProductId?: number) {
   const { data, error } = await supabase.functions.invoke('ah-products', {
     body: { alternativesFor: item, exclude: currentProductId },
   });

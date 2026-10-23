@@ -2,7 +2,7 @@ import type { GroceryItem } from '@/types';
 import { sortByStoreRoute } from '@/lib/storeRouteSort';
 import { t } from '@/lib/i18n';
 
-type Regel = Pick<GroceryItem, 'name' | 'checked' | 'ahProduct'>;
+type Regel = Pick<GroceryItem, 'name' | 'checked' | 'ahProduct' | 'note'>;
 
 /**
  * De lijst als gewone tekst, per afdeling in de looproute van de winkel. Voor
@@ -16,7 +16,8 @@ export const lijstAlsTekst = (items: Regel[]): string => {
     ...groep.items.map((item) => {
       // Bij een AH-product staat het aantal niet in de naam, maar in de koppeling.
       const aantal = item.ahProduct && item.ahProduct.quantity > 1 ? ` (${item.ahProduct.quantity}×)` : '';
-      return `• ${item.name}${aantal}`;
+      const notitie = item.note ? ` – ${item.note}` : '';
+      return `• ${item.name}${aantal}${notitie}`;
     }),
   ].join('\n'));
   return [

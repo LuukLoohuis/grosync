@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Check, ChevronDown, Plus, Trash2, X, Merge, TrendingUp, Loader2, ShoppingBasket, ShoppingCart, Tag, MoreVertical, RefreshCw, Search, Share2, Store } from 'lucide-react';
+import { Camera, Check, ChevronDown, Plus, Trash2, X, Merge, TrendingUp, Loader2, ShoppingBasket, ShoppingCart, Tag, MoreVertical, RefreshCw, Search, Share2, Store } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppContext } from '@/contexts/AppContext';
 import { AH_MAX_ITEMS, ahBasketUrl, matchAhProducts } from '@/services/ahApi';
@@ -175,7 +175,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
   const zoekterm = zoek ? kaal(zoek.trim()) : '';
   const zoekt = zoekterm.length > 0;
   const zichtbaar = zoekt
-    ? unchecked.filter((i) => kaal(i.name).includes(zoekterm) || (i.ahProduct && kaal(i.ahProduct.title).includes(zoekterm)))
+    ? unchecked.filter((i) => kaal(i.name).includes(zoekterm) || (i.note && kaal(i.note).includes(zoekterm)) || (i.ahProduct && kaal(i.ahProduct.title).includes(zoekterm)))
     : unchecked;
   const kanZoeken = unchecked.length >= ZOEK_VANAF || zoek !== null;
   const sluitZoeken = () => setZoek(null);
@@ -232,6 +232,17 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
             >
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[0.9375rem] font-medium text-foreground">{name}</span>
+                {item.note && (
+                  <span className="flex items-center gap-1 truncate text-xs text-foreground/75">
+                    {item.photo && <Camera aria-label={t("met foto")} className="h-3 w-3 shrink-0" />}
+                    <span className="truncate">{item.note}</span>
+                  </span>
+                )}
+                {!item.note && item.photo && (
+                  <span className="flex items-center gap-1 text-xs text-foreground/75">
+                    <Camera aria-hidden="true" className="h-3 w-3 shrink-0" />{t("met foto")}
+                  </span>
+                )}
                 {item.fromRecipe && (
                   <span className="block truncate text-xs text-accent-ink">uit {item.fromRecipe}</span>
                 )}

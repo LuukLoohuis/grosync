@@ -41,7 +41,7 @@ const AhProductSheet = ({ item, onClose }: AhProductSheetProps) => {
     let cancelled = false;
     setStatus('loading');
     setOptions([]);
-    fetchAhAlternatives({ id: item.id, name: item.name }, item.ahProduct?.id)
+    fetchAhAlternatives({ id: item.id, name: item.name, note: item.note }, item.ahProduct?.id)
       .then((alternatives) => {
         if (cancelled) return;
         setOptions(alternatives);
@@ -101,7 +101,7 @@ const AhProductSheet = ({ item, onClose }: AhProductSheetProps) => {
           <>
             <SheetHeader className="px-5 pb-3 pt-5 pr-14 text-left">
               <SheetTitle className="font-display text-xl">{t("Kies een ander product")}</SheetTitle>
-              <SheetDescription className="truncate">{t('Voor {0}', [shown.name])}</SheetDescription>
+              <SheetDescription className="truncate">{t('Voor {0}', [shown.note ? `${shown.name} · ${shown.note}` : shown.name])}</SheetDescription>
             </SheetHeader>
 
             <div className="flex-1 overflow-y-auto px-5 pb-4">

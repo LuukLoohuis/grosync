@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { ArrowRight, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import SwipeToCheck from '@/components/SwipeToCheck';
+import ItemThumb from '@/components/ItemThumb';
 import { CheckCircle, Wegvinken } from '@/components/CheckOff';
 import { tik } from '@/lib/haptics';
 import { stuurMelding } from '@/lib/meldingen';
@@ -141,7 +142,7 @@ const ShoppingMode = ({ items, weg, onCheck, onClose }: ShoppingModeProps) => {
             return (
               <Wegvinken key={item.id} weg={weg.has(item.id)}>
               <SwipeToCheck onSwipe={() => vinkAf(item)}>
-                <div className="flex min-h-18 items-center gap-2 rounded-[14px] border border-border bg-card pl-1 pr-4">
+                <div className="flex min-h-18 items-center gap-2 rounded-[14px] border border-border bg-card py-2 pl-1 pr-4">
                   <button
                     onClick={() => vinkAf(item)}
                     aria-label={t("Vink {0} af", [item.name])}
@@ -149,8 +150,10 @@ const ShoppingMode = ({ items, weg, onCheck, onClose }: ShoppingModeProps) => {
                   >
                     <CheckCircle on={weg.has(item.id)} large />
                   </button>
+                  <ItemThumb item={item} label={name} className="h-14 w-14" />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-display text-lg font-bold tracking-[-0.01em] text-foreground">{name}</span>
+                    {item.note && <span className="block text-sm leading-snug text-foreground/80">{item.note}</span>}
                     {item.fromRecipe && <span className="block truncate text-xs text-accent-ink">uit {item.fromRecipe}</span>}
                   </span>
                   {amount && <span className="shrink-0 text-[0.9375rem] tabular-nums text-muted-foreground">{amount}</span>}

@@ -21,6 +21,8 @@ const toGroceryItem = (row: GroceryRow): GroceryItem => ({
   price: row.price ?? null,
   priceCheckedAt: row.price_checked_at,
   priceBefore: row.price_before ?? null,
+  note: row.note ?? null,
+  photo: row.photo ?? null,
   ahProduct: row.ah_product_id
     ? {
         id: row.ah_product_id,
@@ -102,6 +104,8 @@ const withPendingChanges = (items: GroceryItem[], changes: GroceryChange[], user
         ...i,
         ...(change.patch.checked !== undefined ? { checked: change.patch.checked } : {}),
         ...(change.patch.name !== undefined ? { name: change.patch.name } : {}),
+        ...(change.patch.note !== undefined ? { note: change.patch.note } : {}),
+        ...(change.patch.photo !== undefined ? { photo: change.patch.photo } : {}),
       };
     });
   }, items);
@@ -385,6 +389,17 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
     await saveGroceryChange({ kind: 'update', ids: [id], patch: { name } });
   }, [groceryItems]);
 
+  /** Notitie en/of foto: "dit merk". Leeg of null haalt het weg. */
+  const setGroceryItemDetails = useCallback(async (id: string, details: { note?: string | null; photo?: string | null }) => {
+    const patch: { note?: string | null; photo?: string | null } = {};
+    if (details.note !== undefined) patch.note = details.note?.trim().slice(0, 120) || null;
+    if (details.photo !== undefined) patch.photo = details.photo || null;
+    setGroceryItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...patch } : i)));
+    if (!(await saveGroceryChange({ kind: 'update', ids: [id], patch }))) {
+      toast.error(t("Opslaan lukte niet. Probeer het opnieuw."));
+    }
+  }, []);
+
   const updateGroceryItemPrice = useCallback(async (id: string, price: number | null) => {
     setGroceryItems((prev) => prev.map((i) => (i.id === id ? { ...i, price } : i)));
     await supabase.from('grocery_items').update({ price }).eq('id', id);
@@ -448,6 +463,7 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
     mergeDuplicateItems,
     renameGroceryItem,
     setGroceryItemCount,
+    setGroceryItemDetails,
     updateGroceryItemPrice,
     applyAhMatches,
   };

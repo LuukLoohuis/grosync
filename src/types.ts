@@ -10,6 +10,10 @@ export interface GroceryItem {
   priceBefore?: number | null;
   /** When AH was last searched for this item, also when nothing matched. */
   priceCheckedAt?: string | null;
+  /** Welke precies, in je eigen woorden: "Optimel, de blauwe". */
+  note?: string | null;
+  /** Eigen foto van het product, als klein JPEG-plaatje (data-URL). */
+  photo?: string | null;
 }
 
 export interface AhProduct {

@@ -409,6 +409,16 @@ export const EN: Record<string, string> = {
   'Toevoegen aan altijd in huis': 'Add to always at home',
   'Haal {0} weg uit altijd in huis': 'Remove {0} from always at home',
   'Opslaan lukte niet. Probeer het opnieuw.': 'Saving failed. Please try again.',
+  'Foto van {0} groot bekijken': 'View photo of {0} full size',
+  'Dit merk': 'This brand',
+  'Zodat de ander precies weet welke je bedoelt.': 'So the other person knows exactly which one you mean.',
+  'Andere foto kiezen': 'Choose another photo',
+  'Foto toevoegen': 'Add photo',
+  'Notitie': 'Note',
+  'Bijv. Optimel, de blauwe': 'E.g. Optimel, the blue one',
+  'Andere foto': 'Other photo',
+  'Foto weghalen': 'Remove photo',
+  'met foto': 'with photo',
 
   // Recepten
   'Wat kun je koken?': 'What can you cook?',

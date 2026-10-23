@@ -23,6 +23,11 @@ describe('lijstAlsTekst', () => {
     expect(tekst).toContain('• Halfvolle melk (3×)');
   });
 
+  it('zet de notitie achter de boodschap', () => {
+    const tekst = lijstAlsTekst([item('yoghurtdrank', { note: 'Optimel, de blauwe' })]);
+    expect(tekst).toContain('• yoghurtdrank – Optimel, de blauwe');
+  });
+
   it('geeft niets terug als alles in de kar ligt', () => {
     expect(lijstAlsTekst([item('melk', { checked: true })])).toBe('');
   });

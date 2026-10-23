@@ -263,7 +263,7 @@ async function chooseProducts(
 async function sameIngredient(line: string, candidates: Candidate[]): Promise<Candidate[]> {
   if (candidates.length === 0) return [];
   const result = await askJson(
-    'A shopper wants a different Albert Heijn product for one grocery list line. From the candidates keep only products that ARE that ingredient: other brands, sizes, organic or free-range variants are fine. Drop dishes, salads, snacks, baked goods, spreads, drinks and other products that merely contain it or share a word with it. Order the kept ones for a home cook: the plain everyday version in a normal household size first, then other sizes, brands and organic or premium variants, and multipacks last. Return JSON {"indexes":[...]}.',
+    'A shopper wants a different Albert Heijn product for one grocery list line. From the candidates keep only products that ARE that ingredient: other brands, sizes, organic or free-range variants are fine. Drop dishes, salads, snacks, baked goods, spreads, drinks and other products that merely contain it or share a word with it. When the line has a note in parentheses (a brand or a description such as "Optimel, de blauwe"), put the products that match that note first. Otherwise order the kept ones for a home cook: the plain everyday version in a normal household size first, then other sizes, brands and organic or premium variants, and multipacks last. Return JSON {"indexes":[...]}.',
     JSON.stringify({ line, candidates: candidates.map((c, index) => ({ index, title: c.title, size: c.unitSize, category: c.category })) }),
   );
   const kept: Candidate[] = [];
@@ -328,11 +328,18 @@ Deno.serve(async (req) => {
         return json({ error: 'alternativesFor needs id and name' }, 400);
       }
       const exclude = Number(body.exclude) || null;
+      // "Dit merk" uit de app ("Optimel, de blauwe"). De gewone zoekterm laat
+      // het merk weg, dus zoek ook op wat de notitie zelf noemt.
+      const note = typeof item.note === 'string' ? item.note.trim().slice(0, 120) : '';
       const terms = await searchTerms([{ id: item.id, name: item.name }]);
       const term = terms.get(item.id);
       const query = term?.query || '';
-      const { candidates } = await searchWithFallback(term, 30, 20);
-      const fitting = await sameIngredient(item.name, candidates.filter((c) => c.webshopId !== exclude));
+      const [{ candidates }, byNote] = await Promise.all([
+        searchWithFallback(term, 30, 20),
+        note ? searchAh(note.split(',')[0].trim() || note, 15, 10) : Promise.resolve([] as Candidate[]),
+      ]);
+      const merged = [...byNote, ...candidates.filter((c) => !byNote.some((n) => n.webshopId === c.webshopId))];
+      const fitting = await sameIngredient(note ? `${item.name} (${note})` : item.name, merged.filter((c) => c.webshopId !== exclude));
       const alternatives = fitting.slice(0, 5).map(toAlternative);
       return json({ query, alternatives });
     }
