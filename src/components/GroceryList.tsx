@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Camera, Check, ChevronDown, Plus, Trash2, X, Merge, TrendingUp, Loader2, ShoppingBasket, ShoppingCart, Tag, MoreVertical, RefreshCw, Search, Share2, Store } from 'lucide-react';
+import { Check, ChevronDown, Plus, Trash2, X, Merge, TrendingUp, Loader2, ShoppingBasket, ShoppingCart, Tag, MoreVertical, RefreshCw, Search, Share2, Store } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppContext } from '@/contexts/AppContext';
 import { AH_MAX_ITEMS, ahBasketUrl, matchAhProducts } from '@/services/ahApi';
@@ -16,6 +16,7 @@ import { deelTekst, lijstAlsTekst } from '@/lib/lijstTekst';
 import GroceryItemSheet from '@/components/GroceryItemSheet';
 import ShoppingMode from '@/components/ShoppingMode';
 import SnelInvoer from '@/components/SnelInvoer';
+import ItemThumb from '@/components/ItemThumb';
 import EmptyState from '@/components/EmptyState';
 import DepartmentHeading, { DEPARTMENT_CHIP, DEPARTMENT_DOT } from '@/components/DepartmentHeading';
 import AhProductSheet from '@/components/AhProductSheet';
@@ -225,8 +226,9 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
               type="button"
               onClick={() => setSheetItemId(item.id)}
               aria-label={t("Opties voor {0}", [item.name])}
-              className="flex min-w-0 flex-1 items-center gap-2 py-2 text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex min-w-0 flex-1 items-center gap-2.5 py-2 text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
             >
+              <ItemThumb item={item} label={name} vergroot={false} className="h-9 w-9 text-lg" />
               <span className="min-w-0 flex-1">
                 <span className="flex items-center gap-1.5">
                   <span className="truncate text-[0.9375rem] font-medium text-foreground">{name}</span>
@@ -234,17 +236,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
                     <span className="shrink-0 rounded-md bg-muted px-1.5 py-px text-[0.6875rem] font-semibold text-muted-foreground">{item.store}</span>
                   )}
                 </span>
-                {item.note && (
-                  <span className="flex items-center gap-1 truncate text-xs text-foreground/75">
-                    {item.photo && <Camera aria-label={t("met foto")} className="h-3 w-3 shrink-0" />}
-                    <span className="truncate">{item.note}</span>
-                  </span>
-                )}
-                {!item.note && item.photo && (
-                  <span className="flex items-center gap-1 text-xs text-foreground/75">
-                    <Camera aria-hidden="true" className="h-3 w-3 shrink-0" />{t("met foto")}
-                  </span>
-                )}
+                {item.note && <span className="block truncate text-xs text-foreground/75">{item.note}</span>}
                 {item.fromRecipe && (
                   <span className="block truncate text-xs text-accent-ink">uit {item.fromRecipe}</span>
                 )}

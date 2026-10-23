@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { useAppContext } from '@/contexts/AppContext';
 import { splitsInvoer } from '@/lib/snelInvoer';
 import { departmentLabel } from '@/lib/storeRouteSort';
+import { productIcoon } from '@/lib/productIcoon';
 import { countParts } from '@/lib/itemCount';
 import { tik } from '@/lib/haptics';
 import { locale, t } from '@/lib/i18n';
@@ -171,7 +172,8 @@ const SnelInvoer = () => {
           <p className="px-1 text-xs font-medium text-muted-foreground">{t("Klopt dit? Tik om aan te passen.")}</p>
           <ul className="mt-2 space-y-1.5">
             {kaartjes.map((k) => (
-              <li key={k.id} className="flex min-h-12 items-center gap-2 rounded-lg bg-muted/60 pl-3 pr-1">
+              <li key={k.id} className="flex min-h-12 items-center gap-2.5 rounded-lg bg-muted/60 pl-2.5 pr-1">
+                <span aria-hidden="true" className="w-6 shrink-0 text-center text-lg leading-none">{productIcoon(k.naam)}</span>
                 {bewerkt === k.id ? (
                   <Input
                     autoFocus

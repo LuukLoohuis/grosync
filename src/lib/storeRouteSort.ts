@@ -231,7 +231,8 @@ export function knownDepartment(itemName: string): Department | null {
 }
 
 // Niets herkend: houdbaar, midden in de winkel.
-const fromKeywords = (itemName: string): Department => knownDepartment(itemName) ?? 'houdbaar';
+export const departmentOf = (itemName: string): Department => knownDepartment(itemName) ?? 'houdbaar';
+const fromKeywords = departmentOf;
 
 /** De afdeling waar een getypte boodschap op de lijst komt, als tekst. */
 export const departmentLabel = (itemName: string): string =>
