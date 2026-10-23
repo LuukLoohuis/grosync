@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Check, ChevronDown, Plus, Trash2, X, Merge, TrendingUp, Loader2, ShoppingBasket, ShoppingCart, Tag, MoreVertical, RefreshCw, Store } from 'lucide-react';
+import { Check, ChevronDown, Plus, Trash2, X, Merge, TrendingUp, Loader2, ShoppingBasket, ShoppingCart, Tag, MoreVertical, RefreshCw, Share2, Store } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppContext } from '@/contexts/AppContext';
 import { AH_MAX_ITEMS, ahBasketUrl, matchAhProducts } from '@/services/ahApi';
@@ -12,6 +12,7 @@ import {
 import SwipeToCheck from '@/components/SwipeToCheck';
 import { CheckCircle, Wegvinken, useWegvinken } from '@/components/CheckOff';
 import { toastWithUndo } from '@/lib/undoableDelete';
+import { deelTekst, lijstAlsTekst } from '@/lib/lijstTekst';
 import GroceryItemSheet from '@/components/GroceryItemSheet';
 import ShoppingMode from '@/components/ShoppingMode';
 import EmptyState from '@/components/EmptyState';
@@ -94,6 +95,12 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
     setTelOp((n) => n + 1);
     toastWithUndo(t("“{0}” afgevinkt", [item.name]), () => { void setGroceryItemChecked(item.id, false); });
   });
+
+  const deelLijst = async () => {
+    const uitkomst = await deelTekst(lijstAlsTekst(groceryItems));
+    if (uitkomst === 'gekopieerd') toast.success(t("Lijst gekopieerd. Plak hem waar je wilt."));
+    else if (uitkomst === 'mislukt') toast.error(t("Delen lukte niet. Probeer het opnieuw."));
+  };
 
   const unchecked = groceryItems.filter((i) => !i.checked);
   const checked = groceryItems.filter((i) => i.checked);
@@ -371,6 +378,11 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
+              {unchecked.length > 0 && (
+                <DropdownMenuItem className="min-h-11 cursor-pointer gap-2" onSelect={() => { void deelLijst(); }}>
+                  <Share2 className="h-4 w-4" /> {t("Delen als tekst")}
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem className="min-h-11 cursor-pointer gap-2" onSelect={() => { void mergeDuplicateItems(); }}>
                 <Merge className="h-4 w-4" /> {t("Dubbele samenvoegen")}
               </DropdownMenuItem>
