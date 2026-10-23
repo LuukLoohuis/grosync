@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext } from 'react';
+import React, { createContext, useCallback, useContext, useEffect } from 'react';
 import { useGroceryItems } from '@/hooks/useGroceryItems';
 import { useRecipes } from '@/hooks/useRecipes';
 import { useUsuals } from '@/hooks/useUsuals';
@@ -11,6 +11,7 @@ import type { AhMatch } from '@/services/ahApi';
 import { GroceryItem, PantryItem, Recipe, RecipeCategory, UsualItem } from '@/types';
 import { sameProduct } from '@/lib/pantry';
 import type { Rol } from '@/hooks/useHousehold';
+import { zetAnderenInClub } from '@/lib/meldingen';
 
 /** Hoe vol een potje is, in de woorden die de app gebruikt. */
 export type PantryState = 'vol' | 'bijna' | 'op';
@@ -98,6 +99,9 @@ export const AppProvider = ({
   const pantryHook = usePantry({ userId });
   // Tegoed en Plus gelden voor het hele huishouden; dat rekent de server uit.
   const entitlements = useEntitlements({ userId: selfId });
+
+  // Seintjes sturen heeft alleen zin als er nog iemand in de club zit.
+  useEffect(() => { zetAnderenInClub(household.rol !== 'geen'); }, [household.rol]);
 
   // Wat bijna op of op is hoort op de boodschappenlijst; staat het weer vol, dan
   // hoeft het er niet meer op. Zo doet het label in de kast ook echt iets.

@@ -62,3 +62,37 @@ self.addEventListener('fetch', (event) => {
     );
   }
 });
+
+// Pushmeldingen van push-send: { title, body, soort, tab }.
+self.addEventListener('push', (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    data = { title: 'CoupleCart', body: event.data ? event.data.text() : '' };
+  }
+  event.waitUntil(self.registration.showNotification(data.title || 'CoupleCart', {
+    body: data.body || '',
+    icon: '/icons/icon-192.png',
+    badge: '/icons/badge-72.png',
+    // Een nieuwe melding van dezelfde soort vervangt de oude in plaats van zich op te stapelen.
+    tag: data.soort || 'couplecart',
+    renotify: true,
+    data: { tab: data.tab || 'list' },
+  }));
+});
+
+// Tik op een melding: de open app naar voren op de goede tab, anders de app openen.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const tab = event.notification.data?.tab || 'list';
+  event.waitUntil((async () => {
+    const open = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const client = open.find((c) => new URL(c.url).origin === self.location.origin);
+    if (client) {
+      client.postMessage({ type: 'open-tab', tab });
+      return client.focus();
+    }
+    return self.clients.openWindow(`/#/?tab=${encodeURIComponent(tab)}`);
+  })());
+});

@@ -127,6 +127,25 @@ const Index = () => {
     }
   }, [searchParams, setSearchParams, refreshEntitlements]);
 
+  // Een tik op een pushmelding: #/?tab=list als de app dicht was, anders een
+  // bericht van de service worker aan de open app.
+  useEffect(() => {
+    const naar = searchParams.get('tab');
+    if (!naar) return;
+    setSearchParams({}, { replace: true });
+    if (TABS.some((item) => item.key === naar)) { setInkomst(null); setTab(naar as AppTab); }
+  }, [searchParams, setSearchParams]);
+
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return;
+    const opBericht = (event: MessageEvent) => {
+      const naar = event.data?.type === 'open-tab' ? event.data.tab : null;
+      if (TABS.some((item) => item.key === naar)) { setInkomst(null); setTab(naar as AppTab); }
+    };
+    navigator.serviceWorker.addEventListener('message', opBericht);
+    return () => navigator.serviceWorker.removeEventListener('message', opBericht);
+  }, []);
+
   // A link shared into CoupleCart arrives as #/?import=… (iOS shortcut, Android share target).
   useEffect(() => {
     const fromUrl = searchParams.get('import');

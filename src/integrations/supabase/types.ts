@@ -221,6 +221,18 @@ export type Database = {
         }
         Relationships: []
       }
+      push_subscriptions: {
+        Row: { id: string; user_id: string; endpoint: string; p256dh: string; auth: string; user_agent: string | null; created_at: string; last_used_at: string | null }
+        Insert: { id?: string; user_id: string; endpoint: string; p256dh: string; auth: string; user_agent?: string | null; created_at?: string; last_used_at?: string | null }
+        Update: { id?: string; user_id?: string; endpoint?: string; p256dh?: string; auth?: string; user_agent?: string | null; created_at?: string; last_used_at?: string | null }
+        Relationships: []
+      }
+      push_settings: {
+        Row: { user_id: string; toegevoegd: boolean; winkel: boolean; klaar: boolean; voorraad: boolean; club: boolean; stille_uren: boolean; tijdzone: string; updated_at: string }
+        Insert: { user_id: string; toegevoegd?: boolean; winkel?: boolean; klaar?: boolean; voorraad?: boolean; club?: boolean; stille_uren?: boolean; tijdzone?: string; updated_at?: string }
+        Update: { user_id?: string; toegevoegd?: boolean; winkel?: boolean; klaar?: boolean; voorraad?: boolean; club?: boolean; stille_uren?: boolean; tijdzone?: string; updated_at?: string }
+        Relationships: []
+      }
       app_settings: {
         Row: { key: string; updated_at: string; value: Json }
         Insert: { key: string; updated_at?: string; value?: Json }
@@ -500,6 +512,10 @@ export type Database = {
       is_plus: { Args: { _user: string }; Returns: boolean }
       is_valid_shared_list: { Args: { _list_id: string }; Returns: boolean }
       join_shared_list: { Args: { _share_code: string }; Returns: string }
+      meld_toestel_aan: {
+        Args: { _endpoint: string; _p256dh: string; _auth: string; _user_agent?: string }
+        Returns: undefined
+      }
       cart_club_leden: {
         Args: Record<PropertyKey, never>
         Returns: { user_id: string; naam: string | null; eigenaar: boolean; jij: boolean; sinds: string | null }[]
