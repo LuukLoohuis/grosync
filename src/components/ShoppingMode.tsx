@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import SwipeToCheck from '@/components/SwipeToCheck';
 import { CheckCircle, Wegvinken } from '@/components/CheckOff';
 import { tik } from '@/lib/haptics';
+import { stuurMelding } from '@/lib/meldingen';
 import { splitAmount } from '@/lib/itemAmount';
 import { sortByStoreRoute } from '@/lib/storeRouteSort';
 import type { GroceryItem } from '@/types';
@@ -40,6 +41,19 @@ const ShoppingMode = ({ items, weg, onCheck, onClose }: ShoppingModeProps) => {
       return nieuw.length > 0 ? [...prev, ...nieuw] : prev;
     });
   }, [groups]);
+
+  // Pas bij de eerste afgevinkte boodschap ben je echt aan het winkelen (niet
+  // als je alleen even kijkt); bij het sluiten weten de anderen wat er binnen is.
+  const gehaald = useRef(0);
+  const vinkAf = (item: GroceryItem) => {
+    if (weg.has(item.id)) return;
+    if (gehaald.current === 0) stuurMelding('winkel');
+    gehaald.current += 1;
+    onCheck(item);
+  };
+  useEffect(() => () => {
+    if (gehaald.current > 0) stuurMelding('klaar', { aantal: gehaald.current });
+  }, []);
 
   // Scherm aanhouden zolang je in de winkel staat; niet elke browser kan dit.
   useEffect(() => {
@@ -126,10 +140,10 @@ const ShoppingMode = ({ items, weg, onCheck, onClose }: ShoppingModeProps) => {
             const { name, amount } = splitAmount(item.name);
             return (
               <Wegvinken key={item.id} weg={weg.has(item.id)}>
-              <SwipeToCheck onSwipe={() => onCheck(item)}>
+              <SwipeToCheck onSwipe={() => vinkAf(item)}>
                 <div className="flex min-h-18 items-center gap-2 rounded-[14px] border border-border bg-card pl-1 pr-4">
                   <button
-                    onClick={() => onCheck(item)}
+                    onClick={() => vinkAf(item)}
                     aria-label={t("Vink {0} af", [item.name])}
                     className="group/check flex h-14 w-14 shrink-0 items-center justify-center"
                   >

@@ -5,6 +5,7 @@ import type { Database } from '@/integrations/supabase/types';
 import type { AhMatch } from '@/services/ahApi';
 import { GroceryItem } from '@/types';
 import { deleteWithUndo } from '@/lib/undoableDelete';
+import { meldToegevoegd } from '@/lib/meldingen';
 import { flushGroceryChanges, pendingGroceryChanges, saveGroceryChange, type GroceryChange } from '@/lib/offlineQueue';
 import { t } from '@/lib/i18n';
 import { MAX_COUNT, withCount } from '@/lib/itemCount';
@@ -187,7 +188,10 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
     if (!(await saveGroceryChange({ kind: 'insert', rows: [row] }))) {
       setGroceryItems((prev) => prev.filter((i) => i.id !== row.id));
       toast.error(t("Toevoegen lukte niet. Probeer het opnieuw."));
+      return;
     }
+    // Wat de voorraad er zelf op zet, meldt de voorraad al ('… is op').
+    if (fromRecipe !== 'je voorraad') meldToegevoegd([name]);
   }, [userId]);
 
   const toggleGroceryItem = useCallback(async (id: string) => {
@@ -260,6 +264,7 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
     setGroceryItems((prev) => [...prev, ...rows.map(rowToItem)]);
     const saved = await saveGroceryChange({ kind: 'insert', rows });
     if (!saved) setGroceryItems((prev) => prev.filter((i) => !rows.some((row) => row.id === i.id)));
+    else meldToegevoegd(ingredients);
     return saved;
   }, [userId]);
 

@@ -11,7 +11,7 @@ import type { AhMatch } from '@/services/ahApi';
 import { GroceryItem, PantryItem, Recipe, RecipeCategory, UsualItem } from '@/types';
 import { sameProduct } from '@/lib/pantry';
 import type { Rol } from '@/hooks/useHousehold';
-import { zetAnderenInClub } from '@/lib/meldingen';
+import { stuurMelding, zetAnderenInClub } from '@/lib/meldingen';
 
 /** Hoe vol een potje is, in de woorden die de app gebruikt. */
 export type PantryState = 'vol' | 'bijna' | 'op';
@@ -117,6 +117,7 @@ export const AppProvider = ({
     const item = pantryHook.pantry.find((row) => row.id === id);
     await pantryHook.setQuantity(id, quantity);
     if (item) stemAfMetLijst(item.name, quantity === 0 || (quantity === 1 && item.low));
+    if (item && quantity === 0 && item.quantity > 0) stuurMelding('voorraad', { namen: [item.name] });
   }, [pantryHook, stemAfMetLijst]);
 
   /** De drie standen in één keer goed zetten, inclusief wat er op de lijst hoort. */
@@ -124,6 +125,7 @@ export const AppProvider = ({
     const item = pantryHook.pantry.find((row) => row.id === id);
     if (!item) return;
     if (stand === 'op') {
+      if (item.quantity > 0) stuurMelding('voorraad', { namen: [item.name] });
       await pantryHook.setQuantity(id, 0);
       await pantryHook.setLow(id, false);
     } else {

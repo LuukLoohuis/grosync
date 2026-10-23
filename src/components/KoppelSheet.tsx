@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { FileDown, Link2, Loader2, LogOut, MessageCircle, QrCode, Unlink, UserMinus, UserPlus, Users } from 'lucide-react';
 import { toast } from 'sonner';
+import { lijstAlsTekst } from '@/lib/lijstTekst';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -191,7 +192,8 @@ const KoppelSheet = ({ open, onOpenChange }: KoppelSheetProps) => {
 
   const shareWhatsApp = () => {
     if (uncheckedNames.length === 0) { toast.error(t("Je lijst is leeg, er valt niets te sturen")); return; }
-    const text = '🛒 Boodschappenlijst\n\n' + uncheckedNames.map((name) => `• ${name}`).join('\n');
+    // Dezelfde tekst als 'Delen als tekst' op de lijst: per afdeling, met aantallen.
+    const text = lijstAlsTekst(groceryItems);
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
 

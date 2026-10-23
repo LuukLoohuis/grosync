@@ -123,6 +123,16 @@ export function stuurMelding(soort: Soort, extra: { namen?: string[]; aantal?: n
     .catch(() => { /* geen verbinding: dan maar geen seintje */ });
 }
 
+/**
+ * Net ingestapt in een Cart Club: de anderen horen het. Los van de vlag
+ * hierboven, want die weet nog niet dat je nu in een club zit. Wacht hooguit
+ * even, zodat een herlaad direct erna het verzoek niet afbreekt.
+ */
+export async function meldNieuwLid(): Promise<void> {
+  const verzoek = supabase.functions.invoke('push-send', { body: { soort: 'club' } }).catch(() => null);
+  await Promise.race([verzoek, new Promise((klaar) => setTimeout(klaar, 1500))]);
+}
+
 // Wie vijf dingen achter elkaar typt, stuurt één melding: alles binnen deze tijd samen.
 const BUNDEL_MS = 20_000;
 let gebundeld: string[] = [];

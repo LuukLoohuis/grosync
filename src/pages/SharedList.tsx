@@ -11,6 +11,7 @@ import UsualsList from '@/components/UsualsList';
 import OfflineBanner from '@/components/OfflineBanner';
 import { t } from '@/lib/i18n';
 import { initialen } from '@/lib/cartClub';
+import { meldNieuwLid } from '@/lib/meldingen';
 
 const SharedListContent = () => {
   const [tab, setTab] = useState<'list' | 'usuals' | 'recipes'>('list');
@@ -179,6 +180,8 @@ const SharedList = () => {
       setLoading(false);
       return;
     }
+
+    await meldNieuwLid();
 
     // Met een eigen account zit je nu in de club en hoor je in de app zelf,
     // niet op deze kijkpagina. Gasten blijven hier.
