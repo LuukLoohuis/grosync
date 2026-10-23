@@ -1,15 +1,22 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowRight, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import SwipeToCheck from '@/components/SwipeToCheck';
+import { CheckCircle, Wegvinken } from '@/components/CheckOff';
+import { tik } from '@/lib/haptics';
 import { splitAmount } from '@/lib/itemAmount';
 import { sortByStoreRoute } from '@/lib/storeRouteSort';
 import type { GroceryItem } from '@/types';
 import { t } from '@/lib/i18n';
 
+// Acht vonkjes rond het vinkje als alles gehaald is.
+const VONKEN = [0, 45, 90, 135, 180, 225, 270, 315];
+
 interface ShoppingModeProps {
   items: GroceryItem[];
+  /** Regels die net zijn afgevinkt en nog dichtklappen. */
+  weg: ReadonlySet<string>;
   onCheck: (item: GroceryItem) => void;
   onClose: () => void;
 }
@@ -19,7 +26,7 @@ interface ShoppingModeProps {
  * scherm blijft aan zolang je bezig bent, want je loopt met je telefoon in je
  * hand door de winkel.
  */
-const ShoppingMode = ({ items, onCheck, onClose }: ShoppingModeProps) => {
+const ShoppingMode = ({ items, weg, onCheck, onClose }: ShoppingModeProps) => {
   const [index, setIndex] = useState(0);
 
   const groups = useMemo(() => sortByStoreRoute(items.filter((i) => !i.checked)), [items]);
@@ -46,6 +53,17 @@ const ShoppingMode = ({ items, onCheck, onClose }: ShoppingModeProps) => {
   const groep = groups.find((g) => g.category === huidig);
   const teGaan = items.filter((i) => !i.checked).length;
   const klaar = teGaan === 0;
+
+  // Alleen als je het zelf leeg vinkt, niet als je de winkelmodus opent met alles al in de kar.
+  const wasBezig = useRef(!klaar);
+  const [feest, setFeest] = useState(false);
+  useEffect(() => {
+    if (klaar && wasBezig.current) {
+      setFeest(true);
+      tik('feest');
+    }
+    wasBezig.current = !klaar;
+  }, [klaar]);
 
   const volgende = () => setIndex((n) => Math.min(n + 1, route.length - 1));
   const laatste = index >= route.length - 1;
@@ -80,8 +98,17 @@ const ShoppingMode = ({ items, onCheck, onClose }: ShoppingModeProps) => {
         <div className="mx-auto max-w-lg space-y-2">
           {klaar && (
             <div className="rounded-[14px] border border-border bg-card p-6 text-center">
-              <span aria-hidden="true" className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary-soft text-primary">
-                <Check className="h-6 w-6" strokeWidth={2.4} />
+              <span aria-hidden="true" className="relative mx-auto flex h-12 w-12 items-center justify-center">
+                {feest && VONKEN.map((hoek, i) => (
+                  <span
+                    key={hoek}
+                    className={`absolute left-1/2 top-1/2 -ml-1 -mt-1 h-2 w-2 rounded-full animate-feest-vonk ${i % 2 ? 'bg-accent' : 'bg-primary'}`}
+                    style={{ '--hoek': `${hoek}deg` } as CSSProperties}
+                  />
+                ))}
+                <span className={`flex h-12 w-12 items-center justify-center rounded-full ${feest ? 'bg-primary text-primary-foreground animate-feest-pop' : 'bg-primary-soft text-primary'}`}>
+                  <Check className="h-6 w-6" strokeWidth={2.4} />
+                </span>
               </span>
               <p className="mt-3 font-display text-lg font-bold text-foreground">{t("Niets meer te halen")}</p>
               <Button className="mt-4 min-h-12 w-full" onClick={onClose}>{t("Terug naar je lijst")}</Button>
@@ -98,14 +125,15 @@ const ShoppingMode = ({ items, onCheck, onClose }: ShoppingModeProps) => {
           {groep?.items.map((item) => {
             const { name, amount } = splitAmount(item.name);
             return (
-              <SwipeToCheck key={item.id} onSwipe={() => onCheck(item)}>
+              <Wegvinken key={item.id} weg={weg.has(item.id)}>
+              <SwipeToCheck onSwipe={() => onCheck(item)}>
                 <div className="flex min-h-18 items-center gap-2 rounded-[14px] border border-border bg-card pl-1 pr-4">
                   <button
                     onClick={() => onCheck(item)}
                     aria-label={t("Vink {0} af", [item.name])}
                     className="group/check flex h-14 w-14 shrink-0 items-center justify-center"
                   >
-                    <span className="h-7 w-7 rounded-full border-2 border-border-strong transition-colors duration-150 ease-smooth group-hover/check:border-primary group-hover/check:bg-primary-soft" />
+                    <CheckCircle on={weg.has(item.id)} large />
                   </button>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-display text-lg font-bold tracking-[-0.01em] text-foreground">{name}</span>
@@ -114,6 +142,7 @@ const ShoppingMode = ({ items, onCheck, onClose }: ShoppingModeProps) => {
                   {amount && <span className="shrink-0 text-[0.9375rem] tabular-nums text-muted-foreground">{amount}</span>}
                 </div>
               </SwipeToCheck>
+              </Wegvinken>
             );
           })}
         </div>

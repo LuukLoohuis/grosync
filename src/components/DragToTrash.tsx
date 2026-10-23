@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState, ty
 import { createPortal } from 'react-dom';
 import { Trash2 } from 'lucide-react';
 import { t } from '@/lib/i18n';
+import { tik } from '@/lib/haptics';
 
 // Zo lang houd je een potje vast voordat het loskomt.
 const VASTHOUDEN_MS = 350;
@@ -36,7 +37,7 @@ export const DragToTrashProvider = ({ children }: { children: ReactNode }) => {
     erbovenRef.current = false;
     setSleep(nieuw);
     setErboven(false);
-    try { navigator.vibrate?.(12); } catch { /* geen trilmotor */ }
+    tik('vink');
   }, []);
 
   const move = useCallback((x: number, y: number) => {

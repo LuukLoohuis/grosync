@@ -14,6 +14,7 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import SwipeToCheck from '@/components/SwipeToCheck';
+import { CheckCircle, Wegvinken, useWegvinken } from '@/components/CheckOff';
 import GroceryItemSheet from '@/components/GroceryItemSheet';
 import ShoppingMode from '@/components/ShoppingMode';
 import EmptyState from '@/components/EmptyState';
@@ -86,15 +87,19 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
     }
   };
 
-  const checkOff = (item: GroceryItem) => {
+  // Elke keer dat er iets in de kar valt, veert de teller even op.
+  const [telOp, setTelOp] = useState(0);
+
+  const { weg, vink: checkOff } = useWegvinken<GroceryItem>((item) => {
     trackPurchase(item.name);
     // De kast is van jou alleen: die vul je met een foto of met de hand, niet
     // vanuit de lijst.
     void setGroceryItemChecked(item.id, true);
+    setTelOp((n) => n + 1);
     toast(t("“{0}” afgevinkt", [item.name]), {
       action: { label: t("Ongedaan maken"), onClick: () => { void setGroceryItemChecked(item.id, false); } },
     });
-  };
+  });
 
   const unchecked = groceryItems.filter((i) => !i.checked);
   const checked = groceryItems.filter((i) => i.checked);
@@ -186,7 +191,8 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
     const bonus = item.ahProduct?.isBonus;
     const editing = countEditor.editing?.id === item.id;
     return (
-      <SwipeToCheck key={item.id} onSwipe={() => checkOff(item)} onRemove={() => removeGroceryItem(item.id)}>
+      <Wegvinken key={item.id} weg={weg.has(item.id)}>
+      <SwipeToCheck onSwipe={() => checkOff(item)} onRemove={() => removeGroceryItem(item.id)}>
         <div
           data-count-editor={item.id}
           className={`rounded-[14px] border bg-card transition-colors duration-150 ease-smooth ${editing ? 'border-primary/40' : 'border-border'}`}
@@ -197,7 +203,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
               aria-label={t("Vink {0} af", [item.name])}
               className="group/check flex h-11 w-11 shrink-0 items-center justify-center"
             >
-              <span className="h-6 w-6 rounded-full border-2 border-border-strong transition-colors duration-150 ease-smooth group-hover/check:border-primary group-hover/check:bg-primary-soft" />
+              <CheckCircle on={weg.has(item.id)} />
             </button>
 
             {/* De hele regel opent het venster; het vinkje blijft de snelste weg. */}
@@ -250,6 +256,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
           {editing && <CountQuickPicks editor={countEditor} />}
         </div>
       </SwipeToCheck>
+      </Wegvinken>
     );
   };
 
@@ -464,7 +471,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
               className="flex min-h-12 min-w-0 flex-1 items-center gap-2 text-left text-sm text-muted-foreground"
             >
               <span className="shrink-0 font-medium text-foreground">{t("In de kar")}</span>
-              <span className="shrink-0 tabular-nums">· {checked.length} ·</span>
+              <span key={telOp} className={`inline-block shrink-0 tabular-nums ${telOp ? 'animate-tel-op' : ''}`}>· {checked.length} ·</span>
               <span className="min-w-0 flex-1 truncate">{checked.map((i) => i.name).join(', ')}</span>
               <ChevronDown className={`h-4 w-4 shrink-0 transition-transform duration-150 ease-smooth ${showChecked ? 'rotate-180' : ''}`} />
             </button>
@@ -502,7 +509,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
       )}
 
       {shopping && (
-        <ShoppingMode items={groceryItems} onCheck={checkOff} onClose={() => setShopping(false)} />
+        <ShoppingMode items={groceryItems} weg={weg} onCheck={checkOff} onClose={() => setShopping(false)} />
       )}
 
       <GroceryItemSheet

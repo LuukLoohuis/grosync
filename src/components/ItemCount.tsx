@@ -3,6 +3,7 @@ import { Minus, Plus, Trash2 } from 'lucide-react';
 import type { GroceryItem } from '@/types';
 import { MAX_COUNT, countLabel, itemCount } from '@/lib/itemCount';
 import { t } from '@/lib/i18n';
+import { tik } from '@/lib/haptics';
 
 const QUICK_PICKS = [1, 2, 3, 4, 6, 10];
 // Zo lang blijft de stepper open na de laatste tik; daarna is de lijst weer rustig.
@@ -149,11 +150,11 @@ export const CountStepper = ({ item, editor }: { item: GroceryItem; editor: Coun
       className="flex shrink-0 items-center gap-0.5 rounded-full bg-primary-soft p-0.5 animate-in fade-in zoom-in-95 duration-150"
     >
       {count <= 1 ? (
-        <button type="button" onClick={editor.removeItem} aria-label={t('{0} weggooien', [item.name])} className={`${knop} bg-card text-destructive`}>
+        <button type="button" onClick={() => { tik(); editor.removeItem(); }} aria-label={t('{0} weggooien', [item.name])} className={`${knop} bg-card text-destructive`}>
           <Trash2 className="h-[18px] w-[18px]" />
         </button>
       ) : (
-        <button type="button" onClick={() => editor.set(count - 1)} aria-label={t('Eén minder')} className={`${knop} bg-card text-primary`}>
+        <button type="button" onClick={() => { tik(); editor.set(count - 1); }} aria-label={t('Eén minder')} className={`${knop} bg-card text-primary`}>
           <Minus className="h-[18px] w-[18px]" strokeWidth={2.4} />
         </button>
       )}
@@ -162,7 +163,7 @@ export const CountStepper = ({ item, editor }: { item: GroceryItem; editor: Coun
       </span>
       <button
         type="button"
-        onClick={() => editor.set(count + 1)}
+        onClick={() => { tik(); editor.set(count + 1); }}
         disabled={count >= MAX_COUNT}
         aria-label={t('Eén meer')}
         className={`${knop} bg-primary text-primary-foreground`}
@@ -185,7 +186,7 @@ export const CountQuickPicks = ({ editor }: { editor: CountEditor }) => {
         <button
           key={n}
           type="button"
-          onClick={() => editor.pick(n)}
+          onClick={() => { tik(); editor.pick(n); }}
           aria-pressed={current === n}
           className={`flex h-10 min-w-10 items-center justify-center rounded-full border px-2.5 font-display text-sm font-semibold tabular-nums transition-colors duration-150 ease-smooth focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring ${
             current === n
