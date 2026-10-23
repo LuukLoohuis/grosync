@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Heart, LogOut, MoreVertical, Gauge, PieChart, LifeBuoy, FileText, SquarePlus, Users } from 'lucide-react';
+import { Bell, Heart, LogOut, MoreVertical, Gauge, PieChart, LifeBuoy, FileText, SquarePlus, Users } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useAuth } from '@/hooks/useAuth';
 import { useInstallHint } from '@/hooks/useInstallHint';
@@ -20,6 +20,7 @@ import { isGast } from '@/lib/accountUpgrade';
 const KoppelSheet = lazyPart(() => import('@/components/KoppelSheet'));
 const UsageSheet = lazyPart(() => import('@/components/UsageSheet'));
 const InstallSheet = lazyPart(() => import('@/components/InstallSheet'));
+const MeldingenSheet = lazyPart(() => import('@/components/MeldingenSheet'));
 
 const THEMES = [
   ['system', t('Zoals je telefoon')],
@@ -41,6 +42,7 @@ const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
   const [usageOpen, setUsageOpen] = useState(false);
   const install = useInstallHint();
   const [installOpen, setInstallOpen] = useState(false);
+  const [meldOpen, setMeldOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const [uitlogVraag, setUitlogVraag] = useState(false);
   const gast = isGast(session?.user);
@@ -84,6 +86,9 @@ const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
             ))}
           </DropdownMenuRadioGroup>
           <DropdownMenuSeparator />
+          <DropdownMenuItem className="gap-2 min-h-11 cursor-pointer" onSelect={() => setMeldOpen(true)}>
+            <Bell className="h-4 w-4" /> {t("Meldingen")}
+          </DropdownMenuItem>
           <DropdownMenuItem className="gap-2 min-h-11 cursor-pointer" onSelect={() => setUsageOpen(true)}>
             <PieChart className="h-4 w-4" /> {t("Je tegoed")}
           </DropdownMenuItem>
@@ -123,6 +128,13 @@ const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
       </LazySheet>
       <LazySheet open={installOpen} onClose={() => setInstallOpen(false)}>
         <InstallSheet open={installOpen} onOpenChange={setInstallOpen} way={install.way} canPrompt={install.canPrompt} />
+      </LazySheet>
+      <LazySheet open={meldOpen} onClose={() => setMeldOpen(false)}>
+        <MeldingenSheet
+          open={meldOpen}
+          onOpenChange={setMeldOpen}
+          onBeginscherm={install.offer ? () => { setMeldOpen(false); setInstallOpen(true); } : undefined}
+        />
       </LazySheet>
       <AccountSheet open={accountOpen} onOpenChange={setAccountOpen} />
       <GastUitlogDialog open={uitlogVraag} onOpenChange={setUitlogVraag} onSignOut={signOut} onCreateAccount={() => setAccountOpen(true)} />
