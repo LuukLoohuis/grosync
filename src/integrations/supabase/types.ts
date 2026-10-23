@@ -105,6 +105,33 @@ export type Database = {
         }
         Relationships: []
       }
+      item_memory: {
+        Row: {
+          note: string | null
+          photo: string | null
+          sleutel: string
+          store: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          note?: string | null
+          photo?: string | null
+          sleutel: string
+          store?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          note?: string | null
+          photo?: string | null
+          sleutel?: string
+          store?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       meal_plans: {
         Row: {
           created_at: string

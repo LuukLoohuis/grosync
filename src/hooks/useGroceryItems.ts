@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
@@ -9,6 +9,7 @@ import { meldToegevoegd } from '@/lib/meldingen';
 import { flushGroceryChanges, pendingGroceryChanges, saveGroceryChange, type GroceryChange } from '@/lib/offlineQueue';
 import { t } from '@/lib/i18n';
 import { MAX_COUNT, withCount } from '@/lib/itemCount';
+import { isLeeg, sleutelVan, type Herinnering } from '@/lib/onthouden';
 
 type GroceryRow = Database['public']['Tables']['grocery_items']['Row'];
 type GroceryInsert = Database['public']['Tables']['grocery_items']['Insert'];
@@ -72,14 +73,19 @@ const writeCachedList = (userId: string, items: GroceryItem[]) => {
 };
 
 // A client-made id lets an item added without signal be checked off or removed before it reaches the server.
-const newRow = (userId: string, name: string, fromRecipe?: string): GroceryInsert => ({
+const newRow = (userId: string, name: string, fromRecipe?: string, extra: Partial<Herinnering> = {}): GroceryInsert => ({
   id: crypto.randomUUID(),
   user_id: userId,
   name,
   from_recipe: fromRecipe || null,
   checked: false,
   created_at: new Date().toISOString(),
+  ...(extra.store ? { store: extra.store } : {}),
+  ...(extra.note ? { note: extra.note } : {}),
+  ...(extra.photo ? { photo: extra.photo } : {}),
 });
+
+const geheugenKey = (userId: string) => `couplecart-onthouden-${userId}`;
 
 const rowToItem = (row: GroceryInsert): GroceryItem => ({
   id: row.id!,
@@ -89,6 +95,9 @@ const rowToItem = (row: GroceryInsert): GroceryItem => ({
   price: null,
   priceCheckedAt: null,
   ahProduct: null,
+  store: row.store ?? null,
+  note: row.note ?? null,
+  photo: row.photo ?? null,
 });
 
 // Kept changes laid over a list from the server, so they do not flicker away before they are sent.
@@ -121,6 +130,40 @@ interface UseGroceryItemsOptions {
 export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
   const [groceryItems, setGroceryItems] = useState<GroceryItem[]>([]);
   const [loading, setLoading] = useState(true);
+  // Per product wat jullie de vorige keer kozen (winkel, notitie, foto).
+  const geheugen = useRef(new Map<string, Herinnering>());
+  const itemsRef = useRef<GroceryItem[]>([]);
+  itemsRef.current = groceryItems;
+
+  useEffect(() => {
+    geheugen.current = new Map();
+    if (!userId) return;
+    try {
+      const bewaard = localStorage.getItem(geheugenKey(userId));
+      if (bewaard) geheugen.current = new Map(JSON.parse(bewaard) as [string, Herinnering][]);
+    } catch { /* geen geheugen op dit toestel; de server vult het zo */ }
+    void supabase.from('item_memory').select('sleutel, store, note, photo').eq('user_id', userId).then(({ data, error }) => {
+      if (error || !data) return;
+      geheugen.current = new Map(data.map((r) => [r.sleutel, { store: r.store, note: r.note, photo: r.photo }]));
+      try { localStorage.setItem(geheugenKey(userId), JSON.stringify([...geheugen.current])); } catch { /* vol of geblokkeerd */ }
+    });
+  }, [userId]);
+
+  /** Wat er de vorige keer bij dit product hoorde, voor op een nieuwe regel. */
+  const herinnering = useCallback((name: string): Herinnering | undefined => geheugen.current.get(sleutelVan(name)), []);
+
+  const onthoud = useCallback((name: string, h: Herinnering) => {
+    if (!userId) return;
+    const sleutel = sleutelVan(name);
+    if (!sleutel) return;
+    if (isLeeg(h)) geheugen.current.delete(sleutel); else geheugen.current.set(sleutel, h);
+    try { localStorage.setItem(geheugenKey(userId), JSON.stringify([...geheugen.current])); } catch { /* vol of geblokkeerd */ }
+    // Onthouden is een gemak; lukt het niet (geen bereik), dan blijft de lijst gewoon werken.
+    const verzoek = isLeeg(h)
+      ? supabase.from('item_memory').delete().eq('user_id', userId).eq('sleutel', sleutel)
+      : supabase.from('item_memory').upsert({ user_id: userId, sleutel, ...h, updated_at: new Date().toISOString() });
+    void verzoek.then(({ error }) => { if (error) console.warn('Onthouden lukte niet:', error.message); });
+  }, [userId]);
 
   const reload = useCallback(async () => {
     if (!userId) return;
@@ -191,7 +234,7 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
     // Zet de nieuwe rij zelf in de lijst in plaats van te wachten op de
     // realtime-melding; die kan uitblijven of traag zijn. De subscriptie
     // hierboven slaat een dubbele id over.
-    const row = newRow(userId, name, fromRecipe);
+    const row = newRow(userId, name, fromRecipe, herinnering(name));
     setGroceryItems((prev) => [...prev, rowToItem(row)]);
     if (!(await saveGroceryChange({ kind: 'insert', rows: [row] }))) {
       setGroceryItems((prev) => prev.filter((i) => i.id !== row.id));
@@ -200,12 +243,21 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
     }
     // Wat de voorraad er zelf op zet, meldt de voorraad al ('… is op').
     if (fromRecipe !== 'je voorraad') meldToegevoegd([name]);
-  }, [userId]);
+  }, [userId, herinnering]);
 
-  /** Meerdere tegelijk, uit snel invoeren: één keer opslaan, één seintje. */
-  const addGroceryItems = useCallback(async (names: string[]): Promise<boolean> => {
+  /**
+   * Meerdere tegelijk, uit snel invoeren: één keer opslaan, één seintje. Een
+   * winkel die je zelf noemde wint; anders geldt wat er onthouden is.
+   */
+  const addGroceryItems = useCallback(async (items: { name: string; store?: string | null }[]): Promise<boolean> => {
     if (!userId) return false;
-    const rows = names.map((name) => name.trim()).filter(Boolean).map((name) => newRow(userId, name));
+    const rows = items
+      .map((item) => ({ ...item, name: item.name.trim() }))
+      .filter((item) => item.name)
+      .map(({ name, store }) => {
+        const h = herinnering(name);
+        return newRow(userId, name, undefined, { ...h, ...(store !== undefined ? { store } : {}) });
+      });
     if (rows.length === 0) return true;
     setGroceryItems((prev) => [...prev, ...rows.map(rowToItem)]);
     if (!(await saveGroceryChange({ kind: 'insert', rows }))) {
@@ -215,7 +267,7 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
     }
     meldToegevoegd(rows.map((row) => row.name));
     return true;
-  }, [userId]);
+  }, [userId, herinnering]);
 
   const toggleGroceryItem = useCallback(async (id: string) => {
     const item = groceryItems.find((i) => i.id === id);
@@ -282,14 +334,14 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
 
   const addRecipeToGroceryList = useCallback(async (ingredients: string[], recipeName: string): Promise<boolean> => {
     if (!userId) return false;
-    const rows = ingredients.map((ing) => newRow(userId, ing, recipeName));
+    const rows = ingredients.map((ing) => newRow(userId, ing, recipeName, herinnering(ing)));
     if (rows.length === 0) return true;
     setGroceryItems((prev) => [...prev, ...rows.map(rowToItem)]);
     const saved = await saveGroceryChange({ kind: 'insert', rows });
     if (!saved) setGroceryItems((prev) => prev.filter((i) => !rows.some((row) => row.id === i.id)));
     else meldToegevoegd(ingredients);
     return saved;
-  }, [userId]);
+  }, [userId, herinnering]);
 
   const mergeDuplicateItems = useCallback(async () => {
     if (!userId) return;
@@ -417,8 +469,18 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
     setGroceryItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...patch } : i)));
     if (!(await saveGroceryChange({ kind: 'update', ids: [id], patch }))) {
       toast.error(t("Opslaan lukte niet. Probeer het opnieuw."));
+      return;
     }
-  }, []);
+    // De volgende keer dat dit product op de lijst komt, staat het er meteen goed op.
+    const item = itemsRef.current.find((i) => i.id === id);
+    if (item) {
+      onthoud(item.name, {
+        store: patch.store !== undefined ? patch.store ?? null : item.store ?? null,
+        note: patch.note !== undefined ? patch.note ?? null : item.note ?? null,
+        photo: patch.photo !== undefined ? patch.photo ?? null : item.photo ?? null,
+      });
+    }
+  }, [onthoud]);
 
   const updateGroceryItemPrice = useCallback(async (id: string, price: number | null) => {
     setGroceryItems((prev) => prev.map((i) => (i.id === id ? { ...i, price } : i)));
@@ -475,6 +537,7 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
     loading,
     addGroceryItem,
     addGroceryItems,
+    herinnering,
     toggleGroceryItem,
     removeGroceryItem,
     clearCheckedItems,

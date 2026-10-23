@@ -1,5 +1,6 @@
 import { knownDepartment } from '@/lib/storeRouteSort';
 import { countParts, withCount } from '@/lib/itemCount';
+import { VASTE_WINKELS, winkelNaam } from '@/lib/winkels';
 
 /**
  * Eén zin, meerdere boodschappen: "2 melk, eieren en brood voor zaterdag"
@@ -68,12 +69,39 @@ const losseWoorden = (deel: string): string[] => {
   return [`${prefix}${woorden[0]}`, ...woorden.slice(1)];
 };
 
-export const splitsInvoer = (tekst: string): string[] => {
-  const zin = tekst.replace(/[ \t]+/g, ' ').trim().replace(AANLOOP, '').replace(UITLOOP, '').replace(WANNEER, '');
+export interface Ingevoerd {
+  naam: string;
+  /** Genoemde winkel ("shampoo bij Kruidvat", "@action"); undefined = niet genoemd. */
+  winkel?: string;
+}
+
+const regex = (woord: string) => woord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** Haalt "@kruidvat" of "… bij de Kruidvat" van het eind af. Alleen winkels die je kent, anders is "bij" gewoon tekst. */
+const winkelUit = (tekst: string, winkels: string[], alleenAanEind = false): { tekst: string; winkel?: string } => {
+  const apestaart = tekst.match(alleenAanEind ? /(?:^|\s)@([\p{L}\d'-]+)\s*$/u : /(?:^|\s)@([\p{L}\d'-]+)/u);
+  if (apestaart) return { tekst: tekst.replace(apestaart[0], ' ').replace(/\s+/g, ' ').trim(), winkel: winkelNaam(apestaart[1]) };
+  const namen = [...winkels].sort((a, b) => b.length - a.length).map(regex).join('|');
+  if (!namen) return { tekst };
+  const bij = tekst.match(new RegExp(`\\s+(?:bij|van|in|uit)\\s+(?:de\\s+|het\\s+)?(${namen})\\s*$`, 'i'));
+  if (bij) return { tekst: tekst.slice(0, bij.index).trim(), winkel: winkelNaam(bij[1]) };
+  return { tekst };
+};
+
+/**
+ * Zin → boodschappen, met winkel als je die noemt. Staat de winkel aan het
+ * eind van de zin ("shampoo en tandpasta bij de Kruidvat"), dan geldt hij voor
+ * alles in die zin; bij een los deel alleen voor dat deel.
+ */
+export const leesInvoer = (tekst: string, bekendeWinkels: string[] = []): Ingevoerd[] => {
+  const winkels = [...VASTE_WINKELS, ...bekendeWinkels];
+  const geheel = tekst.replace(/[ \t]+/g, ' ').trim().replace(AANLOOP, '').replace(UITLOOP, '').replace(WANNEER, '');
+  const { tekst: zin, winkel: voorAlles } = winkelUit(geheel, winkels, true);
   const gezien = new Set<string>();
-  const uit: string[] = [];
+  const uit: Ingevoerd[] = [];
   for (const ruw of zin.split(SCHEIDING)) {
-    const deel = schoon(ruw.replace(WANNEER, ''));
+    const { tekst: zonder, winkel } = winkelUit(ruw.replace(WANNEER, '').trim(), winkels);
+    const deel = schoon(zonder);
     if (!deel || WANNEER_LOS.test(deel) || /^(?:en|plus|of)$/i.test(deel)) continue;
     for (const los of losseWoorden(metCijfer(deel))) {
       const naam = metCijfer(los).slice(0, MAX_NAME).trim();
@@ -81,11 +109,14 @@ export const splitsInvoer = (tekst: string): string[] => {
       const sleutel = countParts(naam).rest.toLocaleLowerCase('nl');
       if (!naam || gezien.has(sleutel)) continue;
       gezien.add(sleutel);
-      uit.push(naam);
+      const w = winkel ?? voorAlles;
+      uit.push(w ? { naam, winkel: w } : { naam });
     }
   }
   return uit.slice(0, MAX_ITEMS);
 };
+
+export const splitsInvoer = (tekst: string): string[] => leesInvoer(tekst).map((i) => i.naam);
 
 /** Lijkt dit op meer dan één boodschap? Dan eerst kaartjes ter controle. */
 export const isMeerdere = (tekst: string) => splitsInvoer(tekst).length > 1;

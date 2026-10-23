@@ -190,7 +190,7 @@ const GroceryItemSheet = ({ item, department, onClose, onPickProduct }: GroceryI
 
         <section aria-labelledby="dit-merk" className="mt-5">
           <h3 id="dit-merk" className="font-display text-[0.9375rem] font-bold text-foreground">{t("Dit merk")}</h3>
-          <p className="mb-2 text-xs text-muted-foreground">{t("Zodat de ander precies weet welke je bedoelt.")}</p>
+          <p className="mb-2 text-xs text-muted-foreground">{t("Zodat de ander precies weet welke je bedoelt. Winkel, notitie en foto worden onthouden voor de volgende keer.")}</p>
           <div className="flex items-start gap-3">
             <button
               type="button"

@@ -7,6 +7,7 @@ import { departmentOf, type Department } from '@/lib/storeRouteSort';
  * woorden ("pindakaas", "kokosmelk") staan voor de algemene ("kaas", "melk").
  */
 const PRODUCTEN: [RegExp, string][] = [
+  [/tandenborstel|tandpasta/, '🪥'],
   [/pinda ?kaas/, '🥜'],
   [/kokos/, '🥥'],
   [/hagelslag|chocola|cacao|nutella/, '🍫'],
@@ -79,7 +80,6 @@ const PRODUCTEN: [RegExp, string][] = [
   [/toiletpapier|wc-?papier|keukenpapier|keukenrol/, '🧻'],
   [/zeep|afwasmiddel|wasmiddel/, '🧼'],
   [/spons|sponzen/, '🧽'],
-  [/tandenborstel|tandpasta/, '🪥'],
   [/shampoo|douchegel|conditioner|bodylotion|zonnebrand|deodorant/, '🧴'],
   [/kaars|theelicht/, '🕯️'],
   [/batterij/, '🔋'],

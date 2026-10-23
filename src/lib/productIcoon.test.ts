@@ -15,6 +15,7 @@ describe('productIcoon', () => {
     expect(productIcoon('kokosmelk')).toBe('🥥');
     expect(productIcoon('hagelslag')).toBe('🍫');
     expect(productIcoon('appelsap')).toBe('🧃');
+    expect(productIcoon('tandpasta')).toBe('🪥');
   });
 
   it('valt terug op de afdeling', () => {

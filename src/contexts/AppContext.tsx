@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useEffect } from 'react';
 import { useGroceryItems, type GroceryDetails } from '@/hooks/useGroceryItems';
+import type { Herinnering } from '@/lib/onthouden';
 import { useRecipes } from '@/hooks/useRecipes';
 import { useUsuals } from '@/hooks/useUsuals';
 import { usePantryStaples } from '@/hooks/usePantryStaples';
@@ -34,7 +35,8 @@ interface AppContextType {
   frequentItems: FrequentItem[];
   trackPurchase: (itemName: string) => Promise<void>;
   addGroceryItem: (name: string, fromRecipe?: string) => Promise<void>;
-  addGroceryItems: (names: string[]) => Promise<boolean>;
+  addGroceryItems: (items: { name: string; store?: string | null }[]) => Promise<boolean>;
+  herinnering: (name: string) => Herinnering | undefined;
   toggleGroceryItem: (id: string) => Promise<void>;
   setGroceryItemChecked: (id: string, checked: boolean) => Promise<void>;
   removeGroceryItem: (id: string) => void;
@@ -155,6 +157,7 @@ export const AppProvider = ({
     trackPurchase: purchaseHook.trackPurchase,
     addGroceryItem: grocery.addGroceryItem,
     addGroceryItems: grocery.addGroceryItems,
+    herinnering: grocery.herinnering,
     toggleGroceryItem: grocery.toggleGroceryItem,
     setGroceryItemChecked: grocery.setGroceryItemChecked,
     removeGroceryItem: grocery.removeGroceryItem,

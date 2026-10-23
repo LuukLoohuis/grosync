@@ -201,8 +201,9 @@ const COMPOUNDS: [RegExp, Department][] = [
   [/\bmelkchocolade\b/, 'houdbaar'],
   [/\bboterham(men)?\b/, 'brood'],
   [/\bboterkoek\b/, 'brood'],
-  // "ham" in shampoo, "thee" in theelichtjes, "sla" in hagelslag.
+  // "ham" in shampoo, "pasta" in tandpasta, "thee" in theelichtjes, "sla" in hagelslag.
   [/\bshampoo\b/, 'huishouden'],
+  [/tandpasta/, 'huishouden'],
   [/\bhagelslag\b/, 'houdbaar'],
   [/\btheelicht(je|jes)?\b/, 'huishouden'],
 ];
