@@ -23,6 +23,7 @@ const toGroceryItem = (row: GroceryRow): GroceryItem => ({
   priceBefore: row.price_before ?? null,
   note: row.note ?? null,
   photo: row.photo ?? null,
+  store: row.store ?? null,
   ahProduct: row.ah_product_id
     ? {
         id: row.ah_product_id,
@@ -106,9 +107,12 @@ const withPendingChanges = (items: GroceryItem[], changes: GroceryChange[], user
         ...(change.patch.name !== undefined ? { name: change.patch.name } : {}),
         ...(change.patch.note !== undefined ? { note: change.patch.note } : {}),
         ...(change.patch.photo !== undefined ? { photo: change.patch.photo } : {}),
+        ...(change.patch.store !== undefined ? { store: change.patch.store } : {}),
       };
     });
   }, items);
+
+export type GroceryDetails = { note?: string | null; photo?: string | null; store?: string | null };
 
 interface UseGroceryItemsOptions {
   userId?: string | null;
@@ -389,11 +393,12 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
     await saveGroceryChange({ kind: 'update', ids: [id], patch: { name } });
   }, [groceryItems]);
 
-  /** Notitie en/of foto: "dit merk". Leeg of null haalt het weg. */
-  const setGroceryItemDetails = useCallback(async (id: string, details: { note?: string | null; photo?: string | null }) => {
-    const patch: { note?: string | null; photo?: string | null } = {};
+  /** Notitie, foto ("dit merk") en winkel. Leeg of null haalt het weg. */
+  const setGroceryItemDetails = useCallback(async (id: string, details: GroceryDetails) => {
+    const patch: GroceryDetails = {};
     if (details.note !== undefined) patch.note = details.note?.trim().slice(0, 120) || null;
     if (details.photo !== undefined) patch.photo = details.photo || null;
+    if (details.store !== undefined) patch.store = details.store?.trim().slice(0, 30) || null;
     setGroceryItems((prev) => prev.map((i) => (i.id === id ? { ...i, ...patch } : i)));
     if (!(await saveGroceryChange({ kind: 'update', ids: [id], patch }))) {
       toast.error(t("Opslaan lukte niet. Probeer het opnieuw."));

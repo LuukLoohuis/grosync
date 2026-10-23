@@ -14,6 +14,8 @@ export interface GroceryItem {
   note?: string | null;
   /** Eigen foto van het product, als klein JPEG-plaatje (data-URL). */
   photo?: string | null;
+  /** Waar je het haalt ("Kruidvat"); leeg = maakt niet uit, overal. */
+  store?: string | null;
 }
 
 export interface AhProduct {

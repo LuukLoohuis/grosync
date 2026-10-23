@@ -58,6 +58,7 @@ export type Database = {
           price: number | null
           price_before: number | null
           price_checked_at: string | null
+          store: string | null
           user_id: string
         }
         Insert: {
@@ -78,6 +79,7 @@ export type Database = {
           price?: number | null
           price_before?: number | null
           price_checked_at?: string | null
+          store?: string | null
           user_id: string
         }
         Update: {
@@ -98,6 +100,7 @@ export type Database = {
           price?: number | null
           price_before?: number | null
           price_checked_at?: string | null
+          store?: string | null
           user_id?: string
         }
         Relationships: []

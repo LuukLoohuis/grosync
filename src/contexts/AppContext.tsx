@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect } from 'react';
-import { useGroceryItems } from '@/hooks/useGroceryItems';
+import { useGroceryItems, type GroceryDetails } from '@/hooks/useGroceryItems';
 import { useRecipes } from '@/hooks/useRecipes';
 import { useUsuals } from '@/hooks/useUsuals';
 import { usePantryStaples } from '@/hooks/usePantryStaples';
@@ -43,7 +43,7 @@ interface AppContextType {
   mergeDuplicateItems: () => Promise<void>;
   renameGroceryItem: (id: string, name: string) => Promise<void>;
   setGroceryItemCount: (id: string, count: number) => Promise<void>;
-  setGroceryItemDetails: (id: string, details: { note?: string | null; photo?: string | null }) => Promise<void>;
+  setGroceryItemDetails: (id: string, details: GroceryDetails) => Promise<void>;
   applyAhMatches: (matches: AhMatch[], unmatchedIds?: string[]) => Promise<void>;
   addRecipe: (recipe: Omit<Recipe, 'id'>) => Promise<string | null>;
   updateRecipe: (id: string, updates: Partial<Omit<Recipe, 'id'>>) => Promise<void>;

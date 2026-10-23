@@ -231,7 +231,12 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
               className="flex min-w-0 flex-1 items-center gap-2 py-2 text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
             >
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-[0.9375rem] font-medium text-foreground">{name}</span>
+                <span className="flex items-center gap-1.5">
+                  <span className="truncate text-[0.9375rem] font-medium text-foreground">{name}</span>
+                  {item.store && (
+                    <span className="shrink-0 rounded-md bg-muted px-1.5 py-px text-[0.6875rem] font-semibold text-muted-foreground">{item.store}</span>
+                  )}
+                </span>
                 {item.note && (
                   <span className="flex items-center gap-1 truncate text-xs text-foreground/75">
                     {item.photo && <Camera aria-label={t("met foto")} className="h-3 w-3 shrink-0" />}

@@ -11,6 +11,7 @@ import { t } from '@/lib/i18n';
 import { MAX_COUNT, countParts, itemCount } from '@/lib/itemCount';
 import { toThumbDataUrl } from '@/lib/photo';
 import { itemThumb } from '@/lib/itemThumb';
+import { VASTE_WINKELS, winkelNaam, winkelsOpLijst, zelfdeWinkel } from '@/lib/winkels';
 
 interface GroceryItemSheetProps {
   item: GroceryItem | null;
@@ -30,6 +31,7 @@ const GroceryItemSheet = ({ item, department, onClose, onPickProduct }: GroceryI
   const [name, setName] = useState('');
   const [note, setNote] = useState('');
   const [fotoBezig, setFotoBezig] = useState(false);
+  const [andereWinkel, setAndereWinkel] = useState<string | null>(null);
   const fotoInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -42,6 +44,7 @@ const GroceryItemSheet = ({ item, department, onClose, onPickProduct }: GroceryI
   // realtime-update van je partner wat je net aan het typen bent.
   useEffect(() => {
     if (item) setNote(item.note ?? '');
+    setAndereWinkel(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [item?.id]);
 
@@ -75,6 +78,18 @@ const GroceryItemSheet = ({ item, department, onClose, onPickProduct }: GroceryI
       if (fotoInput.current) fotoInput.current.value = '';
     }
   };
+
+  const kiesWinkel = (winkel: string | null) => {
+    setAndereWinkel(null);
+    if (winkel === (shown.store ?? null) || zelfdeWinkel(winkel, shown.store)) return;
+    void setGroceryItemDetails(shown.id, { store: winkel });
+  };
+  // De vaste winkels, plus wat jullie zelf al eens typten, plus deze.
+  const winkels = [...VASTE_WINKELS, ...winkelsOpLijst([...groceryItems, { store: shown.store, checked: false }])]
+    .filter((w, i, alle) => alle.findIndex((x) => zelfdeWinkel(x, w)) === i);
+  const chip = (aan: boolean) => `min-h-9 shrink-0 rounded-full border px-3.5 text-sm transition-colors ${
+    aan ? 'border-primary bg-primary text-primary-foreground' : 'border-border-strong bg-card text-foreground'
+  }`;
 
   const thumb = itemThumb(shown);
   const count = itemCount(shown);
@@ -137,6 +152,41 @@ const GroceryItemSheet = ({ item, department, onClose, onPickProduct }: GroceryI
             </p>
           )}
         </div>
+
+        <section aria-labelledby="winkel-kop" className="mt-5">
+          <h3 id="winkel-kop" className="font-display text-[0.9375rem] font-bold text-foreground">{t("Winkel")}</h3>
+          <div role="radiogroup" aria-labelledby="winkel-kop" className="-mx-1 mt-2 flex gap-2 overflow-x-auto px-1 pb-1">
+            <button type="button" role="radio" aria-checked={!shown.store} onClick={() => kiesWinkel(null)} className={chip(!shown.store)}>
+              {t("Maakt niet uit")}
+            </button>
+            {winkels.map((w) => {
+              const aan = zelfdeWinkel(w, shown.store);
+              return (
+                <button key={w} type="button" role="radio" aria-checked={aan} onClick={() => kiesWinkel(w)} className={chip(aan)}>
+                  {w}
+                </button>
+              );
+            })}
+            {andereWinkel === null && (
+              <button type="button" onClick={() => setAndereWinkel('')} className={`${chip(false)} border-dashed text-muted-foreground`}>
+                {t("Andere…")}
+              </button>
+            )}
+          </div>
+          {andereWinkel !== null && (
+            <Input
+              autoFocus
+              aria-label={t("Andere winkel")}
+              placeholder={t("Bijv. bakker, Hema")}
+              value={andereWinkel}
+              maxLength={30}
+              className="mt-2"
+              onChange={(e) => setAndereWinkel(e.target.value)}
+              onBlur={() => { const w = andereWinkel.trim(); if (w) kiesWinkel(winkelNaam(w)); else setAndereWinkel(null); }}
+              onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+            />
+          )}
+        </section>
 
         <section aria-labelledby="dit-merk" className="mt-5">
           <h3 id="dit-merk" className="font-display text-[0.9375rem] font-bold text-foreground">{t("Dit merk")}</h3>

@@ -9,11 +9,21 @@ import { tik } from '@/lib/haptics';
 import { stuurMelding } from '@/lib/meldingen';
 import { splitAmount } from '@/lib/itemAmount';
 import { sortByStoreRoute } from '@/lib/storeRouteSort';
+import { voorWinkel, winkelsOpLijst, zelfdeWinkel } from '@/lib/winkels';
 import type { GroceryItem } from '@/types';
 import { t } from '@/lib/i18n';
 
 // Acht vonkjes rond het vinkje als alles gehaald is.
 const VONKEN = [0, 45, 90, 135, 180, 225, 270, 315];
+
+// De winkel van de vorige keer: vaak sta je weer in dezelfde.
+const WINKEL_KEY = 'couplecart-winkel';
+const leesWinkel = () => { try { return localStorage.getItem(WINKEL_KEY); } catch { return null; } };
+const bewaarWinkel = (winkel: string | null) => {
+  try {
+    if (winkel) localStorage.setItem(WINKEL_KEY, winkel); else localStorage.removeItem(WINKEL_KEY);
+  } catch { /* geblokkeerd; dan kies je hem de volgende keer opnieuw */ }
+};
 
 interface ShoppingModeProps {
   items: GroceryItem[];
@@ -31,7 +41,17 @@ interface ShoppingModeProps {
 const ShoppingMode = ({ items, weg, onCheck, onClose }: ShoppingModeProps) => {
   const [index, setIndex] = useState(0);
 
-  const groups = useMemo(() => sortByStoreRoute(items.filter((i) => !i.checked)), [items]);
+  // Eén lijst, meerdere winkels: in de Kruidvat zie je wat daar hoort plus
+  // wat overal kan; de rest blijft gewoon op de lijst staan.
+  const winkels = useMemo(() => winkelsOpLijst(items), [items]);
+  const [winkel, setWinkel] = useState<string | null>(() => {
+    const vorige = leesWinkel();
+    return winkelsOpLijst(items).find((w) => zelfdeWinkel(w, vorige)) ?? null;
+  });
+  const hier = useMemo(() => voorWinkel(items, winkel), [items, winkel]);
+  const elders = items.filter((i) => !i.checked).length - hier.filter((i) => !i.checked).length;
+
+  const groups = useMemo(() => sortByStoreRoute(hier.filter((i) => !i.checked)), [hier]);
   // De afdelingen die er bij het starten waren blijven staan, ook als je ze
   // leegvinkt: anders springt de winkel onder je handen weg.
   const [route, setRoute] = useState(() => groups.map((g) => g.category));
@@ -64,9 +84,19 @@ const ShoppingMode = ({ items, weg, onCheck, onClose }: ShoppingModeProps) => {
     return () => { void lock?.release().catch(() => { /* al vrijgegeven */ }); };
   }, []);
 
+  const kiesWinkel = (w: string | null) => {
+    if (w === winkel) return;
+    setWinkel(w);
+    bewaarWinkel(w);
+    // Andere winkel, andere route: opnieuw bij de eerste afdeling beginnen.
+    setRoute(sortByStoreRoute(voorWinkel(items, w).filter((i) => !i.checked)).map((g) => g.category));
+    setIndex(0);
+    wasBezig.current = false;
+  };
+
   const huidig = route[index];
   const groep = groups.find((g) => g.category === huidig);
-  const teGaan = items.filter((i) => !i.checked).length;
+  const teGaan = hier.filter((i) => !i.checked).length;
   const klaar = teGaan === 0;
 
   // Alleen als je het zelf leeg vinkt, niet als je de winkelmodus opent met alles al in de kar.
@@ -90,7 +120,7 @@ const ShoppingMode = ({ items, weg, onCheck, onClose }: ShoppingModeProps) => {
         <div className="mx-auto flex max-w-lg items-start gap-3">
           <div className="min-w-0 flex-1">
             <h1 className="font-display text-2xl font-bold tracking-[-0.02em]">
-              {klaar ? t("Alles gehaald") : groep?.label ?? t("Klaar met deze afdeling")}
+              {klaar ? (winkel ? t("Alles gehaald bij {0}", [winkel]) : t("Alles gehaald")) : groep?.label ?? t("Klaar met deze afdeling")}
             </h1>
             <p className="mt-0.5 text-sm text-primary-muted">
               {klaar
@@ -107,6 +137,27 @@ const ShoppingMode = ({ items, weg, onCheck, onClose }: ShoppingModeProps) => {
             <X className="h-5 w-5" />
           </button>
         </div>
+        {winkels.length > 0 && (
+          <div role="radiogroup" aria-label={t("Waar ben je?")} className="mx-auto -mb-1 mt-3 flex max-w-lg gap-2 overflow-x-auto pb-1">
+            {[null, ...winkels].map((w) => {
+              const aan = w === winkel;
+              return (
+                <button
+                  key={w ?? ''}
+                  type="button"
+                  role="radio"
+                  aria-checked={aan}
+                  onClick={() => kiesWinkel(w)}
+                  className={`min-h-9 shrink-0 rounded-full px-3.5 text-sm font-medium transition-colors ${
+                    aan ? 'bg-primary-foreground text-primary' : 'bg-primary-deep text-primary-muted hover:text-primary-foreground'
+                  }`}
+                >
+                  {w ?? t("Alle winkels")}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </header>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
@@ -126,6 +177,11 @@ const ShoppingMode = ({ items, weg, onCheck, onClose }: ShoppingModeProps) => {
                 </span>
               </span>
               <p className="mt-3 font-display text-lg font-bold text-foreground">{t("Niets meer te halen")}</p>
+              {elders > 0 && (
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {elders === 1 ? t("Nog 1 boodschap voor een andere winkel.") : t("Nog {0} boodschappen voor andere winkels.", [elders])}
+                </p>
+              )}
               <Button className="mt-4 min-h-12 w-full" onClick={onClose}>{t("Terug naar je lijst")}</Button>
             </div>
           )}
@@ -154,6 +210,7 @@ const ShoppingMode = ({ items, weg, onCheck, onClose }: ShoppingModeProps) => {
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-display text-lg font-bold tracking-[-0.01em] text-foreground">{name}</span>
                     {item.note && <span className="block text-sm leading-snug text-foreground/80">{item.note}</span>}
+                    {!winkel && item.store && <span className="block text-xs font-semibold text-muted-foreground">{item.store}</span>}
                     {item.fromRecipe && <span className="block truncate text-xs text-accent-ink">uit {item.fromRecipe}</span>}
                   </span>
                   {amount && <span className="shrink-0 text-[0.9375rem] tabular-nums text-muted-foreground">{amount}</span>}
