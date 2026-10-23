@@ -18,6 +18,17 @@ if (typeof window !== 'undefined') {
   });
 }
 
+/**
+ * Een toast met "Ongedaan maken" voor iets dat al is gebeurd, zoals afvinken:
+ * even lang in beeld als een verwijdering, zodat terugdraaien overal hetzelfde voelt.
+ */
+export function toastWithUndo(message: string, undo: () => void) {
+  toast(message, {
+    duration: UNDO_MS,
+    action: { label: t("Ongedaan maken"), onClick: undo },
+  });
+}
+
 interface UndoableDelete {
   message: string;
   remove: () => void;

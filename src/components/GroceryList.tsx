@@ -9,12 +9,9 @@ import { Button } from '@/components/ui/button';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
-  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import SwipeToCheck from '@/components/SwipeToCheck';
 import { CheckCircle, Wegvinken, useWegvinken } from '@/components/CheckOff';
+import { toastWithUndo } from '@/lib/undoableDelete';
 import GroceryItemSheet from '@/components/GroceryItemSheet';
 import ShoppingMode from '@/components/ShoppingMode';
 import EmptyState from '@/components/EmptyState';
@@ -65,7 +62,6 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
   const [productItemId, setProductItemId] = useState<string | null>(null);
   const [sheetItemId, setSheetItemId] = useState<string | null>(null);
   const [deptFilter, setDeptFilter] = useState<Department | null>(null);
-  const [clearOpen, setClearOpen] = useState(false);
   const [shopping, setShopping] = useState(false);
   const [pricing, setPricing] = useState(false);
   const [overLimit, setOverLimit] = useState(false);
@@ -96,9 +92,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
     // vanuit de lijst.
     void setGroceryItemChecked(item.id, true);
     setTelOp((n) => n + 1);
-    toast(t("“{0}” afgevinkt", [item.name]), {
-      action: { label: t("Ongedaan maken"), onClick: () => { void setGroceryItemChecked(item.id, false); } },
-    });
+    toastWithUndo(t("“{0}” afgevinkt", [item.name]), () => { void setGroceryItemChecked(item.id, false); });
   });
 
   const unchecked = groceryItems.filter((i) => !i.checked);
@@ -276,7 +270,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
         {groceryItems.length > 0 && (
           <button
             type="button"
-            onClick={() => setClearOpen(true)}
+            onClick={() => { void clearAllItems(); }}
             aria-label={t("Lijst leegmaken")}
             title={t("Lijst leegmaken")}
             className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] border border-border bg-card text-muted-foreground transition-colors duration-150 ease-smooth hover:border-destructive/50 hover:text-destructive"
@@ -383,7 +377,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="min-h-11 cursor-pointer gap-2 text-destructive focus:text-destructive"
-                onSelect={(e) => { e.preventDefault(); setClearOpen(true); }}
+                onSelect={() => { void clearAllItems(); }}
               >
                 <Trash2 className="h-4 w-4" /> {t("Lijst leegmaken")}
               </DropdownMenuItem>
@@ -391,27 +385,6 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
           </DropdownMenu>
           </div>
 
-          <AlertDialog open={clearOpen} onOpenChange={setClearOpen}>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>{t("Hele lijst leegmaken?")}</AlertDialogTitle>
-                <AlertDialogDescription>
-                  {groceryItems.length === 1
-                    ? t("De boodschap verdwijnt, ook voor wie meekijkt.")
-                    : t("Alle {0} boodschappen verdwijnen, ook voor wie meekijkt.", [groceryItems.length])}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel className="min-h-11">{t("Annuleren")}</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={clearAllItems}
-                  className="min-h-11 bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                >
-                  {t("Leegmaken")}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
         </div>
       )}
 

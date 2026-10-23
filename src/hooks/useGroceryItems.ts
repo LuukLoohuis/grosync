@@ -239,9 +239,18 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
   const clearAllItems = useCallback(async () => {
     if (!userId) return;
     // The items on screen, by id, so clearing also works without signal.
-    const ids = groceryItems.map((i) => i.id);
-    setGroceryItems([]);
-    if (ids.length > 0) await saveGroceryChange({ kind: 'delete', ids });
+    const cleared = groceryItems;
+    const ids = cleared.map((i) => i.id);
+    if (ids.length === 0) return;
+    deleteWithUndo({
+      message: ids.length === 1 ? t('“{0}” verwijderd', [cleared[0].name]) : t('Lijst leeggemaakt, {0} boodschappen weg', [ids.length]),
+      remove: () => setGroceryItems((prev) => prev.filter((i) => !ids.includes(i.id))),
+      // Wat er intussen bij kwam blijft staan; de oude lijst komt ervoor terug.
+      restore: () => setGroceryItems((prev) => [...cleared.filter((c) => !prev.some((i) => i.id === c.id)), ...prev]),
+      commit: async () => {
+        if (!(await saveGroceryChange({ kind: 'delete', ids }))) throw new Error('Delete refused');
+      },
+    });
   }, [userId, groceryItems]);
 
   const addRecipeToGroceryList = useCallback(async (ingredients: string[], recipeName: string): Promise<boolean> => {
@@ -300,22 +309,34 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
       // Items without quantities -> just remove duplicates, keep one as-is
     }
 
-    if (idsToDelete.length === 0) return;
-
-    // Optimistic update
-    setGroceryItems((prev) => {
-      let updated = prev.filter((i) => !idsToDelete.includes(i.id));
-      for (const upd of updates) {
-        updated = updated.map((i) => (i.id === upd.id ? { ...i, name: upd.name, price: null, ahProduct: null } : i));
-      }
-      return updated;
-    });
-
-    // Persist
-    await saveGroceryChange({ kind: 'delete', ids: idsToDelete });
-    for (const upd of updates) {
-      await saveGroceryChange({ kind: 'update', ids: [upd.id], patch: { name: upd.name, ...CLEARED_AH_MATCH } });
+    if (idsToDelete.length === 0) {
+      toast(t('Geen dubbele boodschappen gevonden'));
+      return;
     }
+
+    // Zoals ze waren, om terug te zetten: de weggehaalde regels en de oude namen.
+    const before = groceryItems.filter((i) => idsToDelete.includes(i.id) || updates.some((u) => u.id === i.id));
+
+    deleteWithUndo({
+      message: idsToDelete.length === 1 ? t('1 dubbele samengevoegd') : t('{0} dubbele samengevoegd', [idsToDelete.length]),
+      remove: () => setGroceryItems((prev) => {
+        let updated = prev.filter((i) => !idsToDelete.includes(i.id));
+        for (const upd of updates) {
+          updated = updated.map((i) => (i.id === upd.id ? { ...i, name: upd.name, price: null, ahProduct: null } : i));
+        }
+        return updated;
+      }),
+      restore: () => setGroceryItems((prev) => [
+        ...prev.map((i) => before.find((b) => b.id === i.id) ?? i),
+        ...before.filter((b) => !prev.some((i) => i.id === b.id)),
+      ]),
+      commit: async () => {
+        if (!(await saveGroceryChange({ kind: 'delete', ids: idsToDelete }))) throw new Error('Delete refused');
+        for (const upd of updates) {
+          await saveGroceryChange({ kind: 'update', ids: [upd.id], patch: { name: upd.name, ...CLEARED_AH_MATCH } });
+        }
+      },
+    });
   }, [userId, groceryItems]);
 
   /** Naam wijzigen. De AH-koppeling gaat eraf: die hoorde bij de oude naam. */

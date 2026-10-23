@@ -13,6 +13,7 @@ import { useAppContext } from '@/contexts/AppContext';
 import { useMealPlanner } from '@/hooks/useMealPlanner';
 import { leesBonusGeheugen } from '@/lib/bonusMemory';
 import { splitAmount } from '@/lib/itemAmount';
+import { toastWithUndo } from '@/lib/undoableDelete';
 import { lazyPart, preloadWhenIdle } from '@/lib/lazyPart';
 import { repairRecipeImage } from '@/lib/recipeImageRepair';
 import type { GroceryItem, Recipe } from '@/types';
@@ -113,9 +114,7 @@ const TodayScreen = ({ onNavigate }: { onNavigate: (tab: TodayTarget) => void })
   const vinkAf = (item: GroceryItem) => {
     trackPurchase(item.name);
     void setGroceryItemChecked(item.id, true);
-    toast(t("“{0}” afgevinkt", [item.name]), {
-      action: { label: t("Ongedaan maken"), onClick: () => { void setGroceryItemChecked(item.id, false); } },
-    });
+    toastWithUndo(t("“{0}” afgevinkt", [item.name]), () => { void setGroceryItemChecked(item.id, false); });
   };
 
   const uur = new Date().getHours();
