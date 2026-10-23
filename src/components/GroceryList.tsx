@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Check, ChevronDown, Plus, Trash2, X, Merge, TrendingUp, Loader2, ShoppingBasket, ShoppingCart, Tag, MoreVertical, RefreshCw, Share2, Store } from 'lucide-react';
+import { Check, ChevronDown, Plus, Trash2, X, Merge, TrendingUp, Loader2, ShoppingBasket, ShoppingCart, Tag, MoreVertical, RefreshCw, Search, Share2, Store } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppContext } from '@/contexts/AppContext';
 import { AH_MAX_ITEMS, ahBasketUrl, matchAhProducts } from '@/services/ahApi';
@@ -39,6 +39,12 @@ const toSearchQuery = (name: string) => {
 
 const ahSearchUrl = (name: string) => `https://www.ah.nl/zoeken?query=${toSearchQuery(name)}`;
 
+// Vanaf zoveel open boodschappen verschijnt het vergrootglas.
+const ZOEK_VANAF = 15;
+
+// Zoeken zonder op hoofdletters of accenten te letten: "creme" vindt "crème".
+const kaal = (tekst: string) => tekst.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
 type ListOrder = 'department' | 'added';
 const ORDER_KEY = 'couplecart-list-order';
 
@@ -67,6 +73,8 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
   const [pricing, setPricing] = useState(false);
   const [overLimit, setOverLimit] = useState(false);
   const [showChecked, setShowChecked] = useState(false);
+  // null: de zoekbalk is dicht.
+  const [zoek, setZoek] = useState<string | null>(null);
   const barRef = useRef<HTMLDivElement>(null);
   const [barHeight, setBarHeight] = useState(0);
   const { loading, groceryItems, addGroceryItem, setGroceryItemChecked, removeGroceryItem, clearCheckedItems, clearAllItems, mergeDuplicateItems, applyAhMatches, setGroceryItemCount, frequentItems, trackPurchase, plus, remaining, refreshEntitlements } = useAppContext();
@@ -164,9 +172,17 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
     return () => { root.style.removeProperty('--toast-offset'); };
   }, [barHeight, aboveTabBar]);
 
-  const alleGroepen = order === 'department' ? sortByStoreRoute(unchecked) : null;
+  const zoekterm = zoek ? kaal(zoek.trim()) : '';
+  const zoekt = zoekterm.length > 0;
+  const zichtbaar = zoekt
+    ? unchecked.filter((i) => kaal(i.name).includes(zoekterm) || (i.ahProduct && kaal(i.ahProduct.title).includes(zoekterm)))
+    : unchecked;
+  const kanZoeken = unchecked.length >= ZOEK_VANAF || zoek !== null;
+  const sluitZoeken = () => setZoek(null);
+
+  const alleGroepen = order === 'department' ? sortByStoreRoute(zichtbaar) : null;
   // Een gekozen afdeling laat alleen die plank zien; "Alles" laat ze allemaal.
-  const categorized = alleGroepen && deptFilter
+  const categorized = alleGroepen && deptFilter && !zoekt
     ? alleGroepen.filter((group) => group.category === deptFilter)
     : alleGroepen;
   const productItem = groceryItems.find((i) => i.id === productItemId) ?? null;
@@ -274,6 +290,20 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
                 : t("{0} te halen · {1} in de kar", [unchecked.length, checked.length])}
           </p>
         </div>
+        <div className="flex shrink-0 gap-2">
+        {kanZoeken && (
+          <button
+            type="button"
+            onClick={() => (zoek === null ? setZoek('') : sluitZoeken())}
+            aria-label={zoek === null ? t("Zoeken in je lijst") : t("Zoeken sluiten")}
+            aria-pressed={zoek !== null}
+            className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] border transition-colors duration-150 ease-smooth ${
+              zoek !== null ? 'border-primary bg-primary-soft text-primary' : 'border-border bg-card text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Search className="h-5 w-5" strokeWidth={1.9} />
+          </button>
+        )}
         {groceryItems.length > 0 && (
           <button
             type="button"
@@ -285,7 +315,46 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
             <Trash2 className="h-5 w-5" strokeWidth={1.9} />
           </button>
         )}
+        </div>
       </header>
+
+      {zoek !== null && (
+        <div className="relative animate-in fade-in slide-in-from-top-1 duration-150">
+          <Search aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            autoFocus
+            type="search"
+            enterKeyHint="search"
+            placeholder={t("Zoek in je lijst")}
+            aria-label={t("Zoek in je lijst")}
+            value={zoek}
+            onChange={(e) => setZoek(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Escape') sluitZoeken(); }}
+            className="border-primary/40 bg-card pl-9 pr-11 font-body [&::-webkit-search-cancel-button]:hidden"
+          />
+          <button
+            type="button"
+            onClick={sluitZoeken}
+            aria-label={t("Zoeken sluiten")}
+            className="absolute right-0 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center text-muted-foreground hover:text-foreground"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
+      {zoekt && zichtbaar.length === 0 && (
+        <section className="rounded-[14px] border border-dashed border-border bg-card p-5 text-center">
+          <p className="text-sm text-muted-foreground">{t("“{0}” staat niet op je lijst", [zoek!.trim()])}</p>
+          <Button
+            variant="outline"
+            className="mt-3 min-h-11 gap-2"
+            onClick={() => { handleAdd(zoek!.trim()); sluitZoeken(); }}
+          >
+            <Plus className="h-4 w-4" /> {t("Zet “{0}” op de lijst", [zoek!.trim()])}
+          </Button>
+        </section>
+      )}
 
       <div className="flex gap-2">
         <Input
@@ -300,7 +369,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
         </Button>
       </div>
 
-      {suggestions.length > 0 && (
+      {!zoekt && suggestions.length > 0 && (
         <div className="flex flex-wrap gap-2">
           <TrendingUp className="mt-1 h-4 w-4 text-muted-foreground" />
           {suggestions.map((item) => (
@@ -316,7 +385,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
       )}
 
       {/* Afdelingen als tabs: springen in plaats van scrollen. */}
-      {alleGroepen && alleGroepen.length > 1 && (
+      {!zoekt && alleGroepen && alleGroepen.length > 1 && (
         <div className="-mx-4 overflow-x-auto px-4 pb-1">
           <div className="flex w-max items-center gap-2">
             <button
@@ -441,12 +510,12 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
       {/* Items - in the order they were added */}
       {!categorized &&
         <div className="space-y-2">
-          {unchecked.map(renderItem)}
+          {zichtbaar.map(renderItem)}
         </div>
       }
 
       {/* Wat in de kar ligt, op één regel. Openklappen als je iets terug wil. */}
-      {checked.length > 0 && (
+      {!zoekt && checked.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center gap-2 rounded-[14px] border border-border bg-muted/40 px-3">
             <button
