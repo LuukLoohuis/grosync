@@ -201,9 +201,14 @@ const COMPOUNDS: [RegExp, Department][] = [
   [/\bmelkchocolade\b/, 'houdbaar'],
   [/\bboterham(men)?\b/, 'brood'],
   [/\bboterkoek\b/, 'brood'],
+  // "ham" in shampoo, "thee" in theelichtjes, "sla" in hagelslag.
+  [/\bshampoo\b/, 'huishouden'],
+  [/\bhagelslag\b/, 'houdbaar'],
+  [/\btheelicht(je|jes)?\b/, 'huishouden'],
 ];
 
-function fromKeywords(itemName: string): Department {
+/** De afdeling als een trefwoord in de naam iets zegt, anders null. */
+export function knownDepartment(itemName: string): Department | null {
   const lower = itemName.toLowerCase().trim();
   if (FROZEN.test(lower)) return 'diepvries';
 
@@ -222,10 +227,15 @@ function fromKeywords(itemName: string): Department {
       }
     }
   }
-
-  // Default: houdbaar (middle of the store)
-  return 'houdbaar';
+  return null;
 }
+
+// Niets herkend: houdbaar, midden in de winkel.
+const fromKeywords = (itemName: string): Department => knownDepartment(itemName) ?? 'houdbaar';
+
+/** De afdeling waar een getypte boodschap op de lijst komt, als tekst. */
+export const departmentLabel = (itemName: string): string =>
+  DEPARTMENT_LABELS[FROZEN.test(itemName) ? 'diepvries' : fromKeywords(itemName)];
 
 export interface CategorizedItem<T> {
   category: Department;

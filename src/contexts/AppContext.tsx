@@ -34,6 +34,7 @@ interface AppContextType {
   frequentItems: FrequentItem[];
   trackPurchase: (itemName: string) => Promise<void>;
   addGroceryItem: (name: string, fromRecipe?: string) => Promise<void>;
+  addGroceryItems: (names: string[]) => Promise<boolean>;
   toggleGroceryItem: (id: string) => Promise<void>;
   setGroceryItemChecked: (id: string, checked: boolean) => Promise<void>;
   removeGroceryItem: (id: string) => void;
@@ -153,6 +154,7 @@ export const AppProvider = ({
     frequentItems: purchaseHook.frequentItems,
     trackPurchase: purchaseHook.trackPurchase,
     addGroceryItem: grocery.addGroceryItem,
+    addGroceryItems: grocery.addGroceryItems,
     toggleGroceryItem: grocery.toggleGroceryItem,
     setGroceryItemChecked: grocery.setGroceryItemChecked,
     removeGroceryItem: grocery.removeGroceryItem,

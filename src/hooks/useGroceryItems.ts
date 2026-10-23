@@ -202,6 +202,21 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
     if (fromRecipe !== 'je voorraad') meldToegevoegd([name]);
   }, [userId]);
 
+  /** Meerdere tegelijk, uit snel invoeren: één keer opslaan, één seintje. */
+  const addGroceryItems = useCallback(async (names: string[]): Promise<boolean> => {
+    if (!userId) return false;
+    const rows = names.map((name) => name.trim()).filter(Boolean).map((name) => newRow(userId, name));
+    if (rows.length === 0) return true;
+    setGroceryItems((prev) => [...prev, ...rows.map(rowToItem)]);
+    if (!(await saveGroceryChange({ kind: 'insert', rows }))) {
+      setGroceryItems((prev) => prev.filter((i) => !rows.some((row) => row.id === i.id)));
+      toast.error(t("Toevoegen lukte niet. Probeer het opnieuw."));
+      return false;
+    }
+    meldToegevoegd(rows.map((row) => row.name));
+    return true;
+  }, [userId]);
+
   const toggleGroceryItem = useCallback(async (id: string) => {
     const item = groceryItems.find((i) => i.id === id);
     if (!item) return;
@@ -459,6 +474,7 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
     groceryItems,
     loading,
     addGroceryItem,
+    addGroceryItems,
     toggleGroceryItem,
     removeGroceryItem,
     clearCheckedItems,

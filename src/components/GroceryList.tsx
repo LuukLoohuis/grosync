@@ -15,6 +15,7 @@ import { toastWithUndo } from '@/lib/undoableDelete';
 import { deelTekst, lijstAlsTekst } from '@/lib/lijstTekst';
 import GroceryItemSheet from '@/components/GroceryItemSheet';
 import ShoppingMode from '@/components/ShoppingMode';
+import SnelInvoer from '@/components/SnelInvoer';
 import EmptyState from '@/components/EmptyState';
 import DepartmentHeading, { DEPARTMENT_CHIP, DEPARTMENT_DOT } from '@/components/DepartmentHeading';
 import AhProductSheet from '@/components/AhProductSheet';
@@ -64,7 +65,6 @@ interface GroceryListProps {
 }
 
 const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
-  const [newItem, setNewItem] = useState('');
   const [order, setOrder] = useState<ListOrder>(readListOrder);
   const [productItemId, setProductItemId] = useState<string | null>(null);
   const [sheetItemId, setSheetItemId] = useState<string | null>(null);
@@ -84,12 +84,9 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
     removeGroceryItem,
   );
 
-  const handleAdd = (name?: string) => {
-    const item = (name || newItem).trim();
-    if (item) {
-      addGroceryItem(item);
-      setNewItem('');
-    }
+  const handleAdd = (name: string) => {
+    const item = name.trim();
+    if (item) addGroceryItem(item);
   };
 
   // Elke keer dat er iets in de kar valt, veert de teller even op.
@@ -372,18 +369,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
         </section>
       )}
 
-      <div className="flex gap-2">
-        <Input
-          placeholder={t("Wat moet je halen?")}
-          aria-label={t("Wat moet je halen?")}
-          value={newItem}
-          onChange={(e) => setNewItem(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && handleAdd()}
-          className="bg-card border-border font-body" />
-        <Button onClick={() => handleAdd()} size="icon" className="shrink-0 h-11 w-11" aria-label={t("Toevoegen")}>
-          <Plus className="h-4 w-4" />
-        </Button>
-      </div>
+      <SnelInvoer />
 
       {!zoekt && suggestions.length > 0 && (
         <div className="flex flex-wrap gap-2">
