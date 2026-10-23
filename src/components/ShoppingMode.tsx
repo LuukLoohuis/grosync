@@ -31,6 +31,8 @@ interface ShoppingModeProps {
   weg: ReadonlySet<string>;
   onCheck: (item: GroceryItem) => void;
   onClose: () => void;
+  /** Gekozen op de lijst; anders de winkel van de vorige keer. */
+  startWinkel?: string | null;
 }
 
 /**
@@ -38,14 +40,14 @@ interface ShoppingModeProps {
  * scherm blijft aan zolang je bezig bent, want je loopt met je telefoon in je
  * hand door de winkel.
  */
-const ShoppingMode = ({ items, weg, onCheck, onClose }: ShoppingModeProps) => {
+const ShoppingMode = ({ items, weg, onCheck, onClose, startWinkel }: ShoppingModeProps) => {
   const [index, setIndex] = useState(0);
 
   // Eén lijst, meerdere winkels: in de Kruidvat zie je wat daar hoort plus
   // wat overal kan; de rest blijft gewoon op de lijst staan.
   const winkels = useMemo(() => winkelsOpLijst(items), [items]);
   const [winkel, setWinkel] = useState<string | null>(() => {
-    const vorige = leesWinkel();
+    const vorige = startWinkel ?? leesWinkel();
     return winkelsOpLijst(items).find((w) => zelfdeWinkel(w, vorige)) ?? null;
   });
   const hier = useMemo(() => voorWinkel(items, winkel), [items, winkel]);

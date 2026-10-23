@@ -17,6 +17,7 @@ import GroceryItemSheet from '@/components/GroceryItemSheet';
 import ShoppingMode from '@/components/ShoppingMode';
 import SnelInvoer from '@/components/SnelInvoer';
 import ItemThumb from '@/components/ItemThumb';
+import { voorWinkel, winkelsOpLijst, zelfdeWinkel } from '@/lib/winkels';
 import EmptyState from '@/components/EmptyState';
 import DepartmentHeading, { DEPARTMENT_CHIP, DEPARTMENT_DOT } from '@/components/DepartmentHeading';
 import AhProductSheet from '@/components/AhProductSheet';
@@ -70,6 +71,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
   const [productItemId, setProductItemId] = useState<string | null>(null);
   const [sheetItemId, setSheetItemId] = useState<string | null>(null);
   const [deptFilter, setDeptFilter] = useState<Department | null>(null);
+  const [winkelFilter, setWinkelFilter] = useState<string | null>(null);
   const [shopping, setShopping] = useState(false);
   const [pricing, setPricing] = useState(false);
   const [overLimit, setOverLimit] = useState(false);
@@ -172,9 +174,13 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
 
   const zoekterm = zoek ? kaal(zoek.trim()) : '';
   const zoekt = zoekterm.length > 0;
+  // Eén winkel kiezen laat zien wat daar hoort plus wat overal kan.
+  const winkels = winkelsOpLijst(groceryItems);
+  const actieveWinkel = winkels.find((w) => zelfdeWinkel(w, winkelFilter)) ?? null;
+  const inWinkel = voorWinkel(unchecked, actieveWinkel);
   const zichtbaar = zoekt
-    ? unchecked.filter((i) => kaal(i.name).includes(zoekterm) || (i.note && kaal(i.note).includes(zoekterm)) || (i.ahProduct && kaal(i.ahProduct.title).includes(zoekterm)))
-    : unchecked;
+    ? inWinkel.filter((i) => kaal(i.name).includes(zoekterm) || (i.note && kaal(i.note).includes(zoekterm)) || (i.ahProduct && kaal(i.ahProduct.title).includes(zoekterm)))
+    : inWinkel;
   const kanZoeken = unchecked.length >= ZOEK_VANAF || zoek !== null;
   const sluitZoeken = () => setZoek(null);
 
@@ -378,6 +384,34 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
         </div>
       )}
 
+      {/* Winkels: alleen als er labels op de lijst staan. */}
+      {!zoekt && winkels.length > 0 && (
+        <div role="radiogroup" aria-label={t("Winkel")} className="-mx-4 overflow-x-auto px-4">
+          <div className="flex w-max items-center gap-2">
+            <Store aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
+            {[null, ...winkels].map((w) => {
+              const aan = w === actieveWinkel;
+              const aantal = w ? unchecked.filter((i) => zelfdeWinkel(i.store, w)).length : unchecked.length;
+              return (
+                <button
+                  key={w ?? ''}
+                  type="button"
+                  role="radio"
+                  aria-checked={aan}
+                  onClick={() => { setWinkelFilter(w); setDeptFilter(null); }}
+                  className={`inline-flex min-h-10 items-center gap-1.5 rounded-full px-3.5 text-[0.8125rem] font-semibold transition-colors duration-150 ease-smooth ${
+                    aan ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {w ?? t("Alle winkels")}
+                  <span className="tabular-nums opacity-70">{aantal}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Afdelingen als tabs: springen in plaats van scrollen. */}
       {!zoekt && alleGroepen && alleGroepen.length > 1 && (
         <div className="-mx-4 overflow-x-auto px-4 pb-1">
@@ -557,7 +591,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
       )}
 
       {shopping && (
-        <ShoppingMode items={groceryItems} weg={weg} onCheck={checkOff} onClose={() => setShopping(false)} />
+        <ShoppingMode items={groceryItems} weg={weg} onCheck={checkOff} onClose={() => setShopping(false)} startWinkel={actieveWinkel} />
       )}
 
       <GroceryItemSheet
