@@ -17,7 +17,8 @@ import GroceryItemSheet from '@/components/GroceryItemSheet';
 import ShoppingMode from '@/components/ShoppingMode';
 import SnelInvoer from '@/components/SnelInvoer';
 import ItemThumb from '@/components/ItemThumb';
-import { voorWinkel, winkelsOpLijst, zelfdeWinkel } from '@/lib/winkels';
+import { huiskleur, voorWinkel, winkelsOpLijst, zelfdeWinkel, zonderWinkel } from '@/lib/winkels';
+import WinkelLabel, { WinkelStip } from '@/components/WinkelLabel';
 import EmptyState from '@/components/EmptyState';
 import DepartmentHeading, { DEPARTMENT_CHIP, DEPARTMENT_DOT } from '@/components/DepartmentHeading';
 import AhProductSheet from '@/components/AhProductSheet';
@@ -208,7 +209,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
 
   const renderItem = (item: GroceryItem) => {
     // Het aantal staat in de pil; naast de naam blijft alleen gewicht of inhoud ("500 g").
-    const { name, amount } = splitAmount(item.ahProduct ? item.name : countParts(item.name).rest);
+    const { name, amount } = splitAmount(zonderWinkel(item.ahProduct ? item.name : countParts(item.name).rest, item.store));
     const bonus = item.ahProduct?.isBonus;
     const editing = countEditor.editing?.id === item.id;
     return (
@@ -238,9 +239,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
               <span className="min-w-0 flex-1">
                 <span className="flex items-center gap-1.5">
                   <span className="truncate text-[0.9375rem] font-medium text-foreground">{name}</span>
-                  {item.store && (
-                    <span className="shrink-0 rounded-md bg-muted px-1.5 py-px text-[0.6875rem] font-semibold text-muted-foreground">{item.store}</span>
-                  )}
+                  {item.store && <WinkelLabel winkel={item.store} />}
                 </span>
                 {item.note && <span className="block truncate text-xs text-foreground/75">{item.note}</span>}
                 {item.fromRecipe && (
@@ -400,9 +399,10 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
                   aria-checked={aan}
                   onClick={() => { setWinkelFilter(w); setDeptFilter(null); }}
                   className={`inline-flex min-h-10 items-center gap-1.5 rounded-full px-3.5 text-[0.8125rem] font-semibold transition-colors duration-150 ease-smooth ${
-                    aan ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground hover:text-foreground'
+                    aan ? (huiskleur(w) ?? 'bg-foreground text-background') : 'bg-muted text-muted-foreground hover:text-foreground'
                   }`}
                 >
+                  {!aan && <WinkelStip winkel={w} />}
                   {w ?? t("Alle winkels")}
                   <span className="tabular-nums opacity-70">{aantal}</span>
                 </button>

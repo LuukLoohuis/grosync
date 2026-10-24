@@ -9,7 +9,8 @@ import { tik } from '@/lib/haptics';
 import { stuurMelding } from '@/lib/meldingen';
 import { splitAmount } from '@/lib/itemAmount';
 import { sortByStoreRoute } from '@/lib/storeRouteSort';
-import { voorWinkel, winkelsOpLijst, zelfdeWinkel } from '@/lib/winkels';
+import { huiskleur, voorWinkel, winkelsOpLijst, zelfdeWinkel, zonderWinkel } from '@/lib/winkels';
+import WinkelLabel, { WinkelStip } from '@/components/WinkelLabel';
 import type { GroceryItem } from '@/types';
 import { t } from '@/lib/i18n';
 
@@ -150,10 +151,11 @@ const ShoppingMode = ({ items, weg, onCheck, onClose, startWinkel }: ShoppingMod
                   role="radio"
                   aria-checked={aan}
                   onClick={() => kiesWinkel(w)}
-                  className={`min-h-9 shrink-0 rounded-full px-3.5 text-sm font-medium transition-colors ${
-                    aan ? 'bg-primary-foreground text-primary' : 'bg-primary-deep text-primary-muted hover:text-primary-foreground'
+                  className={`inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-sm font-medium transition-colors ${
+                    aan ? (huiskleur(w) ?? 'bg-primary-foreground text-primary') : 'bg-primary-deep text-primary-muted hover:text-primary-foreground'
                   }`}
                 >
+                  {!aan && <WinkelStip winkel={w} />}
                   {w ?? t("Alle winkels")}
                 </button>
               );
@@ -196,7 +198,7 @@ const ShoppingMode = ({ items, weg, onCheck, onClose, startWinkel }: ShoppingMod
           )}
 
           {groep?.items.map((item) => {
-            const { name, amount } = splitAmount(item.name);
+            const { name, amount } = splitAmount(zonderWinkel(item.name, item.store));
             return (
               <Wegvinken key={item.id} weg={weg.has(item.id)}>
               <SwipeToCheck onSwipe={() => vinkAf(item)}>
@@ -212,7 +214,7 @@ const ShoppingMode = ({ items, weg, onCheck, onClose, startWinkel }: ShoppingMod
                   <span className="min-w-0 flex-1">
                     <span className="block truncate font-display text-lg font-bold tracking-[-0.01em] text-foreground">{name}</span>
                     {item.note && <span className="block text-sm leading-snug text-foreground/80">{item.note}</span>}
-                    {!winkel && item.store && <span className="block text-xs font-semibold text-muted-foreground">{item.store}</span>}
+                    {!winkel && item.store && <WinkelLabel winkel={item.store} className="mt-0.5 inline-block" />}
                     {item.fromRecipe && <span className="block truncate text-xs text-accent-ink">uit {item.fromRecipe}</span>}
                   </span>
                   {amount && <span className="shrink-0 text-[0.9375rem] tabular-nums text-muted-foreground">{amount}</span>}

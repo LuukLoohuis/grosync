@@ -11,7 +11,8 @@ import { t } from '@/lib/i18n';
 import { MAX_COUNT, countParts, itemCount } from '@/lib/itemCount';
 import { toThumbDataUrl } from '@/lib/photo';
 import { itemThumb } from '@/lib/itemThumb';
-import { VASTE_WINKELS, winkelNaam, winkelsOpLijst, zelfdeWinkel } from '@/lib/winkels';
+import { VASTE_WINKELS, huiskleur, winkelNaam, winkelsOpLijst, zelfdeWinkel } from '@/lib/winkels';
+import { WinkelStip } from '@/components/WinkelLabel';
 
 interface GroceryItemSheetProps {
   item: GroceryItem | null;
@@ -87,8 +88,8 @@ const GroceryItemSheet = ({ item, department, onClose, onPickProduct }: GroceryI
   // De vaste winkels, plus wat jullie zelf al eens typten, plus deze.
   const winkels = [...VASTE_WINKELS, ...winkelsOpLijst([...groceryItems, { store: shown.store, checked: false }])]
     .filter((w, i, alle) => alle.findIndex((x) => zelfdeWinkel(x, w)) === i);
-  const chip = (aan: boolean) => `min-h-9 shrink-0 rounded-full border px-3.5 text-sm transition-colors ${
-    aan ? 'border-primary bg-primary text-primary-foreground' : 'border-border-strong bg-card text-foreground'
+  const chip = (aan: boolean, kleur?: string | null) => `min-h-9 shrink-0 rounded-full border px-3.5 text-sm transition-colors ${
+    aan ? (kleur ? `border-transparent font-semibold ${kleur}` : 'border-primary bg-primary text-primary-foreground') : 'border-border-strong bg-card text-foreground'
   }`;
 
   const thumb = itemThumb(shown);
@@ -162,7 +163,8 @@ const GroceryItemSheet = ({ item, department, onClose, onPickProduct }: GroceryI
             {winkels.map((w) => {
               const aan = zelfdeWinkel(w, shown.store);
               return (
-                <button key={w} type="button" role="radio" aria-checked={aan} onClick={() => kiesWinkel(w)} className={chip(aan)}>
+                <button key={w} type="button" role="radio" aria-checked={aan} onClick={() => kiesWinkel(w)} className={`${chip(aan, huiskleur(w))} inline-flex items-center gap-1.5`}>
+                  {!aan && <WinkelStip winkel={w} />}
                   {w}
                 </button>
               );
