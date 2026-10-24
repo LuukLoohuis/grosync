@@ -20,14 +20,25 @@ describe('productIcoon', () => {
 
   it('kent Italiaanse kaas, vleeswaren, paddenstoelen en sauzen', () => {
     expect(productIcoon('gran padano 2x')).toBe('🧀');
-    expect(productIcoon('prosciutto')).toBe('🥓');
-    expect(productIcoon('mortadella')).toBe('🍖');
+    expect(productIcoon('prosciutto')).toBe('🥪');
+    expect(productIcoon('mortadella')).toBe('🥪');
+    expect(productIcoon('Parmegiano regiano')).toBe('🧀');
     expect(productIcoon('oesterzwammen')).toBe('🍄');
     expect(productIcoon('tomatensaus italiaans merk')).toBe('🥫');
   });
 
+  it('kent gember, kruiden, peulvruchten en olijven', () => {
+    expect(productIcoon('Gember')).toBe('🫚');
+    expect(productIcoon('verse basilicum')).toBe('🌿');
+    expect(productIcoon('kikkererwten')).toBe('🫘');
+    expect(productIcoon('doperwten')).toBe('🫛');
+    expect(productIcoon('olijfolie')).toBe('🫒');
+    expect(productIcoon('bloemkool')).toBe('🥦');
+    expect(productIcoon('hamburger')).toBe('🍔');
+  });
+
   it('geeft niets bij een onbekend product, wel een beginletter', () => {
-    expect(productIcoon('olijfolie')).toBe(null);
+    expect(productIcoon('zonnebloemolie')).toBe(null);
     expect(beginletter('2 gran padano')).toBe('G');
     expect(beginletter('12')).toBe('?');
   });
