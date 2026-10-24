@@ -10,12 +10,15 @@ const Toaster = ({ ...props }: ToasterProps) => {
   return (
     <Sonner
       theme={theme as ToasterProps["theme"]}
+      // Opzij en omlaag wegvegen; standaard mag bij bottom-center alleen omlaag.
+      swipeDirections={["left", "right", "bottom"]}
       className="toaster group"
       toastOptions={{
         classNames: {
+          // Met ! omdat Sonners eigen CSS buiten de Tailwind-lagen staat en anders wint (witte toast, onleesbare knop).
           toast:
-            "group toast group-[.toaster]:min-h-[52px] group-[.toaster]:rounded-[14px] group-[.toaster]:border-0 group-[.toaster]:bg-foreground group-[.toaster]:px-3.5 group-[.toaster]:py-3 group-[.toaster]:font-body group-[.toaster]:text-sm group-[.toaster]:text-background group-[.toaster]:shadow-soft",
-          description: "group-[.toast]:text-background/70",
+            "group toast min-h-[52px]! rounded-[14px]! border-0! bg-foreground! px-3.5! py-3! font-body! text-sm! text-background! shadow-soft!",
+          description: "text-background/70!",
           actionButton:
             "group-[.toast]:min-h-9! group-[.toast]:rounded-[10px]! group-[.toast]:border! group-[.toast]:border-background/35! group-[.toast]:bg-transparent! group-[.toast]:px-3! group-[.toast]:text-[0.8125rem]! group-[.toast]:font-semibold! group-[.toast]:text-background!",
           cancelButton: "group-[.toast]:bg-muted group-[.toast]:text-muted-foreground",
