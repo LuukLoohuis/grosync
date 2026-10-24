@@ -1,3 +1,5 @@
+import { searchDirk, searchJumbo, STORES, storeName, type Store } from './winkels.ts';
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
@@ -23,6 +25,8 @@ type Candidate = {
   bonusMechanism: string | null;
   imageUrl: string | null;
   category: string;
+  /** The product page at the store. */
+  url: string;
 };
 
 type Match = {
@@ -125,6 +129,7 @@ function toCandidates(products: any[], keep = 10): Candidate[] {
       bonusMechanism: p.bonusMechanism || null,
       imageUrl: p.images?.[0]?.url || null,
       category: p.mainCategory || '',
+      url: `https://www.ah.nl/producten/product/wi${p.webshopId}`,
     }))
     .filter((c) => typeof c.webshopId === 'number' && typeof c.price === 'number')
     .slice(0, keep);
@@ -152,10 +157,17 @@ async function searchAh(query: string, size = 15, keep = 10): Promise<Candidate[
   }
 }
 
-// Asked only when AH found nothing and the batch gave no second wording.
-async function ahWording(query: string): Promise<string> {
+// The same search at another chain; see winkels.ts.
+function searchStore(store: Store, query: string, size = 15, keep = 10): Promise<Candidate[]> {
+  if (store === 'Jumbo') return searchJumbo(query, keep);
+  if (store === 'Dirk') return searchDirk(query, keep);
+  return searchAh(query, size, keep);
+}
+
+// Asked only when the store found nothing and the batch gave no second wording.
+async function ahWording(query: string, store: Store = 'AH'): Promise<string> {
   const result = await askJson(
-    'Albert Heijn\'s product search found nothing for this Dutch search. Give the word(s) AH itself uses on such products, different from the search (e.g. "keukenrol" → "keukenpapier", "wc-papier" → "toiletpapier"). Return JSON {"query":"..."}, with "" if you know no other wording.',
+    `${storeName[store]}'s product search found nothing for this Dutch search. Give the word(s) a Dutch supermarket itself uses on such products, different from the search (e.g. "keukenrol" → "keukenpapier", "wc-papier" → "toiletpapier"). Return JSON {"query":"..."}, with "" if you know no other wording.`,
     JSON.stringify({ search: query }),
   );
   return typeof result.query === 'string' ? result.query.trim() : '';
@@ -168,6 +180,7 @@ async function searchWithFallback(
   term: SearchTerm | undefined,
   size?: number,
   keep?: number,
+  store: Store = 'AH',
 ): Promise<{ candidates: Candidate[]; searchedAs: string }> {
   if (!term) return { candidates: [], searchedAs: '' };
   const tried = new Set<string>();
@@ -175,13 +188,13 @@ async function searchWithFallback(
     const key = query.trim().toLowerCase();
     if (!key || tried.has(key)) return [];
     tried.add(key);
-    return searchAh(query.trim(), size, keep);
+    return searchStore(store, query.trim(), size, keep);
   };
   const first = await attempt(term.query);
   if (first.length > 0) return { candidates: first, searchedAs: term.query };
   const second = await attempt(term.fallback);
   if (second.length > 0) return { candidates: second, searchedAs: term.fallback };
-  const wording = await ahWording(term.query).catch(() => '');
+  const wording = await ahWording(term.query, store).catch(() => '');
   return { candidates: await attempt(wording), searchedAs: wording };
 }
 
@@ -260,10 +273,10 @@ async function chooseProducts(
 
 // Keeps the candidates that are the ingredient itself, best fit first, so "eieren"
 // offers egg packs instead of egg salad, eierkoeken or yoghurt.
-async function sameIngredient(line: string, candidates: Candidate[]): Promise<Candidate[]> {
+async function sameIngredient(line: string, candidates: Candidate[], store: Store = 'AH'): Promise<Candidate[]> {
   if (candidates.length === 0) return [];
   const result = await askJson(
-    'A shopper wants a different Albert Heijn product for one grocery list line. From the candidates keep only products that ARE that ingredient: other brands, sizes, organic or free-range variants are fine. Drop dishes, salads, snacks, baked goods, spreads, drinks and other products that merely contain it or share a word with it. When the line has a note in parentheses (a brand or a description such as "Optimel, de blauwe"), put the products that match that note first. Otherwise order the kept ones for a home cook: the plain everyday version in a normal household size first, then other sizes, brands and organic or premium variants, and multipacks last. Return JSON {"indexes":[...]}.',
+    `A shopper wants a different ${storeName[store]} product for one grocery list line. From the candidates keep only products that ARE that ingredient: other brands, sizes, organic or free-range variants are fine. Drop dishes, salads, snacks, baked goods, spreads, drinks and other products that merely contain it or share a word with it. When the line has a note in parentheses (a brand or a description such as "Optimel, de blauwe"), put the products that match that note first. Otherwise order the kept ones for a home cook: the plain everyday version in a normal household size first, then other sizes, brands and organic or premium variants, and multipacks last. Return JSON {"indexes":[...]}.`,
     JSON.stringify({ line, candidates: candidates.map((c, index) => ({ index, title: c.title, size: c.unitSize, category: c.category })) }),
   );
   const kept: Candidate[] = [];
@@ -290,7 +303,7 @@ function toMatch(itemId: string, candidate: Candidate, quantity: number): Match 
     isBonus: candidate.isBonus,
     bonusMechanism: candidate.bonusMechanism,
     imageUrl: candidate.imageUrl,
-    productUrl: `https://www.ah.nl/producten/product/wi${candidate.webshopId}`,
+    productUrl: candidate.url,
     category: candidate.category,
   };
 }
@@ -306,6 +319,7 @@ function toAlternative(candidate: Candidate) {
     bonusMechanism: candidate.bonusMechanism,
     imageUrl: candidate.imageUrl,
     category: candidate.category,
+    productUrl: candidate.url,
   };
 }
 
@@ -321,12 +335,15 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
 
-    // Other products from the same AH search, for "Kies een ander product".
+    // Other products from the same search, for "Kies een ander product" and the
+    // automatic match. AH unless the app asks for another store.
     if (body?.alternativesFor) {
       const item = body.alternativesFor;
       if (typeof item?.id !== 'string' || typeof item?.name !== 'string' || !item.name.trim()) {
         return json({ error: 'alternativesFor needs id and name' }, 400);
       }
+      const store: Store = body.store ?? 'AH';
+      if (!STORES.includes(store)) return json({ error: `store must be one of ${STORES.join(', ')}` }, 400);
       const exclude = Number(body.exclude) || null;
       // "Dit merk" uit de app ("Optimel, de blauwe"). De gewone zoekterm laat
       // het merk weg, dus zoek ook op wat de notitie zelf noemt.
@@ -335,13 +352,13 @@ Deno.serve(async (req) => {
       const term = terms.get(item.id);
       const query = term?.query || '';
       const [{ candidates }, byNote] = await Promise.all([
-        searchWithFallback(term, 30, 20),
-        note ? searchAh(note.split(',')[0].trim() || note, 15, 10) : Promise.resolve([] as Candidate[]),
+        searchWithFallback(term, 30, 20, store),
+        note ? searchStore(store, note.split(',')[0].trim() || note, 15, 10) : Promise.resolve([] as Candidate[]),
       ]);
       const merged = [...byNote, ...candidates.filter((c) => !byNote.some((n) => n.webshopId === c.webshopId))];
-      const fitting = await sameIngredient(note ? `${item.name} (${note})` : item.name, merged.filter((c) => c.webshopId !== exclude));
+      const fitting = await sameIngredient(note ? `${item.name} (${note})` : item.name, merged.filter((c) => c.webshopId !== exclude), store);
       const alternatives = fitting.slice(0, 5).map(toAlternative);
-      return json({ query, alternatives });
+      return json({ store, query, alternatives });
     }
 
     const { items } = body;
