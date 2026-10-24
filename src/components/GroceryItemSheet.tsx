@@ -13,6 +13,7 @@ import { toThumbDataUrl } from '@/lib/photo';
 import { itemThumb } from '@/lib/itemThumb';
 import { VASTE_WINKELS, huiskleur, winkelNaam, winkelsOpLijst, zelfdeWinkel } from '@/lib/winkels';
 import { WinkelStip } from '@/components/WinkelLabel';
+import { ahProductUrl } from '@/services/ahApi';
 
 interface GroceryItemSheetProps {
   item: GroceryItem | null;
@@ -268,10 +269,17 @@ const GroceryItemSheet = ({ item, department, onClose, onPickProduct }: GroceryI
             </button>
           )}
 
-          <a href={`https://www.ah.nl/zoeken?query=${zoekterm(shown.name)}`} target="_blank" rel="noopener noreferrer" className={rij}>
-            <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
-            <span className="flex-1">{t("Zoek bij Albert Heijn")}</span>
-          </a>
+          {shown.ahProduct ? (
+            <a href={ahProductUrl(shown.ahProduct.id)} target="_blank" rel="noopener noreferrer" className={rij}>
+              <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <span className="flex-1">{t("Bekijk op ah.nl")}</span>
+            </a>
+          ) : (
+            <a href={`https://www.ah.nl/zoeken?query=${zoekterm(shown.name)}`} target="_blank" rel="noopener noreferrer" className={rij}>
+              <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <span className="flex-1">{t("Zoek bij Albert Heijn")}</span>
+            </a>
+          )}
           <a href={`https://www.jumbo.com/producten/?searchTerms=${zoekterm(shown.name)}`} target="_blank" rel="noopener noreferrer" className={rij}>
             <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
             <span className="flex-1">{t("Zoek bij Jumbo")}</span>

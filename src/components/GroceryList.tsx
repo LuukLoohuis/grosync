@@ -19,6 +19,7 @@ import SnelInvoer from '@/components/SnelInvoer';
 import ItemThumb from '@/components/ItemThumb';
 import { huiskleur, voorWinkel, winkelsOpLijst, zelfdeWinkel, zonderWinkel } from '@/lib/winkels';
 import WinkelLabel, { WinkelStip } from '@/components/WinkelLabel';
+import { useAhKoppeling } from '@/hooks/useAhKoppeling';
 import EmptyState from '@/components/EmptyState';
 import DepartmentHeading, { DEPARTMENT_CHIP, DEPARTMENT_DOT } from '@/components/DepartmentHeading';
 import AhProductSheet from '@/components/AhProductSheet';
@@ -82,6 +83,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
   const barRef = useRef<HTMLDivElement>(null);
   const [barHeight, setBarHeight] = useState(0);
   const { loading, groceryItems, addGroceryItem, setGroceryItemChecked, removeGroceryItem, clearCheckedItems, clearAllItems, mergeDuplicateItems, applyAhMatches, setGroceryItemCount, frequentItems, trackPurchase, plus, remaining, refreshEntitlements } = useAppContext();
+  useAhKoppeling(groceryItems, applyAhMatches);
 
   const countEditor = useCountEditor(
     (id, count) => { void setGroceryItemCount(id, count); },
