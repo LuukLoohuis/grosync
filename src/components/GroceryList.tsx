@@ -20,6 +20,7 @@ import ItemThumb from '@/components/ItemThumb';
 import { huiskleur, voorWinkel, winkelsOpLijst, zelfdeWinkel, zonderWinkel } from '@/lib/winkels';
 import WinkelLabel, { WinkelStip } from '@/components/WinkelLabel';
 import { useAhKoppeling } from '@/hooks/useAhKoppeling';
+import { koppelWinkel, productWinkel } from '@/lib/ahKoppeling';
 import EmptyState from '@/components/EmptyState';
 import DepartmentHeading, { DEPARTMENT_CHIP, DEPARTMENT_DOT } from '@/components/DepartmentHeading';
 import AhProductSheet from '@/components/AhProductSheet';
@@ -115,7 +116,8 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
 
   const unchecked = groceryItems.filter((i) => !i.checked);
   const checked = groceryItems.filter((i) => i.checked);
-  const pricedItems = unchecked.filter((i) => i.ahProduct);
+  // Het totaal en het mandje zijn van AH; een Jumbo- of Dirk-product hoort daar niet in.
+  const pricedItems = unchecked.filter((i) => productWinkel(i) === 'AH');
   const ahTotal = pricedItems.reduce((sum, i) => sum + (i.price ?? 0), 0);
   const showBar = !loading && unchecked.length > 0;
   const hasPrices = pricedItems.length > 0;
@@ -129,7 +131,8 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
   const mandjeOp = !plus && remaining('mandje') === 0;
 
   const fetchAhPrices = async () => {
-    const batch = unchecked.slice(0, AH_MAX_ITEMS);
+    // Wat je bij Jumbo of Dirk haalt, krijgt daar een product, niet bij AH.
+    const batch = unchecked.filter((i) => (koppelWinkel(i.store) ?? 'AH') === 'AH').slice(0, AH_MAX_ITEMS);
     if (batch.length === 0) return;
     if (mandjeOp) { setOverLimit(true); return; }
     setPricing(true);
@@ -251,7 +254,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
                   <span className="block truncate text-xs text-muted-foreground">{item.ahProduct.title}</span>
                 )}
                 {!item.ahProduct && item.priceCheckedAt && (
-                  <span className="block text-xs text-muted-foreground">{t("niet gevonden bij AH")}</span>
+                  <span className="block text-xs text-muted-foreground">{t("niet gevonden bij {0}", [koppelWinkel(item.store) ?? 'AH'])}</span>
                 )}
               </span>
 

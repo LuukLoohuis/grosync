@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useAppContext } from '@/contexts/AppContext';
-import { ahProductUrl, fetchAhAlternatives, type AhAlternative } from '@/services/ahApi';
+import { fetchAlternatives, type AhAlternative } from '@/services/ahApi';
+import { koppelWinkel, productUrl, productWinkel, WINKEL_SITE } from '@/lib/ahKoppeling';
 import type { GroceryItem } from '@/types';
 import { locale, t } from '@/lib/i18n';
 
@@ -26,6 +27,8 @@ const AhProductSheet = ({ item, onClose }: AhProductSheetProps) => {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [saving, setSaving] = useState(false);
+  // Zoeken bij de winkel van de regel als we die kunnen koppelen, anders bij AH.
+  const winkel = koppelWinkel(shown?.store) ?? 'AH';
 
   // Reset the choice when another item opens, not when this one updates.
   useEffect(() => {
@@ -41,14 +44,14 @@ const AhProductSheet = ({ item, onClose }: AhProductSheetProps) => {
     let cancelled = false;
     setStatus('loading');
     setOptions([]);
-    fetchAhAlternatives({ id: item.id, name: item.name, note: item.note }, item.ahProduct?.id)
+    fetchAlternatives(koppelWinkel(item.store) ?? 'AH', { id: item.id, name: item.name, note: item.note }, item.ahProduct?.id)
       .then((alternatives) => {
         if (cancelled) return;
         setOptions(alternatives);
         setStatus('ready');
       })
       .catch((error) => {
-        console.error('AH alternatives failed:', error);
+        console.error('Alternatives failed:', error);
         if (!cancelled) setStatus('error');
       });
     return () => { cancelled = true; };
@@ -56,7 +59,8 @@ const AhProductSheet = ({ item, onClose }: AhProductSheetProps) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [item?.id, attempt]);
 
-  const current: AhAlternative | null = shown?.ahProduct
+  // Het huidige product alleen als het van deze winkel is.
+  const current: AhAlternative | null = shown?.ahProduct && productWinkel(shown) === winkel
     ? {
         productId: shown.ahProduct.id,
         title: shown.ahProduct.title,
@@ -67,6 +71,7 @@ const AhProductSheet = ({ item, onClose }: AhProductSheetProps) => {
         bonusMechanism: null,
         imageUrl: shown.ahProduct.imageUrl,
         category: shown.ahProduct.category ?? '',
+        productUrl: productUrl(shown.ahProduct) ?? undefined,
       }
     : null;
   const choices = [...(current ? [current] : []), ...options.filter((option) => option.productId !== current?.productId)];
@@ -77,6 +82,7 @@ const AhProductSheet = ({ item, onClose }: AhProductSheetProps) => {
     setSaving(true);
     await applyAhMatches([{
       itemId: shown.id,
+      store: winkel,
       productId: selected.productId,
       title: selected.title,
       unitSize: selected.unitSize,
@@ -87,7 +93,7 @@ const AhProductSheet = ({ item, onClose }: AhProductSheetProps) => {
       isBonus: selected.isBonus,
       bonusMechanism: selected.bonusMechanism,
       imageUrl: selected.imageUrl,
-      productUrl: ahProductUrl(selected.productId),
+      productUrl: selected.productUrl || productUrl({ id: selected.productId, store: winkel }) || '',
       category: selected.category,
     }]);
     setSaving(false);
@@ -105,7 +111,7 @@ const AhProductSheet = ({ item, onClose }: AhProductSheetProps) => {
             </SheetHeader>
 
             <div className="flex-1 overflow-y-auto px-5 pb-4">
-              <div role="group" aria-label={t("Producten bij AH")} className="space-y-2">
+              <div role="group" aria-label={t("Producten bij {0}", [winkel])} className="space-y-2">
                 {choices.map((choice) => {
                   const isSelected = choice.productId === selectedId;
                   return (
@@ -146,7 +152,7 @@ const AhProductSheet = ({ item, onClose }: AhProductSheetProps) => {
                 </p>
               )}
               {status === 'ready' && options.length === 0 && (
-                <p className="mt-3 text-sm text-muted-foreground">{t("AH heeft geen andere producten voor deze boodschap.")}</p>
+                <p className="mt-3 text-sm text-muted-foreground">{t("{0} heeft geen andere producten voor deze boodschap.", [winkel])}</p>
               )}
 
               <div className="mt-4 flex items-center justify-between rounded-lg bg-muted pl-3">
@@ -177,12 +183,12 @@ const AhProductSheet = ({ item, onClose }: AhProductSheetProps) => {
 
               {selected && (
                 <a
-                  href={ahProductUrl(selected.productId)}
+                  href={selected.productUrl || productUrl({ id: selected.productId, store: winkel }) || undefined}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="mt-2 inline-flex min-h-11 items-center gap-1.5 text-sm text-primary hover:underline"
                 >
-                  <ExternalLink className="h-4 w-4" /> {t("Bekijk op ah.nl")}
+                  <ExternalLink className="h-4 w-4" /> {t("Bekijk op {0}", [WINKEL_SITE[winkel]])}
                 </a>
               )}
             </div>

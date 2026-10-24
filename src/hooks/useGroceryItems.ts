@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import type { AhMatch } from '@/services/ahApi';
+import { ANDERE_WINKELS_AAN } from '@/lib/ahKoppeling';
 import { GroceryItem } from '@/types';
 import { deleteWithUndo } from '@/lib/undoableDelete';
 import { meldToegevoegd } from '@/lib/meldingen';
@@ -28,6 +29,9 @@ const toGroceryItem = (row: GroceryRow): GroceryItem => ({
   ahProduct: row.ah_product_id
     ? {
         id: row.ah_product_id,
+        // Bestaan pas na migratie 20261024120000_product_store; daarvoor undefined, dus AH.
+        store: (row.product_store as 'Jumbo' | 'Dirk' | null | undefined) ?? null,
+        url: row.product_url ?? null,
         title: row.ah_product_title || '',
         unitSize: row.ah_unit_size,
         quantity: row.ah_quantity || 1,
@@ -49,6 +53,8 @@ const CLEARED_AH_MATCH = {
   ah_image_url: null,
   ah_is_bonus: null,
   ah_category: null,
+  // These columns exist only after the product_store migration.
+  ...(ANDERE_WINKELS_AAN ? { product_store: null, product_url: null } : {}),
   price_checked_at: null,
 };
 
@@ -504,6 +510,8 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
         priceCheckedAt: checkedAt,
         ahProduct: {
           id: match.productId,
+          store: match.store && match.store !== 'AH' ? match.store : null,
+          url: match.store && match.store !== 'AH' ? match.productUrl : null,
           title: match.title,
           unitSize: match.unitSize,
           quantity: match.quantity,
@@ -524,6 +532,10 @@ export const useGroceryItems = ({ userId }: UseGroceryItemsOptions = {}) => {
       ah_image_url: m.imageUrl,
       ah_is_bonus: m.isBonus,
       ah_category: m.category || null,
+      // AH schrijft deze kolommen niet zolang Jumbo en Dirk uit staan: dan bestaan ze nog niet.
+      ...(ANDERE_WINKELS_AAN
+        ? { product_store: m.store && m.store !== 'AH' ? m.store : null, product_url: m.store && m.store !== 'AH' ? m.productUrl : null }
+        : {}),
       price_checked_at: checkedAt,
       }).eq('id', m.itemId)),
       ...(unmatchedIds.length > 0

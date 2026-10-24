@@ -19,7 +19,12 @@ export interface GroceryItem {
 }
 
 export interface AhProduct {
+  /** Het productnummer bij de winkel (bij Jumbo zonder de verpakkingscode). */
   id: number;
+  /** Bij welke winkel dit product hoort; leeg is AH (alles van voor Jumbo en Dirk). */
+  store?: 'AH' | 'Jumbo' | 'Dirk' | null;
+  /** De productpagina; leeg bij AH, die bouwen we uit het nummer. */
+  url?: string | null;
   title: string;
   unitSize: string | null;
   quantity: number;

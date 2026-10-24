@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import type { GroceryItem } from '@/types';
-import { fetchAhAlternatives, type AhMatch } from '@/services/ahApi';
-import { alsMatch, teKoppelen, zoekNaam } from '@/lib/ahKoppeling';
+import { fetchAlternatives, type AhMatch } from '@/services/ahApi';
+import { alsMatch, koppelWinkel, teKoppelen, zoekNaam } from '@/lib/ahKoppeling';
 
 /**
- * Koppelt boodschappen met winkel AH vanzelf aan een AH-product, één tegelijk
- * op de achtergrond. Kiezen telt niet mee voor de gratis karretjes; het is
+ * Koppelt boodschappen met winkel AH (en, zodra dat aan staat, Jumbo of Dirk)
+ * vanzelf aan een product van die winkel, één tegelijk op de achtergrond. Kiezen telt niet mee voor de gratis karretjes; het is
  * dezelfde zoekopdracht als "Kies een ander product".
  */
 export const useAhKoppeling = (
@@ -25,10 +25,11 @@ export const useAhKoppeling = (
     geprobeerd.current.add(item.id);
     bezig.current = true;
     const naam = zoekNaam(item);
-    // De naam ook als "merk": zo zoekt AH op wat je precies typte ("Mutti passata").
-    fetchAhAlternatives({ id: item.id, name: naam, note: item.note || naam })
-      .then((producten) => (producten[0] ? applyAhMatches([alsMatch(item, producten[0])]) : applyAhMatches([], [item.id])))
-      .catch((e) => console.warn('AH-koppeling mislukt:', e))
+    const winkel = koppelWinkel(item.store) ?? 'AH';
+    // De naam ook als "merk": zo zoekt de winkel op wat je precies typte ("Mutti passata").
+    fetchAlternatives(winkel, { id: item.id, name: naam, note: item.note || naam })
+      .then((producten) => (producten[0] ? applyAhMatches([alsMatch(item, producten[0], winkel)]) : applyAhMatches([], [item.id])))
+      .catch((e) => console.warn(`${winkel}-koppeling mislukt:`, e))
       .finally(() => {
         bezig.current = false;
         setBeurt((n) => n + 1);

@@ -151,6 +151,30 @@ dat is een keuze voor jou, zie [Jumbo](#jumbo). Hoogvliet kan later op dezelfde 
 
 ## Prototype
 
-Zie de commits op deze branch na dit document: `ah-products` krijgt een `store`-parameter voor
-`alternativesFor` (AH, Jumbo, Dirk), de app `fetchAlternatives(store, …)`, en de automatische
-koppeling werkt voor die drie winkels zodra de migratie hieronder staat en een schakelaar aan gaat.
+Op deze branch, nog niet uitgerold en nog niet aan:
+
+- **Edge function** `ah-products`: `alternativesFor` neemt een `store` (`'AH'` standaard,
+  `'Jumbo'`, `'Dirk'`). Zoeken en uitlezen staat in `supabase/functions/ah-products/winkels.ts`
+  (tests: `winkels_test.ts`). Elk alternatief krijgt een `productUrl`. De rest van de functie
+  (zoekterm en keuze door gpt-4o-mini, terugval op een andere formulering) is hetzelfde voor elke
+  winkel. Het mandje vullen (`items`) blijft alleen AH.
+- **App:** `fetchAlternatives(store, …)` in `src/services/ahApi.ts`; `koppelWinkel`,
+  `productWinkel`, `productUrl` en `teKoppelen` in `src/lib/ahKoppeling.ts` (tests:
+  `ahKoppeling.test.ts`). `useAhKoppeling` zoekt bij de winkel van de regel. Het AH-totaal, het
+  AH-mandje en het vullen van dat mandje laten Jumbo- en Dirk-producten erbuiten. "Bekijk op
+  jumbo.com" en "Product bij Jumbo kiezen" volgen de winkel.
+- **Schakelaar:** `ANDERE_WINKELS_AAN` in `src/lib/ahKoppeling.ts` staat op `false`. Zo werkt de
+  app nu precies als voorheen (gecontroleerd in de preview: AH koppelt, een Jumbo-regel niet).
+- **Migratie (voorstel):** `supabase/migrations/20261024120000_product_store.sql` voegt
+  `product_store` (NULL = AH) en `product_url` toe aan `grocery_items`. De `ah_*`-kolommen blijven
+  en dienen voor elke winkel; bij Jumbo houdt `ah_product_id` het artikelnummer zonder
+  verpakkingscode. Hernoemen naar `product_*` kan later apart.
+
+### Aanzetten (jouw stappen)
+
+1. Kiezen: alleen Dirk, of ook Jumbo (zie robots.txt hierboven). Voor alleen Dirk: haal `'Jumbo'`
+   uit `KOPPELBAAR` in `src/lib/ahKoppeling.ts` en uit `STORES` in `winkels.ts`.
+2. Migratie draaien: `scripts/supabase-sql.sh < supabase/migrations/20261024120000_product_store.sql`.
+3. Functie uitrollen: `supabase functions deploy ah-products`.
+4. In de logs van `ah-products` kijken of Jumbo en Dirk vanaf Supabase antwoorden (Akamai).
+5. `ANDERE_WINKELS_AAN = true`, dan in de preview een regel met winkel Jumbo of Dirk toevoegen.

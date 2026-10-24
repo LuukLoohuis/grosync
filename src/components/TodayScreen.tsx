@@ -19,6 +19,7 @@ import { lazyPart, preloadWhenIdle } from '@/lib/lazyPart';
 import { repairRecipeImage } from '@/lib/recipeImageRepair';
 import type { GroceryItem, Recipe } from '@/types';
 import { locale, t } from '@/lib/i18n';
+import { productWinkel } from '@/lib/ahKoppeling';
 
 type TodayTarget = 'list' | 'recipes' | 'bonus';
 
@@ -69,7 +70,7 @@ const TodayScreen = ({ onNavigate }: { onNavigate: (tab: TodayTarget) => void })
   const openPicker = (dag: number) => { setPickerDag(dag); setPickerOpen(true); };
 
   const teHalen = groceryItems.filter((i) => !i.checked);
-  const metPrijs = teHalen.filter((i) => i.ahProduct);
+  const metPrijs = teHalen.filter((i) => productWinkel(i) === 'AH');
   const ahTotaal = metPrijs.reduce((sum, i) => sum + (i.price ?? 0), 0);
   const inBonus = metPrijs.filter((i) => i.ahProduct?.isBonus).length;
   const lijstOnderschrift = metPrijs.length > 0

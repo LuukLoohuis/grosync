@@ -13,7 +13,7 @@ import { toThumbDataUrl } from '@/lib/photo';
 import { itemThumb } from '@/lib/itemThumb';
 import { VASTE_WINKELS, huiskleur, winkelNaam, winkelsOpLijst, zelfdeWinkel } from '@/lib/winkels';
 import { WinkelStip } from '@/components/WinkelLabel';
-import { ahProductUrl } from '@/services/ahApi';
+import { koppelWinkel, productUrl, productWinkel, WINKEL_SITE } from '@/lib/ahKoppeling';
 
 interface GroceryItemSheetProps {
   item: GroceryItem | null;
@@ -256,7 +256,7 @@ const GroceryItemSheet = ({ item, department, onClose, onPickProduct }: GroceryI
           ) : (
             <button type="button" onClick={() => { onClose(); onPickProduct(shown.id); }} className={rij}>
               <Tag className="h-4 w-4 shrink-0 text-muted-foreground" />
-              <span className="flex-1">{t("Product bij AH kiezen")}</span>
+              <span className="flex-1">{t("Product bij {0} kiezen", [koppelWinkel(shown.store) ?? 'AH'])}</span>
               <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
             </button>
           )}
@@ -269,10 +269,10 @@ const GroceryItemSheet = ({ item, department, onClose, onPickProduct }: GroceryI
             </button>
           )}
 
-          {shown.ahProduct ? (
-            <a href={ahProductUrl(shown.ahProduct.id)} target="_blank" rel="noopener noreferrer" className={rij}>
+          {shown.ahProduct && productUrl(shown.ahProduct) ? (
+            <a href={productUrl(shown.ahProduct) ?? undefined} target="_blank" rel="noopener noreferrer" className={rij}>
               <ExternalLink className="h-4 w-4 shrink-0 text-muted-foreground" />
-              <span className="flex-1">{t("Bekijk op ah.nl")}</span>
+              <span className="flex-1">{t("Bekijk op {0}", [WINKEL_SITE[productWinkel(shown) ?? 'AH']])}</span>
             </a>
           ) : (
             <a href={`https://www.ah.nl/zoeken?query=${zoekterm(shown.name)}`} target="_blank" rel="noopener noreferrer" className={rij}>

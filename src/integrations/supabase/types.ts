@@ -58,6 +58,8 @@ export type Database = {
           price: number | null
           price_before: number | null
           price_checked_at: string | null
+          product_store: string | null
+          product_url: string | null
           store: string | null
           user_id: string
         }
@@ -79,6 +81,8 @@ export type Database = {
           price?: number | null
           price_before?: number | null
           price_checked_at?: string | null
+          product_store?: string | null
+          product_url?: string | null
           store?: string | null
           user_id: string
         }
@@ -100,6 +104,8 @@ export type Database = {
           price?: number | null
           price_before?: number | null
           price_checked_at?: string | null
+          product_store?: string | null
+          product_url?: string | null
           store?: string | null
           user_id?: string
         }
