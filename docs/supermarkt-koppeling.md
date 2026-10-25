@@ -163,8 +163,12 @@ Op deze branch, nog niet uitgerold en nog niet aan:
   `ahKoppeling.test.ts`). `useAhKoppeling` zoekt bij de winkel van de regel. Het AH-totaal, het
   AH-mandje en het vullen van dat mandje laten Jumbo- en Dirk-producten erbuiten. "Bekijk op
   jumbo.com" en "Product bij Jumbo kiezen" volgen de winkel.
-- **Schakelaar:** `ANDERE_WINKELS_AAN` in `src/lib/ahKoppeling.ts` staat op `false`. Zo werkt de
-  app nu precies als voorheen (gecontroleerd in de preview: AH koppelt, een Jumbo-regel niet).
+- **Schakelaar:** `ANDERE_WINKELS_AAN` in `src/lib/ahKoppeling.ts`. Op `false` werkt de app
+  precies als voorheen. Sinds 25 oktober 2026 staat hij op `true`: migratie gedraaid, functie
+  uitgerold, en vanaf Supabase antwoorden Jumbo en Dirk gewoon (2,5–4,5 s per regel inclusief
+  de keuze door het model, net als AH). In de preview: gember → Jumbo Biologische Verse Gember,
+  Mutti passata → Mutti Passata la Rossa 700ml (Jumbo), halfvolle melk → Melkunie Halfvolle melk
+  (Dirk), passata → AH Tomaten passata gezeefd; het AH-totaal telt alleen de AH-regel.
 - **Migratie (voorstel):** `supabase/migrations/20261024120000_product_store.sql` voegt
   `product_store` (NULL = AH) en `product_url` toe aan `grocery_items`. De `ah_*`-kolommen blijven
   en dienen voor elke winkel; bij Jumbo houdt `ah_product_id` het artikelnummer zonder

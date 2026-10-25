@@ -1,15 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import type { GroceryItem } from '@/types';
-import { alsMatch, koppelWinkel, productWinkel, teKoppelen } from '@/lib/ahKoppeling';
+import { alsMatch, ANDERE_WINKELS_AAN, KOPPELBAAR, koppelWinkel, productWinkel, teKoppelen } from '@/lib/ahKoppeling';
 
 const regel = (patch: Partial<GroceryItem>): GroceryItem => ({ id: 'a', name: 'passata', checked: false, ...patch });
 const product = (store?: 'Jumbo' | 'Dirk') => ({ id: 1, store, title: 'x', unitSize: null, quantity: 1, imageUrl: null, isBonus: false, category: null });
 const ALLE = ['AH', 'Jumbo', 'Dirk'] as const;
+const ALLEEN_AH = ['AH'] as const;
 
 describe('koppelWinkel', () => {
-  it('kent alleen AH zolang de rest uit staat', () => {
-    expect(koppelWinkel('ah')).toBe('AH');
-    expect(koppelWinkel('Jumbo')).toBeNull();
+  it('volgt de schakelaar', () => {
+    expect(KOPPELBAAR.length).toBe(ANDERE_WINKELS_AAN ? 3 : 1);
+  });
+
+  it('kent alleen AH als de rest uit staat', () => {
+    expect(koppelWinkel('ah', ALLEEN_AH)).toBe('AH');
+    expect(koppelWinkel('Jumbo', ALLEEN_AH)).toBeNull();
     expect(koppelWinkel('Jumbo', ALLE)).toBe('Jumbo');
     expect(koppelWinkel('Lidl', ALLE)).toBeNull();
     expect(koppelWinkel(null, ALLE)).toBeNull();
@@ -17,7 +22,7 @@ describe('koppelWinkel', () => {
 });
 
 describe('teKoppelen', () => {
-  it('doet nu precies wat het deed: AH zonder product en nog niet gezocht', () => {
+  it('met alleen AH: AH zonder product en nog niet gezocht', () => {
     const items = [
       regel({ id: '1', store: 'AH' }),
       regel({ id: '2', store: 'AH', priceCheckedAt: '2026-10-24' }),
@@ -26,7 +31,7 @@ describe('teKoppelen', () => {
       regel({ id: '5', store: 'AH', checked: true }),
       regel({ id: '6' }),
     ];
-    expect(teKoppelen(items).map((i) => i.id)).toEqual(['1']);
+    expect(teKoppelen(items, ALLEEN_AH).map((i) => i.id)).toEqual(['1']);
   });
 
   it('met Jumbo en Dirk aan: die ook, en opnieuw als de winkel veranderde', () => {

@@ -118,6 +118,8 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
   const checked = groceryItems.filter((i) => i.checked);
   // Het totaal en het mandje zijn van AH; een Jumbo- of Dirk-product hoort daar niet in.
   const pricedItems = unchecked.filter((i) => productWinkel(i) === 'AH');
+  // Wat bij AH hoort: alles behalve wat je bij Jumbo of Dirk haalt (die krijgen daar een product).
+  const voorAh = unchecked.filter((i) => (koppelWinkel(i.store) ?? 'AH') === 'AH');
   const ahTotal = pricedItems.reduce((sum, i) => sum + (i.price ?? 0), 0);
   const showBar = !loading && unchecked.length > 0;
   const hasPrices = pricedItems.length > 0;
@@ -131,8 +133,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
   const mandjeOp = !plus && remaining('mandje') === 0;
 
   const fetchAhPrices = async () => {
-    // Wat je bij Jumbo of Dirk haalt, krijgt daar een product, niet bij AH.
-    const batch = unchecked.filter((i) => (koppelWinkel(i.store) ?? 'AH') === 'AH').slice(0, AH_MAX_ITEMS);
+    const batch = voorAh.slice(0, AH_MAX_ITEMS);
     if (batch.length === 0) return;
     if (mandjeOp) { setOverLimit(true); return; }
     setPricing(true);
@@ -652,7 +653,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
                   </Button>
                 </div>
                 <p className="mt-1 text-[11px] text-muted-foreground">
-                  <span className="tabular-nums">{t('{0} van {1} gevonden', [pricedItems.length, unchecked.length])}</span>{' '}
+                  <span className="tabular-nums">{t('{0} van {1} gevonden', [pricedItems.length, voorAh.length])}</span>{' '}
                   {plus
                     ? t("· Je bestelt bij AH, in de app of op ah.nl.")
                     : t('· nog {0} van {1} karretjes deze maand', [remaining('mandje'), FREE_LIMIT])}

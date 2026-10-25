@@ -8,7 +8,7 @@ import { zelfdeWinkel, zonderWinkel } from '@/lib/winkels';
  * bestaan (migratie 20261024120000_product_store.sql) en ah-products met de
  * store-parameter is uitgerold. Tot dan alleen AH.
  */
-export const ANDERE_WINKELS_AAN = false;
+export const ANDERE_WINKELS_AAN = true;
 
 export const KOPPELBAAR: readonly ProductStore[] = ANDERE_WINKELS_AAN ? ['AH', 'Jumbo', 'Dirk'] : ['AH'];
 
