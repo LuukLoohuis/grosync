@@ -17,6 +17,7 @@ import { AppProvider } from "@/contexts/AppContext";
 import { LazyBoundary } from "@/components/LazyBoundary";
 import NieuwWachtwoord from "@/components/NieuwWachtwoord";
 import Splash from "@/components/Splash";
+import IntroOverlay from "@/components/IntroOverlay";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -46,6 +47,8 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return (
     <AppProvider userId={household.ownerId ?? session.user.id} selfId={session.user.id} household={household}>
       {children}
+      {/* The brand intro after signing in, once per session, over the list that loads underneath. */}
+      {location.pathname === "/" && <IntroOverlay />}
     </AppProvider>
   );
 };
