@@ -2,7 +2,7 @@ import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { taal } from '@/lib/i18n';
 
-const HERZIEN = '28 september 2026';
+const HERZIEN = '26 oktober 2026';
 const MAIL = 'info.couplecart@gmail.com';
 
 interface Deel {
@@ -43,9 +43,8 @@ const DELEN: Record<string, Deel> = {
 
         <H2>Wie we zijn</H2>
         <P>
-          CoupleCart wordt aangeboden door Luuk Loohuis, ingeschreven bij de Kamer van Koophandel.
-          Vragen gaan naar {mail}. Vul hier je KvK-nummer, btw-nummer en adres in voordat je de app
-          betaald aanbiedt; zonder die gegevens mag je geen digitale dienst verkopen aan consumenten.
+          CoupleCart is een handelsnaam van Loohuis Elevations, Morelstraat 71-BS, 3552 GM Utrecht.
+          KvK-nummer 42194734, btw-nummer NL005573299B52. Vragen gaan naar {mail}.
         </P>
 
         <H2>Wat je krijgt</H2>
