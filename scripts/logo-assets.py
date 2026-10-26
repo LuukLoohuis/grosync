@@ -7,7 +7,7 @@ Makes every logo file the app uses from the master logo, docs/logo/couplecart-lo
 Needs Pillow. Writes:
   src/assets/couplecart-logo.webp         the whole logo, for the login screen
   src/assets/couplecart-logo-donker.webp  the same with light letters, for the dark theme
-  public/favicon.png, public/favicon.ico  only the emblem, square; also the icon in the app's header
+  public/favicon.png                      only the emblem, square; also the icon in the app's header
   public/og-image.png                     the whole logo on cream, for link previews
 """
 from PIL import Image
@@ -72,8 +72,7 @@ square = fit(emblem, 480, 480)
 favicon = Image.new('RGBA', (512, 512), (0, 0, 0, 0))
 favicon.alpha_composite(square, (16, 16))
 favicon.save('public/favicon.png', optimize=True)
-favicon.save('public/favicon.ico', sizes=[(16, 16), (32, 32), (48, 48)])
-print('public/favicon.png 512 512, public/favicon.ico 16/32/48')
+print('public/favicon.png 512 512')
 
 og = fit(logo, 1200, 530, CREAM)
 preview = Image.new('RGBA', (1200, 630), CREAM + (255,))

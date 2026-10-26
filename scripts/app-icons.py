@@ -10,11 +10,13 @@ background, the shadow and the tile's own rim. Writes:
   public/apple-touch-icon.png          180 px, what iPhone and iPad put on the home screen
   public/icons/icon-192.png, -512.png  the same picture, for the manifest
   public/icons/icon-maskable-512.png   the emblem smaller, because Android may crop it to a circle
+  public/icons/favicon-512.png         the browser-tab icon: the tile with its own rounded corners,
+  public/favicon.ico                   transparent outside them; the .ico holds 16 to 256 px
 """
 import sys
 
 import numpy as np
-from PIL import Image, ImageFilter
+from PIL import Image, ImageDraw, ImageFilter
 
 SOURCE = 'docs/logo/couplecart-app-icon.webp'
 # The tile in the 1254 px source, measured by hand: its box (left, top, right, bottom) and the
@@ -117,3 +119,16 @@ write('public/apple-touch-icon.png', 180, tile_side)
 write('public/icons/icon-192.png', 192, tile_side)
 write('public/icons/icon-512.png', 512, tile_side)
 write('public/icons/icon-maskable-512.png', 512, reach / SAFE_RADIUS)
+
+# The browser tab shows no tile of its own, so the favicon gets the tile's rounded corners, drawn at
+# four times the size for smooth edges. The emblem's centre is not the tile's, so the crop is the
+# tile's box itself, made square.
+x = cx + PAD - tile_side / 2
+y = cy + PAD - tile_side / 2
+tile = canvas.resize((512, 512), Image.LANCZOS, box=(x, y, x + tile_side, y + tile_side)).convert('RGBA')
+corners = Image.new('L', (2048, 2048), 0)
+ImageDraw.Draw(corners).rounded_rectangle((0, 0, 2047, 2047), radius=round(RADIUS * 2048 / tile_side), fill=255)
+tile.putalpha(corners.resize((512, 512), Image.LANCZOS))
+tile.save('public/icons/favicon-512.png', optimize=True)
+tile.save('public/favicon.ico', sizes=[(16, 16), (32, 32), (48, 48), (64, 64), (128, 128), (256, 256)])
+print('public/icons/favicon-512.png 512 x 512, public/favicon.ico 16-256')
