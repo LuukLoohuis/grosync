@@ -1,5 +1,5 @@
 import { assertEquals } from 'jsr:@std/assert@1';
-import { eenheidsprijs, eenheidsprijsVan, gelijkeHoeveelheid, kiesGoedkoopste, maatInTitel, totalen, vasteWeglaat, type Keuze } from './vergelijk.ts';
+import { eenheidsprijs, eenheidsprijsVan, gelijkeHoeveelheid, kiesGoedkoopste, maatInTitel, totalen, vasteWeglaat, deeltWoord, type Keuze } from './vergelijk.ts';
 
 Deno.test('eenheidsprijs leest de maten van AH, Jumbo en Dirk', () => {
   const per = (maat: string, prijs: number) => {
@@ -145,4 +145,23 @@ Deno.test('kilo en liter tellen samen: passata van 500 g tegen een fles van 700 
 Deno.test('rogge valt af, tenzij de regel erom vraagt', () => {
   assertEquals(vasteWeglaat('volkoren brood', 'Brood van Soma Limburgs Volkoren Roggebrood 400 g'), true);
   assertEquals(vasteWeglaat('roggebrood', 'Brood van Soma Limburgs Volkoren Roggebrood 400 g'), false);
+});
+
+Deno.test('deeltWoord: een ander product valt af', () => {
+  assertEquals(deeltWoord('halfvolle melk', 'halfvolle melk', 'Milner Oud plakken 30+'), false);
+  assertEquals(deeltWoord('halfvolle melk', 'halfvolle melk', '1 de Beste Halfvolle melk'), true);
+});
+
+Deno.test('deeltWoord: samenstellingen, vervoegingen en het woord van de winkel', () => {
+  assertEquals(deeltWoord('scharreleieren', 'scharreleieren', 'Vrije uitloop eieren wit M'), true);
+  assertEquals(deeltWoord('geraspte kaas', 'geraspte kaas', 'De Zaanse Hoeve Mild 45+ geraspt'), true);
+  assertEquals(deeltWoord('geraspte kaas', 'geraspte kaas', 'Rasp Mild 48+ Kaas 250 g'), true);
+  assertEquals(deeltWoord('banaan', 'banaan', 'Del Monte Bananen'), true);
+  assertEquals(deeltWoord('keukenrol', 'keukenpapier', 'AH Keukenpapier 4 rollen'), true);
+  assertEquals(deeltWoord('melk', 'melk', 'Melkunie Halfvolle melk'), true);
+  assertEquals(deeltWoord('pasta penne', 'penne', 'AH Penne'), true);
+});
+
+Deno.test('mix valt af', () => {
+  assertEquals(vasteWeglaat('volkoren brood', 'Koopmans Broodmix Fijn Volkoren Brood 450 g'), true);
 });

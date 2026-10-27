@@ -1,5 +1,5 @@
 import { searchDirk, searchJumbo, STORES, storeName, type Store } from './winkels.ts';
-import { eenheidsprijsVan, kiesGoedkoopste, totalen, vasteWeglaat, type Keuze } from './vergelijk.ts';
+import { eenheidsprijsVan, kiesGoedkoopste, totalen, vasteWeglaat, deeltWoord, type Keuze } from './vergelijk.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -277,9 +277,9 @@ async function chooseProducts(
 }
 
 // For the price comparison: which candidates are NOT this ingredient. Fixed words
-// (vasteWeglaat) went out before this; the model only names what else must go and
-// everything it does not name stays, because a forgotten plain product made a
-// dearer one win. The cheapest of what is left is picked in code (kiesGoedkoopste).
+// (vasteWeglaat) and products sharing no word with the line (deeltWoord) went out
+// before this; the model only names what else must go and everything it does not
+// name stays, because a forgotten plain product made a dearer one win. The cheapest of what is left is picked in code (kiesGoedkoopste).
 async function notIngredient(
   line: { name: string; searchedAs: string; candidates: Candidate[] },
   store: Store,
@@ -409,7 +409,10 @@ Deno.serve(async (req) => {
           return { id: item.id, name: item.name, searchedAs, candidates };
         });
         const searchable = lines
-          .map((line) => ({ ...line, candidates: line.candidates.filter((c) => !vasteWeglaat(line.name, c.title)) }))
+          .map((line) => ({
+            ...line,
+            candidates: line.candidates.filter((c) => !vasteWeglaat(line.name, c.title) && deeltWoord(line.name, line.searchedAs, c.title)),
+          }))
           .filter((line) => line.candidates.length > 0);
         const drops = await mapWithConcurrency(searchable, FILTER_CONCURRENCY, (line) =>
           notIngredient(line, store).catch((e) => {

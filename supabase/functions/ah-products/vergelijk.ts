@@ -171,6 +171,7 @@ const ANDERS = [
   /\bgerookt\w*/, /\bvleeswaren\b/,
   /\bbio\b/, /\bbiologisch\w*/,
   /\brogge\w*/,
+  /\w*mix\b/,
   /\bmini\b/,
 ];
 
@@ -181,4 +182,24 @@ export function vasteWeglaat(regel: string, titel: string): boolean {
   const r = gewoneTekst(regel);
   const t = gewoneTekst(titel);
   return ANDERS.some((woord) => woord.test(t) && !woord.test(r));
+}
+
+const woorden = (tekst: string) => gewoneTekst(tekst).split(/[^a-z]+/).filter((w) => w.length >= 4);
+
+/** "eieren" in "scharreleieren", "geraspt" in "geraspte", "banaan" naast "bananen". */
+const zelfdeWoord = (a: string, b: string) => {
+  if (a.includes(b) || b.includes(a)) return true;
+  let gelijk = 0;
+  while (gelijk < a.length && a[gelijk] === b[gelijk]) gelijk++;
+  return gelijk >= 4 && gelijk >= 0.6 * Math.min(a.length, b.length);
+};
+
+/**
+ * Deelt de titel een woord met de regel of de zoekterm? Zo niet, dan is het een
+ * ander product, wat het model er ook van vindt: kaas voor "halfvolle melk".
+ * De zoekterm telt mee, want die kan het woord van de winkel zelf zijn (keukenpapier).
+ */
+export function deeltWoord(regel: string, zoekterm: string, titel: string): boolean {
+  const gezocht = [...woorden(regel), ...woorden(zoekterm)];
+  return woorden(titel).some((w) => gezocht.some((g) => zelfdeWoord(g, w)));
 }
