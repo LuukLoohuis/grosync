@@ -848,5 +848,5 @@ export const EN: Record<string, string> = {
   'Aanbieding': 'Offer',
   'Niet gevonden: {0}': 'Not found: {0}',
   'Met alles wat {0} heeft: {1}': 'With everything {0} has: {1}',
-  'Vergeleken over de {0} boodschappen die alle drie hebben, met het goedkoopste passende product en de aanbiedingen van nu.': 'Compared over the {0} items all three have, using the cheapest matching product and current offers.',
+  'Vergeleken over de {0} boodschappen die alle drie hebben, voor dezelfde hoeveelheid (het kleinste pak), met het goedkoopste passende product en de aanbiedingen van nu.': 'Compared over the {0} items all three have, for the same amount (the smallest pack), using the cheapest matching product and current offers.',
 };

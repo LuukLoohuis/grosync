@@ -58,13 +58,13 @@ export interface VergelijkKeuze {
   bonusMechanism: string | null;
   imageUrl: string | null;
   productUrl: string;
-  perEenheid: { prijs: number; eenheid: 'kg' | 'l' | 'stuk' } | null;
+  perEenheid: { prijs: number; eenheid: 'kg' | 'l' | 'stuk'; hoeveelheid: number } | null;
 }
 
 export interface WinkelTotaal {
   store: ProductStore;
   totaal: number;
-  /** Alleen de regels die elke winkel heeft; dit vergelijk je. */
+  /** Alleen de regels die elke winkel heeft, per regel voor dezelfde hoeveelheid; dit vergelijk je. */
   eerlijkTotaal: number;
   bonusVoordeel: number;
   gevonden: number;

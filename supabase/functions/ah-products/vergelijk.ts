@@ -21,13 +21,17 @@ export type Keuze = {
   perEenheid: Eenheidsprijs | null;
 };
 
-export type Eenheidsprijs = { prijs: number; eenheid: 'kg' | 'l' | 'stuk' };
+/** Prijs per kg, liter of stuk, en hoeveel daarvan in één pak zit. */
+export type Eenheidsprijs = { prijs: number; eenheid: 'kg' | 'l' | 'stuk'; hoeveelheid: number };
 
 export type WinkelTotaal = {
   store: Store;
   /** Alles wat deze winkel heeft. */
   totaal: number;
-  /** Alleen de regels die alle winkels hebben; dit vergelijk je. */
+  /**
+   * Alleen de regels die alle winkels hebben, en per regel voor dezelfde
+   * hoeveelheid (het kleinste pak van de drie): 30 eieren tegen 6 is anders geen vergelijking.
+   */
   eerlijkTotaal: number;
   /** Wat de aanbiedingen in het eerlijke totaal schelen. */
   bonusVoordeel: number;
@@ -52,13 +56,36 @@ const rond = (bedrag: number) => Math.round(bedrag * 100) / 100;
  */
 export function eenheidsprijs(unitSize: string, price: number): Eenheidsprijs | null {
   const tekst = unitSize.toLowerCase().replace(/^ca\.?\s*/, '').trim();
-  if (/^per\s+stuk$/.test(tekst)) return { prijs: rond(price), eenheid: 'stuk' };
+  if (/^per\s+stuk$/.test(tekst)) return { prijs: rond(price), eenheid: 'stuk', hoeveelheid: 1 };
   const match = tekst.match(/^(?:(\d+)\s*[x×]\s*)?(\d+(?:[.,]\d+)?)\s*([a-z]+)\b/);
   if (!match) return null;
   const maat = MAAT[match[3]];
   const hoeveel = (match[1] ? Number(match[1]) : 1) * getal(match[2]) * (maat?.factor ?? 0);
   if (!maat || !(hoeveel > 0) || !(price > 0)) return null;
-  return { prijs: rond(price / hoeveel), eenheid: maat.eenheid };
+  return { prijs: rond(price / hoeveel), eenheid: maat.eenheid, hoeveelheid: Math.round(hoeveel * 1000) / 1000 };
+}
+
+const MAAT_IN_TEKST = /(?:\d+\s*[x×]\s*)?\d+(?:[.,]\d+)?\s*(?:g|gr|gram|kg|kilo|ml|cl|dl|l|lt|liter|st|stuks?)\b/gi;
+
+/** De maat uit een titel, voor Jumbo zonder maat: "Jumbo Scharreleieren M/L 6 Stuks" → "6 Stuks". */
+export const maatInTitel = (title: string): string => [...title.matchAll(MAAT_IN_TEKST)].pop()?.[0] ?? '';
+
+/** Eenheidsprijs uit de maat, en anders uit de titel. */
+export const eenheidsprijsVan = (product: { unitSize: string; title: string; price: number }): Eenheidsprijs | null =>
+  eenheidsprijs(product.unitSize, product.price) ?? eenheidsprijs(maatInTitel(product.title), product.price);
+
+/**
+ * Wat elke winkel voor deze regel kost bij dezelfde hoeveelheid: het kleinste
+ * pak van de drie, tegen de prijs per eenheid van elke winkel. Zonder vergelijkbare
+ * eenheden (kg tegen stuks) gewoon de prijs van wat je koopt.
+ */
+export function gelijkeHoeveelheid(keuzes: Keuze[]): number[] {
+  const eenheden = keuzes.map((k) => k.perEenheid);
+  const vergelijkbaar = eenheden.every((e) => e && e.eenheid === eenheden[0]!.eenheid);
+  if (!vergelijkbaar) return keuzes.map((k) => k.price);
+  const totaal = keuzes.map((k) => k.perEenheid!.hoeveelheid * k.quantity);
+  const maat = Math.min(...totaal);
+  return keuzes.map((k, i) => rond((k.price / totaal[i]) * maat));
 }
 
 /**
@@ -70,14 +97,16 @@ export function totalen(itemIds: string[], keuzes: Keuze[], stores: readonly Sto
   const bij = (store: Store) => new Map(keuzes.filter((k) => k.store === store).map((k) => [k.itemId, k]));
   const perWinkel = new Map(stores.map((store) => [store, bij(store)]));
   const overal = itemIds.filter((id) => stores.every((store) => perWinkel.get(store)!.has(id)));
+  // Per regel de prijs bij dezelfde hoeveelheid, in de volgorde van stores.
+  const gelijk = new Map(overal.map((id) => [id, gelijkeHoeveelheid(stores.map((store) => perWinkel.get(store)!.get(id)!))]));
   return stores
-    .map((store) => {
+    .map((store, plek) => {
       const gekozen = perWinkel.get(store)!;
       const eerlijk = overal.map((id) => gekozen.get(id)!);
       return {
         store,
         totaal: rond([...gekozen.values()].reduce((som, k) => som + k.price, 0)),
-        eerlijkTotaal: rond(eerlijk.reduce((som, k) => som + k.price, 0)),
+        eerlijkTotaal: rond(overal.reduce((som, id) => som + gelijk.get(id)![plek], 0)),
         bonusVoordeel: rond(eerlijk.reduce((som, k) => som + (k.priceBefore != null ? k.priceBefore - k.price : 0), 0)),
         gevonden: gekozen.size,
         ontbreekt: itemIds.filter((id) => !gekozen.has(id)),

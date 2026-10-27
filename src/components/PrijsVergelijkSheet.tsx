@@ -176,7 +176,7 @@ const PrijsVergelijkSheet = ({ open, items, onClose, onOverLimit, onKlaar }: Pri
               })}
 
               <p className="px-1 pb-2 text-xs text-muted-foreground">
-                {t('Vergeleken over de {0} boodschappen die alle drie hebben, met het goedkoopste passende product en de aanbiedingen van nu.', [overal])}
+                {t('Vergeleken over de {0} boodschappen die alle drie hebben, voor dezelfde hoeveelheid (het kleinste pak), met het goedkoopste passende product en de aanbiedingen van nu.', [overal])}
               </p>
             </div>
           );

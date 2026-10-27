@@ -1,5 +1,5 @@
 import { searchDirk, searchJumbo, STORES, storeName, type Store } from './winkels.ts';
-import { eenheidsprijs, totalen, type Keuze } from './vergelijk.ts';
+import { eenheidsprijsVan, totalen, type Keuze } from './vergelijk.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -281,15 +281,15 @@ async function chooseCheapest(
   store: Store,
 ): Promise<Map<string, { index: number; quantity: number }>> {
   const result = await askJson(
-    `For each grocery list line pick the CHEAPEST ${storeName[store]} product that is that ingredient, to compare what the same list costs at different supermarkets. Any brand is fine, house brands included. Respect what the line says about the product itself: "diepvries" or "frozen" means a frozen product (and without it prefer fresh), "gerookt" means smoked, "volkoren" means wholegrain. Drop dishes, snacks, ready meals, flavoured variants and multipacks unless the line asks for them. Compare by price per unit ("perUnit") among normal household sizes, then pick the package (and "quantity", the number of packages) that covers the amount for the lowest total price; quantity 1 when the amount is unknown or small. Use index -1 when no candidate is that ingredient. Return JSON {"choices":[{"id":"...","index":0,"quantity":1}]}.`,
+    `For each grocery list line pick the CHEAPEST ${storeName[store]} product that is that ingredient, to compare what the same list costs at different supermarkets. Any brand is fine, house brands included. It must be the ordinary product itself: never a plant-based or vegan substitute (plantaardig, vegan, vegetarisch), smoked or deli version (gerookt, vleeswaren, beleg), organic premium, dish, snack, ready meal, flavoured variant or multipack, unless the line itself asks for it. "diepvries" or "frozen" means a frozen product, and without it prefer fresh; "volkoren" means wholegrain. Pick a normal household package (e.g. 6 or 10 eggs, 1 litre of milk, 500 g of pasta), not a bulk or family pack, and among those the lowest price per unit ("perUnit"). "quantity" is the number of packages that covers the amount; 1 when the amount is unknown or small. Use index -1 when no candidate is that ingredient. Return JSON {"choices":[{"id":"...","index":0,"quantity":1}]}.`,
     JSON.stringify(lines.map((line) => ({
       id: line.id,
       ingredient: line.name,
       amount: line.amount,
       search: line.searchedAs,
       candidates: line.candidates.map((c, index) => {
-        const unit = eenheidsprijs(c.unitSize, c.price);
-        return { index, title: c.title, size: c.unitSize, price: c.price, perUnit: unit ? `${unit.prijs} per ${unit.eenheid}` : null, category: c.category };
+        const unit = eenheidsprijsVan(c);
+        return { index, title: c.title, size: c.unitSize || null, price: c.price, perUnit: unit ? `${unit.prijs} per ${unit.eenheid}` : null, category: c.category };
       }),
     }))),
   );
@@ -435,7 +435,7 @@ Deno.serve(async (req) => {
             bonusMechanism: match.bonusMechanism,
             imageUrl: match.imageUrl,
             productUrl: match.productUrl,
-            perEenheid: eenheidsprijs(candidate.unitSize, candidate.price),
+            perEenheid: eenheidsprijsVan(candidate),
           });
         }
         return keuzes;
