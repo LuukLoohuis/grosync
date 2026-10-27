@@ -35,6 +35,28 @@ interface PantryScreenProps {
 }
 
 /** De voorraadkast: twee tegels breed, want dichtheid is hier het probleem. */
+/** Een plank met wat potten en pakken, in de kleuren van de afdelingen: zo ziet een kast eruit. */
+const KastPlank = () => (
+  <svg viewBox="0 0 240 112" aria-hidden="true" className="mx-auto h-[112px] w-full max-w-[16rem]">
+    <g strokeWidth="2" strokeLinejoin="round">
+      {/* pot met deksel */}
+      <rect x="22" y="44" width="40" height="52" rx="9" fill="hsl(var(--dept-groente) / .18)" stroke="hsl(var(--dept-groente))" />
+      <rect x="26" y="34" width="32" height="11" rx="3" fill="hsl(var(--dept-groente))" stroke="hsl(var(--dept-groente))" />
+      {/* pak pasta */}
+      <rect x="72" y="22" width="36" height="74" rx="4" fill="hsl(var(--dept-pasta) / .18)" stroke="hsl(var(--dept-pasta))" />
+      <rect x="80" y="40" width="20" height="26" rx="3" fill="hsl(var(--card))" stroke="hsl(var(--dept-pasta))" />
+      {/* fles */}
+      <path d="M126 96V52c0-7 6-10 6-16V20h12v16c0 6 6 9 6 16v44z" fill="hsl(var(--dept-drinken) / .18)" stroke="hsl(var(--dept-drinken))" />
+      {/* blikken */}
+      <rect x="162" y="62" width="28" height="34" rx="5" fill="hsl(var(--dept-houdbaar) / .18)" stroke="hsl(var(--dept-houdbaar))" />
+      <rect x="196" y="62" width="28" height="34" rx="5" fill="hsl(var(--dept-houdbaar) / .18)" stroke="hsl(var(--dept-houdbaar))" />
+      <rect x="179" y="30" width="28" height="32" rx="5" fill="hsl(var(--dept-vlees) / .18)" stroke="hsl(var(--dept-vlees))" />
+    </g>
+    {/* de plank */}
+    <rect x="8" y="96" width="224" height="8" rx="3" fill="hsl(var(--primary))" />
+  </svg>
+);
+
 const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
   const {
     pantry, pantryLoading, stockUp, removePantryItem, addGroceryItem, setPantryQuantity, setPantryState,
@@ -160,17 +182,21 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
         onChange={(e) => takePhotos(e.target.files)}
       />
 
-      {pantry.length > 0 && (
-        <>
-          <header className="flex items-start gap-2">
-            <div className="min-w-0 flex-1">
-              <h1 className="font-display text-2xl font-bold tracking-[-0.02em] text-foreground">{t("Voorraad")}</h1>
-              <p className="mt-0.5 text-sm text-muted-foreground">
-                {pantry.length} {pantry.length === 1 ? t('product') : t('producten')}
-                {bijnaTeller > 0 && t("· {0} bijna op", [bijnaTeller])}
-                {opTeller > 0 && t("· {0} op", [opTeller])}
-              </p>
-            </div>
+      <header className="flex items-start gap-2">
+        <div className="min-w-0 flex-1">
+          <h1 className="font-display text-2xl font-bold tracking-[-0.02em] text-foreground">{t("Voorraad")}</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            {pantry.length === 0
+              ? t("Wat er bij jullie in de kast staat")
+              : <>
+                  {pantry.length} {pantry.length === 1 ? t('product') : t('producten')}
+                  {bijnaTeller > 0 && <> {t("· {0} bijna op", [bijnaTeller])}</>}
+                  {opTeller > 0 && <> {t("· {0} op", [opTeller])}</>}
+                </>}
+          </p>
+        </div>
+        {pantry.length > 0 && (
+          <>
             <button
               type="button"
               onClick={() => setBijwerken((aan) => !aan)}
@@ -202,7 +228,12 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
             >
               {scanning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
             </Button>
-          </header>
+          </>
+        )}
+      </header>
+
+      {pantry.length > 0 && (
+        <>
 
           {bijwerken && (
             <p className="rounded-[12px] border border-primary/30 bg-primary-soft px-3 py-2 text-sm text-primary-deep">
@@ -299,35 +330,24 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
       {!pantryLoading && pantry.length === 0 && (
         <>
           <section className="rounded-[20px] border border-border bg-card p-5 text-center">
-            <div
-              aria-hidden="true"
-              className="mx-auto flex h-[150px] w-full items-end justify-center rounded-[14px] border border-border p-2"
-              style={{ backgroundImage: 'repeating-linear-gradient(135deg, hsl(var(--muted)) 0 4px, transparent 4px 8px)' }}
-            >
-              <span className="font-mono text-[0.625rem] text-muted-foreground">{t("foto · plank in beeld")}</span>
-            </div>
-            <h2 className="mt-4 font-display text-2xl font-bold tracking-[-0.01em] text-foreground">{t("Maak een foto van je plank")}</h2>
-            <p className="mx-auto mt-2 max-w-[20rem] text-sm text-muted-foreground">
+            <KastPlank />
+            <h2 className="mt-4 text-balance font-display text-2xl font-bold tracking-[-0.01em] text-foreground">{t("Maak een foto van je plank")}</h2>
+            <p className="mx-auto mt-2 max-w-[20rem] text-pretty text-sm text-muted-foreground">
               {t("CoupleCart leest welke producten erop staan. Je ziet eerst wat er herkend is en vinkt zelf af wat klopt.")}
             </p>
             <Button variant="secondary" className="mt-4 min-h-[50px] w-full gap-2" onClick={scan} disabled={scanning}>
               {scanning ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("Foto lezen…")}</> : <><Camera className="h-4 w-4" /> {t("Foto maken")}</>}
             </Button>
-            <Button variant="outline" className="mt-2 min-h-[50px] w-full" onClick={() => document.getElementById('kast-zelf-typen')?.focus()}>
-              {t("Zelf typen")}
-            </Button>
-            <p className="mt-3 text-xs text-muted-foreground">{t('{0} foto’s per maand gratis', [FREE_LIMIT])}</p>
+            {!plus && <p className="mt-3 text-xs text-muted-foreground">{t('{0} foto’s per maand gratis', [FREE_LIMIT])}</p>}
           </section>
 
-          <p className="text-center text-xs text-muted-foreground">
-            {t('Je kast vul je zelf: met een foto, of door te typen. De lijst blijft eraf.')}
-          </p>
-
+          <label htmlFor="kast-zelf-typen" className="-mb-2 block text-sm font-medium text-foreground">
+            {t("Of typ wat er staat")}
+          </label>
           <div className="flex gap-2">
             <Input
               id="kast-zelf-typen"
-              placeholder={t("Zelf iets toevoegen")}
-              aria-label={t("Zelf iets toevoegen")}
+              placeholder={t("Bijvoorbeeld: pindakaas")}
               value={adding}
               onChange={(e) => setAdding(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && addByHand()}
@@ -343,7 +363,7 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
       {zichtbaar.map((plank) => (
         <section key={plank.sleutel}>
           {plank.sleutel === 'bijna' ? (
-            <h2 className="mb-1.5 mt-1.5 font-display text-[0.6875rem] font-semibold uppercase tracking-[0.09em] text-accent-ink">
+            <h2 className="mb-1.5 mt-1.5 font-display text-[0.8125rem] font-semibold text-accent-ink">
               {t("Bijna op")}
             </h2>
           ) : (
