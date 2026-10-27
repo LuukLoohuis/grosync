@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Camera, ExternalLink, Link2, Loader2, ShoppingBasket, Sparkles } from 'lucide-react';
+import { Camera, ExternalLink, Link2, Loader2, ShoppingBasket } from 'lucide-react';
 import { toast } from 'sonner';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
+import PlusAanbod from '@/components/PlusAanbod';
 import { useAppContext } from '@/contexts/AppContext';
 import { FREE_LIMIT, type MeteredFeature } from '@/hooks/useEntitlements';
 import { BetalenUitError, openPortal } from '@/services/plusApi';
@@ -84,13 +85,8 @@ const UsageSheet = ({ open, onOpenChange }: UsageSheetProps) => {
         </div>
 
         {!plus && (
-          <div className="mt-4 rounded-[14px] border border-border bg-accent-soft p-4">
-            <p className="flex items-center gap-2 font-display text-[0.9375rem] font-bold text-foreground">
-              <Sparkles className="h-4 w-4 text-accent-ink" /> {t("CoupleCart Plus")}
-            </p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {t("Onbeperkt recepten ophalen, scannen en karretjes vullen, voor het hele huishouden. Binnenkort te koop.")}
-            </p>
+          <div className="mt-4">
+            <PlusAanbod />
           </div>
         )}
 

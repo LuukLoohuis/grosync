@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Bell, Heart, LogOut, MoreVertical, Gauge, PieChart, LifeBuoy, FileText, SquarePlus, Users } from 'lucide-react';
+import { Bell, Heart, LogOut, MoreVertical, Gauge, PieChart, LifeBuoy, FileText, Sparkles, SquarePlus, Users } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useAuth } from '@/hooks/useAuth';
 import { useInstallHint } from '@/hooks/useInstallHint';
@@ -36,7 +36,7 @@ const TALEN: [Taal, string][] = [
 /** Share, theme menu and sign out. `onDark` styles them for the green plane on "Vandaag". */
 const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
   const { session, signOut } = useAuth();
-  const { isAdmin } = useAppContext();
+  const { isAdmin, plus } = useAppContext();
   const { theme, setTheme } = useTheme();
   const [shareOpen, setShareOpen] = useState(false);
   const [usageOpen, setUsageOpen] = useState(false);
@@ -57,6 +57,19 @@ const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
 
   return (
     <div className="-mr-2 flex items-center">
+      {!plus && (
+        <button
+          type="button"
+          onClick={() => setUsageOpen(true)}
+          aria-label={t("CoupleCart Plus")}
+          title={t("CoupleCart Plus")}
+          className={`mr-1 flex h-8 shrink-0 items-center gap-1 rounded-full bg-accent px-2.5 text-xs font-bold text-accent-foreground transition-[filter] hover:brightness-105 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 ${
+            onDark ? 'focus-visible:ring-primary-foreground focus-visible:ring-offset-primary dark:focus-visible:ring-foreground' : 'focus-visible:ring-ring'
+          }`}
+        >
+          <Sparkles className="h-3.5 w-3.5" strokeWidth={2.2} /> {t("Plus")}
+        </button>
+      )}
       <button type="button" onClick={() => setShareOpen(true)} aria-label={t("Cart Club")} title={t("Cart Club")} className={iconButton}>
         <Users className="h-5 w-5" strokeWidth={1.9} />
       </button>
@@ -68,6 +81,12 @@ const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
           {gast && <AccountMenuItem onSelect={() => setAccountOpen(true)} />}
+          <DropdownMenuItem className="gap-2 min-h-11 cursor-pointer font-semibold text-accent-ink focus:text-accent-ink" onSelect={() => setUsageOpen(true)}>
+            <Sparkles className="h-4 w-4" />
+            <span className="flex-1">{t("CoupleCart Plus")}</span>
+            <span className="text-xs font-normal text-muted-foreground">{plus ? t("actief") : t("€ 1,99 p/m")}</span>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
           <DropdownMenuLabel>{t("Thema")}</DropdownMenuLabel>
           <DropdownMenuRadioGroup value={theme ?? 'system'} onValueChange={setTheme}>
             {THEMES.map(([value, label]) => (
