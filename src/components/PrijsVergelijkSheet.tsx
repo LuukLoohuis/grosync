@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronDown, Loader2, RefreshCw } from 'lucide-react';
+import { Check, ChevronDown, Loader2, RefreshCw } from 'lucide-react';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import type { GroceryItem } from '@/types';
-import { comparePrices, VERGELIJK_MAX_ITEMS, type Vergelijking } from '@/services/ahApi';
+import { comparePrices, VERGELIJK_MAX_ITEMS, type ProductStore, type Vergelijking } from '@/services/ahApi';
 import { QuotaError } from '@/services/functions';
 import { besparing, keuzesVan, meerDanGoedkoopste, overalGevonden } from '@/lib/prijsVergelijk';
 import { huiskleur } from '@/lib/winkels';
@@ -23,9 +23,62 @@ interface PrijsVergelijkSheetProps {
   onKlaar: () => void;
 }
 
-type Stand = { soort: 'bezig' } | { soort: 'fout' } | { soort: 'klaar'; uitkomst: Vergelijking };
+type Stand =
+  | { soort: 'bezig' }
+  | { soort: 'fout' }
+  // Uitkomst binnen; de voortgang staat nog even op klaar.
+  | { soort: 'afronden'; uitkomst: Vergelijking }
+  | { soort: 'klaar'; uitkomst: Vergelijking };
 
 const eenheidTekst = { kg: 'kg', l: 'l', stuk: 'stuk' } as const;
+
+const WINKELS: ProductStore[] = ['AH', 'Jumbo', 'Dirk'];
+// Zo lang zoekt de server meestal (7 à 10 s); de teller loopt iets voor en wacht dan op het kiezen.
+const ZOEKTIJD_MS = 6000;
+// Even laten zien dat alle drie klaar zijn voordat de uitkomst verschijnt.
+const KLAAR_PAUZE_MS = 450;
+
+/**
+ * Wat de server echt doet, zichtbaar gemaakt: per winkel elke boodschap
+ * opzoeken en dan het goedkoopste passende product kiezen. De server meldt
+ * geen tussenstand, dus de teller is een schatting die nooit vooruitloopt op
+ * het antwoord: hij blijft op "kiest" staan tot de uitkomst er is.
+ */
+const ZoekVoortgang = ({ namen, klaar }: { namen: string[]; klaar: boolean }) => {
+  const [ms, setMs] = useState(0);
+  useEffect(() => {
+    const begin = performance.now();
+    const klok = window.setInterval(() => setMs(performance.now() - begin), 150);
+    return () => window.clearInterval(klok);
+  }, []);
+
+  const n = namen.length;
+  return (
+    <ul aria-hidden="true" className="space-y-2">
+      {WINKELS.map((winkel, plek) => {
+        // De winkels zoeken tegelijk, maar niet in hetzelfde tempo.
+        const tempo = ZOEKTIJD_MS * (0.8 + plek * 0.12);
+        const gezocht = klaar ? n : Math.min(n, Math.floor((Math.max(0, ms - plek * 250) / tempo) * n));
+        const status = klaar ? t('Klaar') : gezocht < n ? t('Zoekt {0}', [namen[gezocht]]) : t('Kiest het goedkoopste…');
+        return (
+          <li key={winkel} className="relative overflow-hidden rounded-[14px] border border-border bg-card px-4 py-3">
+            <div className="flex items-center gap-3">
+              <span className={`shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold ${huiskleur(winkel) ?? 'bg-muted text-foreground'}`}>{winkel}</span>
+              <span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{status}</span>
+              {klaar
+                ? <Check className="h-4 w-4 shrink-0 text-primary" strokeWidth={2.4} />
+                : <span className="shrink-0 text-xs tabular-nums text-muted-foreground">{gezocht}/{n}</span>}
+            </div>
+            <span
+              className="absolute inset-x-0 bottom-0 block h-0.5 origin-left bg-primary transition-transform duration-300 ease-smooth"
+              style={{ transform: `scaleX(${n ? gezocht / n : 0})` }}
+            />
+          </li>
+        );
+      })}
+    </ul>
+  );
+};
 
 const PrijsVergelijkSheet = ({ open, items, onClose, onOverLimit, onKlaar }: PrijsVergelijkSheetProps) => {
   const [stand, setStand] = useState<Stand>({ soort: 'bezig' });
@@ -38,7 +91,11 @@ const PrijsVergelijkSheet = ({ open, items, onClose, onOverLimit, onKlaar }: Pri
     setStand({ soort: 'bezig' });
     try {
       const uitkomst = await comparePrices(lijst.current.map((i) => ({ id: i.id, name: zoekNaam(i) })));
-      if (deze === poging.current) setStand({ soort: 'klaar', uitkomst });
+      if (deze !== poging.current) return;
+      setStand({ soort: 'afronden', uitkomst });
+      window.setTimeout(() => {
+        if (deze === poging.current) setStand({ soort: 'klaar', uitkomst });
+      }, KLAAR_PAUZE_MS);
     } catch (error) {
       if (deze !== poging.current) return;
       if (error instanceof QuotaError) {
@@ -85,10 +142,15 @@ const PrijsVergelijkSheet = ({ open, items, onClose, onOverLimit, onKlaar }: Pri
           </SheetDescription>
         </SheetHeader>
 
-        {stand.soort === 'bezig' && (
-          <div className="flex flex-col items-center gap-3 py-10 text-center" role="status">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">{t('We zoeken bij drie winkels. Dat duurt zo’n halve minuut.')}</p>
+        {(stand.soort === 'bezig' || stand.soort === 'afronden') && (
+          <div className="mt-4 space-y-3">
+            <ZoekVoortgang key={poging.current} namen={lijst.current.map((i) => i.name)} klaar={stand.soort === 'afronden'} />
+            <p role="status" className="flex items-center justify-center gap-2 px-1 text-xs text-muted-foreground">
+              {stand.soort === 'bezig' && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              {stand.soort === 'bezig'
+                ? t('Per winkel elk product opzoeken en het goedkoopste kiezen. Dat duurt zo’n tien seconden.')
+                : t('Klaar, alle drie de winkels doorzocht.')}
+            </p>
           </div>
         )}
 
@@ -108,11 +170,7 @@ const PrijsVergelijkSheet = ({ open, items, onClose, onOverLimit, onKlaar }: Pri
           const overal = overalGevonden(ids, stores);
           return (
             <div className="mt-4 space-y-3">
-              {winst ? (
-                <p className="rounded-[14px] bg-accent-soft px-4 py-3 text-sm text-foreground">
-                  {t('Bij {0} ben je {1} goedkoper uit dan bij {2}.', [winst.store, euro.format(winst.bedrag), winst.tegen])}
-                </p>
-              ) : overal === 0 ? (
+              {!winst && overal === 0 ? (
                 <p className="rounded-[14px] bg-muted px-4 py-3 text-sm text-muted-foreground">
                   {t('Geen boodschap gevonden die alle drie de winkels hebben, dus niets te vergelijken.')}
                 </p>
@@ -121,8 +179,19 @@ const PrijsVergelijkSheet = ({ open, items, onClose, onOverLimit, onKlaar }: Pri
               {stores.map((winkel, plek) => {
                 const open = uitgeklapt === winkel.store;
                 const extra = meer.get(winkel.store) ?? 0;
+                // De winnaar is het enige dat opvalt; de rest blijft rustig.
+                const winnaar = plek === 0 && Boolean(winst);
                 return (
-                  <div key={winkel.store} className={`rounded-[14px] border ${plek === 0 && winst ? 'border-primary' : 'border-border'} bg-card`}>
+                  <div
+                    key={winkel.store}
+                    className={`rounded-[14px] ${winnaar ? 'border-2 border-primary bg-primary-soft shadow-card' : 'border border-border bg-card'}`}
+                  >
+                    {winnaar && winst && (
+                      <p className="flex items-center gap-1.5 px-4 pt-3 text-sm font-semibold text-primary">
+                        <Check className="h-4 w-4" strokeWidth={2.4} />
+                        {t('Goedkoopst: {0} minder dan bij {1}', [euro.format(winst.bedrag), winst.tegen])}
+                      </p>
+                    )}
                     <button
                       type="button"
                       onClick={() => setUitgeklapt(open ? null : winkel.store)}
@@ -137,13 +206,13 @@ const PrijsVergelijkSheet = ({ open, items, onClose, onOverLimit, onKlaar }: Pri
                         {winkel.bonusVoordeel > 0.004 && <> · {t('{0} aanbieding', [euro.format(winkel.bonusVoordeel)])}</>}
                       </span>
                       <span className="text-right leading-tight">
-                        <span className="block font-display text-lg font-bold tabular-nums text-foreground">{euro.format(winkel.eerlijkTotaal)}</span>
+                        <span className={`block font-display font-bold tabular-nums ${winnaar ? 'text-2xl text-primary' : 'text-lg text-foreground'}`}>{euro.format(winkel.eerlijkTotaal)}</span>
                         {extra > 0.004 && <span className="block text-[0.6875rem] tabular-nums text-muted-foreground">+{euro.format(extra)}</span>}
                       </span>
                       <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />
                     </button>
                     {open && (
-                      <div className="border-t border-border px-4 py-2">
+                      <div className={`border-t px-4 py-2 ${winnaar ? 'border-primary/25' : 'border-border'}`}>
                         <ul className="divide-y divide-border">
                           {keuzesVan(winkel.store, ids, keuzes).map((k) => (
                             <li key={k.itemId} className="flex items-start gap-3 py-2 text-sm">

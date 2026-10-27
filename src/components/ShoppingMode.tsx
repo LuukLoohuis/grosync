@@ -16,6 +16,8 @@ import { t } from '@/lib/i18n';
 
 // Acht vonkjes rond het vinkje als alles gehaald is.
 const VONKEN = [0, 45, 90, 135, 180, 225, 270, 315];
+// Vanaf zoveel boodschappen te gaan zegt de onderbalk "bijna".
+const BIJNA = 3;
 
 // De winkel van de vorige keer: vaak sta je weer in dezelfde.
 const WINKEL_KEY = 'couplecart-winkel';
@@ -59,10 +61,19 @@ const ShoppingMode = ({ items, weg, onCheck, onClose, startWinkel }: ShoppingMod
   // leegvinkt: anders springt de winkel onder je handen weg.
   const [route, setRoute] = useState(() => groups.map((g) => g.category));
 
+  // Zelfde idee voor de voortgang: wat open stond toen je begon, plus wat
+  // er onderweg bij komt. Zo telt de balk alleen deze ronde, niet wat er
+  // van de vorige keer nog afgevinkt op de lijst staat.
+  const [ronde, setRonde] = useState(() => new Set(hier.filter((i) => !i.checked).map((i) => i.id)));
+
   useEffect(() => {
     setRoute((prev) => {
       const nieuw = groups.map((g) => g.category).filter((c) => !prev.includes(c));
       return nieuw.length > 0 ? [...prev, ...nieuw] : prev;
+    });
+    setRonde((prev) => {
+      const nieuw = groups.flatMap((g) => g.items).filter((i) => !prev.has(i.id));
+      return nieuw.length > 0 ? new Set([...prev, ...nieuw.map((i) => i.id)]) : prev;
     });
   }, [groups]);
 
@@ -92,7 +103,9 @@ const ShoppingMode = ({ items, weg, onCheck, onClose, startWinkel }: ShoppingMod
     setWinkel(w);
     bewaarWinkel(w);
     // Andere winkel, andere route: opnieuw bij de eerste afdeling beginnen.
-    setRoute(sortByStoreRoute(voorWinkel(items, w).filter((i) => !i.checked)).map((g) => g.category));
+    const open = voorWinkel(items, w).filter((i) => !i.checked);
+    setRoute(sortByStoreRoute(open).map((g) => g.category));
+    setRonde(new Set(open.map((i) => i.id)));
     setIndex(0);
     wasBezig.current = false;
   };
@@ -101,6 +114,10 @@ const ShoppingMode = ({ items, weg, onCheck, onClose, startWinkel }: ShoppingMod
   const groep = groups.find((g) => g.category === huidig);
   const teGaan = hier.filter((i) => !i.checked).length;
   const klaar = teGaan === 0;
+  // Wat de partner intussen van de lijst haalt, telt niet mee.
+  const inRonde = hier.filter((i) => ronde.has(i.id));
+  const gedaan = inRonde.filter((i) => i.checked || weg.has(i.id)).length;
+  const deel = inRonde.length > 0 ? gedaan / inRonde.length : 1;
 
   // Alleen als je het zelf leeg vinkt, niet als je de winkelmodus opent met alles al in de kar.
   const wasBezig = useRef(!klaar);
@@ -130,6 +147,24 @@ const ShoppingMode = ({ items, weg, onCheck, onClose, startWinkel }: ShoppingMod
                 ? t("Je kar is compleet.")
                 : t("Afdeling {0} van {1} · nog {2} hier", [Math.min(index + 1, route.length), route.length, groep?.items.length ?? 0])}
             </p>
+            {inRonde.length > 0 && (
+              <div className="mt-3 flex items-center gap-3">
+                <div
+                  role="progressbar"
+                  aria-label={t("Gehaald")}
+                  aria-valuemin={0}
+                  aria-valuemax={inRonde.length}
+                  aria-valuenow={gedaan}
+                  className="h-2 flex-1 overflow-hidden rounded-full bg-primary-deep"
+                >
+                  <div
+                    className="h-full origin-left rounded-full bg-accent transition-transform duration-300 ease-smooth"
+                    style={{ transform: `scaleX(${deel})` }}
+                  />
+                </div>
+                <span className="shrink-0 text-xs font-semibold tabular-nums text-primary-foreground">{gedaan}/{inRonde.length}</span>
+              </div>
+            )}
           </div>
           <button
             type="button"
@@ -229,7 +264,13 @@ const ShoppingMode = ({ items, weg, onCheck, onClose, startWinkel }: ShoppingMod
       {!klaar && (
         <footer className="shrink-0 border-t border-border bg-background px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <div className="mx-auto flex max-w-lg items-center gap-3">
-            <p className="min-w-0 flex-1 text-xs text-muted-foreground">{t("Veeg naar rechts om af te vinken")}</p>
+            {teGaan <= BIJNA ? (
+              <p className="min-w-0 flex-1 text-sm font-semibold text-foreground">
+                {teGaan === 1 ? t("Bijna klaar, nog 1!") : t("Bijna klaar, nog {0}!", [teGaan])}
+              </p>
+            ) : (
+              <p className="min-w-0 flex-1 text-xs text-muted-foreground">{t("Veeg naar rechts om af te vinken")}</p>
+            )}
             <Button
               variant="secondary"
               className="min-h-12 shrink-0 gap-2"

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Bell, Heart, LogOut, MoreVertical, Gauge, PieChart, LifeBuoy, FileText, Sparkles, SquarePlus, Users } from 'lucide-react';
+import { Bell, Heart, LogOut, MoreVertical, Gauge, LifeBuoy, FileText, Sparkles, SquarePlus, Users } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useAuth } from '@/hooks/useAuth';
 import { useInstallHint } from '@/hooks/useInstallHint';
@@ -23,7 +23,7 @@ const InstallSheet = lazyPart(() => import('@/components/InstallSheet'));
 const MeldingenSheet = lazyPart(() => import('@/components/MeldingenSheet'));
 
 const THEMES = [
-  ['system', t('Zoals je telefoon')],
+  ['system', t('Auto')],
   ['light', t('Licht')],
   ['dark', t('Donker')],
 ] as const;
@@ -33,7 +33,10 @@ const TALEN: [Taal, string][] = [
   ['en', 'English'],
 ];
 
-/** Share, theme menu and sign out. `onDark` styles them for the green plane on "Vandaag". */
+// Thema en taal als knoppen naast elkaar: twee regels in plaats van zeven.
+const SEGMENT = 'min-h-10 justify-center rounded-lg px-2 text-[0.8125rem] font-medium text-muted-foreground [&>span:first-child]:hidden data-[state=checked]:bg-primary-soft data-[state=checked]:text-primary focus:bg-muted focus:text-foreground data-[state=checked]:focus:bg-primary-soft data-[state=checked]:focus:text-primary';
+
+/** Plus, Cart Club and one menu for the rest; sign out lives at the bottom of that menu. `onDark` styles them for the green plane on "Vandaag". */
 const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
   const { session, signOut } = useAuth();
   const { isAdmin, plus } = useAppContext();
@@ -79,27 +82,26 @@ const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
             <MoreVertical className="h-5 w-5" strokeWidth={1.9} />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuContent align="end" className="w-60">
           {gast && <AccountMenuItem onSelect={() => setAccountOpen(true)} />}
           <DropdownMenuItem className="gap-2 min-h-11 cursor-pointer font-semibold text-accent-ink focus:text-accent-ink" onSelect={() => setUsageOpen(true)}>
             <Sparkles className="h-4 w-4" />
             <span className="flex-1">{t("CoupleCart Plus")}</span>
-            <span className="text-xs font-normal text-muted-foreground">{plus ? t("actief") : t("€ 1,99 p/m")}</span>
+            <span className="text-xs font-normal text-muted-foreground">{plus ? t("actief") : t("en je tegoed")}</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuLabel>{t("Thema")}</DropdownMenuLabel>
-          <DropdownMenuRadioGroup value={theme ?? 'system'} onValueChange={setTheme}>
+          <DropdownMenuRadioGroup value={theme ?? 'system'} onValueChange={setTheme} className="grid grid-cols-3 gap-1 px-1 pb-1">
             {THEMES.map(([value, label]) => (
-              <DropdownMenuRadioItem key={value} value={value} className="min-h-11 cursor-pointer">
+              <DropdownMenuRadioItem key={value} value={value} className={SEGMENT}>
                 {label}
               </DropdownMenuRadioItem>
             ))}
           </DropdownMenuRadioGroup>
-          <DropdownMenuSeparator />
           <DropdownMenuLabel>{t('Taal')}</DropdownMenuLabel>
-          <DropdownMenuRadioGroup value={taal()} onValueChange={(waarde) => setTaal(waarde as Taal)}>
+          <DropdownMenuRadioGroup value={taal()} onValueChange={(waarde) => setTaal(waarde as Taal)} className="grid grid-cols-2 gap-1 px-1 pb-1">
             {TALEN.map(([value, label]) => (
-              <DropdownMenuRadioItem key={value} value={value} className="min-h-11 cursor-pointer">
+              <DropdownMenuRadioItem key={value} value={value} className={SEGMENT}>
                 {label}
               </DropdownMenuRadioItem>
             ))}
@@ -108,14 +110,12 @@ const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
           <DropdownMenuItem className="gap-2 min-h-11 cursor-pointer" onSelect={() => setMeldOpen(true)}>
             <Bell className="h-4 w-4" /> {t("Meldingen")}
           </DropdownMenuItem>
-          <DropdownMenuItem className="gap-2 min-h-11 cursor-pointer" onSelect={() => setUsageOpen(true)}>
-            <PieChart className="h-4 w-4" /> {t("Je tegoed")}
-          </DropdownMenuItem>
           {install.offer && (
             <DropdownMenuItem className="gap-2 min-h-11 cursor-pointer" onSelect={() => setInstallOpen(true)}>
               <SquarePlus className="h-4 w-4" /> {isIos(install.way) ? t("Zet op beginscherm") : t("Installeer als app")}
             </DropdownMenuItem>
           )}
+          <DropdownMenuSeparator />
           {isAdmin && (
             <DropdownMenuItem asChild className="gap-2 min-h-11 cursor-pointer">
               <a href="#/admin"><Gauge className="h-4 w-4" /> {t("Beheer")}</a>
@@ -134,11 +134,12 @@ const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
               <Heart className="h-4 w-4" /> {t("Steun CoupleCart")}
             </a>
           </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem className="gap-2 min-h-11 cursor-pointer" onSelect={gast ? () => setUitlogVraag(true) : () => { void signOut(); }}>
+            <LogOut className="h-4 w-4" /> {t("Uitloggen")}
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
-      <button type="button" onClick={gast ? () => setUitlogVraag(true) : signOut} aria-label={t("Uitloggen")} title={t("Uitloggen")} className={iconButton}>
-        <LogOut className="h-5 w-5" strokeWidth={1.9} />
-      </button>
       <LazySheet open={shareOpen} onClose={() => setShareOpen(false)}>
         <KoppelSheet open={shareOpen} onOpenChange={setShareOpen} />
       </LazySheet>
