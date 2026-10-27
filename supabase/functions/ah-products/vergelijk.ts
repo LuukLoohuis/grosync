@@ -131,8 +131,9 @@ export function totalen(itemIds: string[], keuzes: Keuze[], stores: readonly Sto
     .sort((a, b) => a.eerlijkTotaal - b.eerlijkTotaal || b.gevonden - a.gevonden);
 }
 
-// Een pak tot zoveel keer het kleinste passende pak telt nog als gewone maat;
-// daarboven is het een groot- of gezinsverpakking (30 eieren tegen 6).
+// Een pak tot zoveel keer de middelste pakmaat telt nog als gewone maat; daarboven
+// is het een groot- of gezinsverpakking (30 eieren tegen 10). De middelste, niet
+// de kleinste: één potje van 100 g liet anders alle potten van 285 g afvallen.
 const MAX_PAK_FACTOR = 2.5;
 
 /**
@@ -152,8 +153,9 @@ export function kiesGoedkoopste<T extends { unitSize: string; title: string; pri
   for (const { per } of metPrijs) telling.set(soort(per.eenheid), (telling.get(soort(per.eenheid)) ?? 0) + 1);
   const eenheid = [...telling.entries()].reduce((a, b) => (b[1] > a[1] ? b : a))[0];
   const zelfde = metPrijs.filter((k) => soort(k.per.eenheid) === eenheid);
-  const kleinste = Math.min(...zelfde.map((k) => k.per.hoeveelheid));
-  const gewoon = zelfde.filter((k) => k.per.hoeveelheid <= kleinste * MAX_PAK_FACTOR);
+  const maten = zelfde.map((k) => k.per.hoeveelheid).sort((a, b) => a - b);
+  const middelste = maten[Math.floor(maten.length / 2)];
+  const gewoon = zelfde.filter((k) => k.per.hoeveelheid <= middelste * MAX_PAK_FACTOR);
   // Exact per eenheid vergelijken, niet op de afgeronde centen.
   const perEenheid = (k: { product: T; per: Eenheidsprijs }) => k.product.price / k.per.hoeveelheid;
   return gewoon.reduce((best, k) => (perEenheid(k) < perEenheid(best) ? k : best)).product;

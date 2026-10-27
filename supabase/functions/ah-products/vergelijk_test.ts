@@ -172,3 +172,11 @@ Deno.test('spelt en meergranen vallen af voor volkoren brood', () => {
   assertEquals(vasteWeglaat('speltbrood', 'AH Liefde & Passie Spelt volkoren gesneden'), false);
   assertEquals(vasteWeglaat('volkoren brood', 'AH Rond volkoren half'), false);
 });
+
+Deno.test('kiesGoedkoopste: grootverpakking telt vanaf de middelste maat, niet het kleinste potje', () => {
+  const ah = p('AH Zongedroogde tomaten', '285 g', 1.69);
+  assertEquals(kiesGoedkoopste([
+    p('Royal Zongedroogde tomaten', '100 g', 2.99), ah, p('AH Zongedroogde tomaten jullienne', '285 g', 1.95),
+    p('Royal Zongedroogde tomaten in olie', '290 g', 2.79), p('Royal Zongedroogde tomaten in balsamicoazijn', '210 g', 3.15),
+  ]), ah);
+});
