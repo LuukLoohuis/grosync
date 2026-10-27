@@ -690,9 +690,9 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
               <button
                 type="button"
                 onClick={() => (mandjeOp ? setOverLimit(true) : setVergelijken(true))}
-                className="mt-1 flex min-h-9 w-full items-center justify-center gap-1.5 text-xs font-medium text-foreground underline-offset-2 hover:underline"
+                className="mt-2 flex min-h-11 w-full items-center justify-center gap-2 rounded-[12px] border-[1.5px] border-border-strong bg-card text-sm font-semibold text-foreground transition-transform duration-150 ease-smooth active:scale-[.98]"
               >
-                <Scale className="h-3.5 w-3.5" /> {t('Waar is dit het goedkoopst?')}
+                <Scale className="h-4 w-4" /> {t('Waar is dit het goedkoopst?')}
               </button>
             )}
           </div>
