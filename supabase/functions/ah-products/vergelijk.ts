@@ -70,9 +70,22 @@ const MAAT_IN_TEKST = /(?:\d+\s*[x×]\s*)?\d+(?:[.,]\d+)?\s*(?:g|gr|gram|kg|kilo
 /** De maat uit een titel, voor Jumbo zonder maat: "Jumbo Scharreleieren M/L 6 Stuks" → "6 Stuks". */
 export const maatInTitel = (title: string): string => [...title.matchAll(MAAT_IN_TEKST)].pop()?.[0] ?? '';
 
-/** Eenheidsprijs uit de maat, en anders uit de titel. */
-export const eenheidsprijsVan = (product: { unitSize: string; title: string; price: number }): Eenheidsprijs | null =>
-  eenheidsprijs(product.unitSize, product.price) ?? eenheidsprijs(maatInTitel(product.title), product.price);
+const HALF = /\bhalf\b/i;
+const HEEL = /\bheel\b/i;
+
+/**
+ * Eenheidsprijs uit de maat, en anders uit de titel. Brood gaat per stuk, maar
+ * een half brood is een half stuk: € 0,99 voor een half telt als € 1,98 per heel.
+ */
+export function eenheidsprijsVan(product: { unitSize: string; title: string; price: number }): Eenheidsprijs | null {
+  const per = eenheidsprijs(product.unitSize, product.price)
+    ?? eenheidsprijs(maatInTitel(product.title), product.price)
+    ?? (HALF.test(product.title) || HEEL.test(product.title) ? eenheidsprijs('per stuk', product.price) : null);
+  if (per && per.eenheid === 'stuk' && per.hoeveelheid === 1 && HALF.test(product.title)) {
+    return { prijs: rond(product.price * 2), eenheid: 'stuk', hoeveelheid: 0.5 };
+  }
+  return per;
+}
 
 /**
  * Wat elke winkel voor deze regel kost bij dezelfde hoeveelheid: het kleinste

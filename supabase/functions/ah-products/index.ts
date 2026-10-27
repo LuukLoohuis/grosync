@@ -11,6 +11,8 @@ const AH_HEADERS = { 'User-Agent': 'Appie/8.22.3', 'x-application': 'AHWEBSHOP',
 const MAX_ITEMS = 40;
 // Comparing searches every line at all three stores; Jumbo and Dirk take 2.5–4.5 s a search.
 const MAX_COMPARE_ITEMS = 25;
+// One filter call per line and store: up to 75 small calls, ten at a time per store.
+const FILTER_CONCURRENCY = 10;
 const SEARCH_CONCURRENCY = 5;
 
 type Item = { id: string; name: string };
@@ -277,25 +279,28 @@ async function chooseProducts(
 // For the price comparison: which candidates are the ordinary ingredient itself.
 // Only that is the model's call; the cheapest of them is picked in code
 // (kiesGoedkoopste), so the totals do not depend on the model's taste.
+// One call per line: with ten lines of twenty numbered candidates in one call the
+// model dropped plain products and kept wrong ones.
 async function ordinaryIngredient(
-  lines: { id: string; name: string; searchedAs: string; candidates: Candidate[] }[],
+  line: { name: string; searchedAs: string; candidates: Candidate[] },
   store: Store,
-): Promise<Map<string, number[]>> {
+): Promise<number[]> {
   const result = await askJson(
-    `For each grocery list line keep the ${storeName[store]} candidates that ARE that ingredient, as an ordinary everyday product, to compare what the same list costs at different supermarkets. Any brand is fine, house brands included, and any normal size. Drop plant-based or vegan substitutes (plantaardig, vegan, vegetarisch), smoked or deli versions (gerookt, vleeswaren, beleg), organic or premium variants (biologisch, bio, extra, luxe), dishes, salads, snacks, ready meals, flavoured variants, mini or snack sizes and multipacks, unless the line itself asks for them. "diepvries" or "frozen" means only frozen products, and without it only fresh or shelf products; "volkoren" means wholegrain. The candidates come from a search ("search") that may use the store's own word for the same thing. Return JSON {"lines":[{"id":"...","indexes":[...]}]} with every id; an empty list when no candidate is that ingredient.`,
-    JSON.stringify(lines.map((line) => ({
-      id: line.id,
+    `Keep the ${storeName[store]} candidates that ARE this grocery list line, as an ordinary everyday product, to compare what the same list costs at different supermarkets. Any brand is fine, house brands included, and any normal size. Drop:
+- plant-based or vegan substitutes (plantaardig, vegan, vegetarisch), unless the ingredient itself is a plant product such as peanut butter;
+- smoked or deli versions (gerookt, vleeswaren, beleg);
+- organic or premium variants (biologisch, bio, extra, luxe);
+- prepared or flavoured variants: à la crème, met roomsaus, met kaas, gekruid, gemarineerd, seasoning, sauces;
+- cheese for a purpose when the line just says cheese: pasta-, pizza-, gratin-, ovenkaas, Parmezaans, mozzarella, tex-mex, strooikaas;
+- dishes, salads, snacks, ready meals, sandwiches, mini or snack sizes and multipacks.
+Keep them anyway when the line itself asks for them. "diepvries" or "frozen" means only frozen products, and without it fresh or shelf products. "volkoren" means wholegrain. Bread: keep both half and whole loaves (half, heel) of plain bread; drop rolls (broodjes), baguettes and specialty loaves (vloerbrood, desem, spelt, eiwitrijk). The candidates come from a search ("search") that may use the store's own word for the same thing. Return JSON {"indexes":[...]}, empty when no candidate is that ingredient.`,
+    JSON.stringify({
       ingredient: line.name,
       search: line.searchedAs,
       candidates: line.candidates.map((c, index) => ({ index, title: c.title, size: c.unitSize || null, category: c.category })),
-    }))),
+    }),
   );
-  const kept = new Map<string, number[]>();
-  for (const line of result.lines || []) {
-    if (typeof line?.id !== 'string' || !Array.isArray(line.indexes)) continue;
-    kept.set(line.id, line.indexes.filter((index: unknown) => Number.isInteger(index)));
-  }
-  return kept;
+  return Array.isArray(result.indexes) ? result.indexes.filter((index: unknown) => Number.isInteger(index)) : [];
 }
 
 // Keeps the candidates that are the ingredient itself, best fit first, so "eieren"
@@ -412,10 +417,14 @@ Deno.serve(async (req) => {
           return { id: item.id, name: item.name, searchedAs, candidates };
         });
         const searchable = lines.filter((line) => line.candidates.length > 0);
-        const kept = searchable.length ? await ordinaryIngredient(searchable, store) : new Map<string, number[]>();
+        const kept = await mapWithConcurrency(searchable, FILTER_CONCURRENCY, (line) =>
+          ordinaryIngredient(line, store).catch((e) => {
+            console.error('Filter failed:', store, line.name, e);
+            return [] as number[];
+          }));
         const keuzes: Keuze[] = [];
-        for (const line of searchable) {
-          const fitting = (kept.get(line.id) ?? []).flatMap((index) => line.candidates[index] ?? []);
+        for (const [n, line] of searchable.entries()) {
+          const fitting = kept[n].flatMap((index) => line.candidates[index] ?? []);
           const candidate = kiesGoedkoopste(fitting);
           if (!candidate) continue;
           // One package: the comparison is per same amount anyway (gelijkeHoeveelheid).

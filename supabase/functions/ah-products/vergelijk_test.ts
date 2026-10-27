@@ -100,3 +100,17 @@ Deno.test('kiesGoedkoopste: zonder maten de laagste pakprijs, leeg is null', () 
   assertEquals(kiesGoedkoopste([p('Waldkorn half', '', 1.39), goedkoop]), goedkoop);
   assertEquals(kiesGoedkoopste([]), null);
 });
+
+Deno.test('brood: een half is een half stuk, ook zonder maat', () => {
+  assertEquals(eenheidsprijsVan({ title: 'AH Rond volkoren half', unitSize: 'per stuk', price: 0.99 }), { prijs: 1.98, eenheid: 'stuk', hoeveelheid: 0.5 });
+  assertEquals(eenheidsprijsVan({ title: 'Waldkorn - Volkoren Brood - Half', unitSize: '', price: 1.39 }), { prijs: 2.78, eenheid: 'stuk', hoeveelheid: 0.5 });
+  assertEquals(eenheidsprijsVan({ title: 'Rond volkoren heel', unitSize: 'Per stuk', price: 0.93 }), { prijs: 0.93, eenheid: 'stuk', hoeveelheid: 1 });
+  // Een half voor € 0,99 is duurder per brood dan een heel voor € 1,89.
+  assertEquals(kiesGoedkoopste([p('AH Rond volkoren half', 'per stuk', 0.99), p('AH Rond volkoren heel', 'per stuk', 1.89)])?.title, 'AH Rond volkoren heel');
+});
+
+Deno.test('brood: half tegen heel vergelijkt per heel brood', () => {
+  const half = metMaat('AH', 'b', 0.99, 'stuk', 0.5);
+  const heel = metMaat('Dirk', 'b', 0.93, 'stuk', 1);
+  assertEquals(gelijkeHoeveelheid([half, heel]), [0.99, 0.47]);
+});
