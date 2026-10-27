@@ -44,6 +44,48 @@ export function matchAhProducts(items: { id: string; name: string }[]) {
   return callFunction<{ matches: AhMatch[]; unmatched: string[] }>('ah-products', { items });
 }
 
+/** Het goedkoopste passende product voor één regel bij één winkel. */
+export interface VergelijkKeuze {
+  itemId: string;
+  store: ProductStore;
+  title: string;
+  unitSize: string;
+  unitPrice: number;
+  quantity: number;
+  price: number;
+  priceBefore: number | null;
+  isBonus: boolean;
+  bonusMechanism: string | null;
+  imageUrl: string | null;
+  productUrl: string;
+  perEenheid: { prijs: number; eenheid: 'kg' | 'l' | 'stuk' } | null;
+}
+
+export interface WinkelTotaal {
+  store: ProductStore;
+  totaal: number;
+  /** Alleen de regels die elke winkel heeft; dit vergelijk je. */
+  eerlijkTotaal: number;
+  bonusVoordeel: number;
+  gevonden: number;
+  ontbreekt: string[];
+}
+
+export interface Vergelijking {
+  items: string[];
+  /** Goedkoopste eerst. */
+  stores: WinkelTotaal[];
+  keuzes: VergelijkKeuze[];
+}
+
+// Vergelijken zoekt elke regel bij drie winkels; de functie neemt er hooguit zoveel.
+export const VERGELIJK_MAX_ITEMS = 25;
+
+// Telt als één karretje; een 402 wordt een QuotaError.
+export function comparePrices(items: { id: string; name: string }[]) {
+  return callFunction<Vergelijking>('ah-products', { compare: items.slice(0, VERGELIJK_MAX_ITEMS) });
+}
+
 // Other products from the same search at this store, without the one already chosen.
 export async function fetchAlternatives(
   store: ProductStore,

@@ -10,6 +10,12 @@ import { zelfdeWinkel, zonderWinkel } from '@/lib/winkels';
  */
 export const ANDERE_WINKELS_AAN = true;
 
+/**
+ * Prijsvergelijking per lijst (AH, Jumbo, Dirk). Prototype: pas aan zodra
+ * ah-products met de compare-tak is uitgerold en de uitkomsten kloppen.
+ */
+export const PRIJSVERGELIJK_AAN = false;
+
 export const KOPPELBAAR: readonly ProductStore[] = ANDERE_WINKELS_AAN ? ['AH', 'Jumbo', 'Dirk'] : ['AH'];
 
 /** Waar je een product bekijkt: "Bekijk op jumbo.com". */

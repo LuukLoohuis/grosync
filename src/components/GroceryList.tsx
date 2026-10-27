@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Check, ChevronDown, Plus, Trash2, X, Merge, TrendingUp, Loader2, ShoppingBasket, ShoppingCart, Tag, MoreVertical, RefreshCw, Search, Share2, Store } from 'lucide-react';
+import { Check, ChevronDown, Plus, Trash2, X, Merge, TrendingUp, Loader2, ShoppingBasket, ShoppingCart, Tag, MoreVertical, RefreshCw, Search, Scale, Share2, Store } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppContext } from '@/contexts/AppContext';
 import { AH_MAX_ITEMS, ahBasketUrl, matchAhProducts } from '@/services/ahApi';
@@ -20,11 +20,12 @@ import ItemThumb from '@/components/ItemThumb';
 import { huiskleur, voorWinkel, winkelsOpLijst, zelfdeWinkel, zonderWinkel } from '@/lib/winkels';
 import WinkelLabel, { WinkelStip } from '@/components/WinkelLabel';
 import { useAhKoppeling } from '@/hooks/useAhKoppeling';
-import { koppelWinkel, productWinkel } from '@/lib/ahKoppeling';
+import { koppelWinkel, PRIJSVERGELIJK_AAN, productWinkel } from '@/lib/ahKoppeling';
 import EmptyState from '@/components/EmptyState';
 import DepartmentHeading, { DEPARTMENT_CHIP, DEPARTMENT_DOT } from '@/components/DepartmentHeading';
 import AhProductSheet from '@/components/AhProductSheet';
 import PlusSheet from '@/components/PlusSheet';
+import PrijsVergelijkSheet from '@/components/PrijsVergelijkSheet';
 import { FREE_LIMIT } from '@/hooks/useEntitlements';
 import { QuotaError } from '@/services/functions';
 import { sortByStoreRoute, type Department } from '@/lib/storeRouteSort';
@@ -78,6 +79,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
   const [shopping, setShopping] = useState(false);
   const [pricing, setPricing] = useState(false);
   const [overLimit, setOverLimit] = useState(false);
+  const [vergelijken, setVergelijken] = useState(false);
   const [showChecked, setShowChecked] = useState(false);
   // null: de zoekbalk is dicht.
   const [zoek, setZoek] = useState<string | null>(null);
@@ -608,6 +610,15 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
       />
       <AhProductSheet item={productItem} onClose={() => setProductItemId(null)} />
       <PlusSheet feature={overLimit ? 'mandje' : null} onClose={() => setOverLimit(false)} />
+      {PRIJSVERGELIJK_AAN && (
+        <PrijsVergelijkSheet
+          open={vergelijken}
+          items={unchecked}
+          onClose={() => setVergelijken(false)}
+          onOverLimit={() => setOverLimit(true)}
+          onKlaar={() => { void refreshEntitlements(); }}
+        />
+      )}
 
       {/* Room for the fixed price bar */}
       {showBar && <div aria-hidden="true" style={{ height: barHeight }} />}
@@ -674,6 +685,15 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
                   </p>
                 )}
               </>
+            )}
+            {PRIJSVERGELIJK_AAN && unchecked.length >= 2 && (
+              <button
+                type="button"
+                onClick={() => (mandjeOp ? setOverLimit(true) : setVergelijken(true))}
+                className="mt-1 flex min-h-9 w-full items-center justify-center gap-1.5 text-xs font-medium text-foreground underline-offset-2 hover:underline"
+              >
+                <Scale className="h-3.5 w-3.5" /> {t('Waar is dit het goedkoopst?')}
+              </button>
             )}
           </div>
         </div>
