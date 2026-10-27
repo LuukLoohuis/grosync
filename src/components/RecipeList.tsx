@@ -400,7 +400,7 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
                     void runImport(importValue);
                   }}
                 >
-                  {fetchingMeta ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("Bezig…")}</> : importOp ? t("Tegoed op") : t("Recept ophalen")}
+                  {fetchingMeta ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("Bezig…")}</> : importOp ? t("Meer met Plus") : t("Recept ophalen")}
                 </Button>
               </div>
               <p className="min-h-5 text-sm text-muted-foreground" role="status" aria-live="polite">{progress}</p>
@@ -550,7 +550,7 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
           <header className="flex items-start justify-between gap-3 px-1">
             <div className="min-w-0">
             <h1 className="font-display text-[1.75rem] font-bold tracking-[-0.02em] text-foreground">
-              {filter ? findCategory(recipeCategories, filter).name : t("Wat eten we?")}
+              {filter ? findCategory(recipeCategories, filter).name : t("Recepten")}
             </h1>
             <p className="mt-0.5 text-[0.8125rem] text-muted-foreground">
               {filter

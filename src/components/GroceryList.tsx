@@ -48,9 +48,14 @@ const ahSearchUrl = (name: string) => `https://www.ah.nl/zoeken?query=${toSearch
 
 // Vanaf zoveel open boodschappen verschijnt het vergrootglas.
 const ZOEK_VANAF = 15;
+// En vanaf zoveel de rij met afdelingen; bij een korte lijst zie je alles al.
+const AFDELINGEN_VANAF = 8;
 
 // Zoeken zonder op hoofdletters of accenten te letten: "creme" vindt "crème".
 const kaal = (tekst: string) => tekst.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
+// Eén kaart per afdeling, met een lijn tussen de regels: een plank, geen stapel losse kaartjes.
+const PLANK = 'divide-y divide-border overflow-hidden rounded-[14px] border border-border bg-card';
 
 type ListOrder = 'department' | 'added';
 const ORDER_KEY = 'couplecart-list-order';
@@ -215,6 +220,17 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
   const currentNames = groceryItems.map((i) => i.name.toLowerCase());
   const suggestions = frequentItems.filter((f) => !currentNames.includes(f.name));
 
+  // Wat er bij het openen al stond, schuift niet binnen; alleen wat er daarna bijkomt.
+  const gezien = useRef<Set<string> | null>(null);
+  if (gezien.current === null && !loading) gezien.current = new Set(groceryItems.map((i) => i.id));
+  const nieuw = (id: string) => gezien.current !== null && !gezien.current.has(id);
+  useEffect(() => {
+    // Pas na de animatie als gezien tellen: een tussentijdse render breekt hem dan niet af.
+    const ids = groceryItems.map((i) => i.id);
+    const timer = window.setTimeout(() => ids.forEach((id) => gezien.current?.add(id)), 300);
+    return () => window.clearTimeout(timer);
+  }, [groceryItems]);
+
   const renderItem = (item: GroceryItem) => {
     // Het aantal staat in de pil; naast de naam blijft alleen gewicht of inhoud ("500 g").
     const { name, amount } = splitAmount(zonderWinkel(item.ahProduct ? item.name : countParts(item.name).rest, item.store));
@@ -222,10 +238,10 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
     const editing = countEditor.editing?.id === item.id;
     return (
       <Wegvinken key={item.id} weg={weg.has(item.id)}>
-      <SwipeToCheck onSwipe={() => checkOff(item)} onRemove={() => removeGroceryItem(item.id)}>
+      <SwipeToCheck onSwipe={() => checkOff(item)} onRemove={() => removeGroceryItem(item.id)} className="">
         <div
           data-count-editor={item.id}
-          className={`rounded-[14px] border bg-card transition-colors duration-150 ease-smooth ${editing ? 'border-primary/40' : 'border-border'}`}
+          className={`transition-colors duration-150 ease-smooth ${editing ? 'bg-primary-soft/50' : 'bg-card'} ${nieuw(item.id) ? 'animate-rij-in' : ''}`}
         >
           <div className="flex min-h-14 items-center gap-1 pl-1 pr-1.5">
             <button
@@ -322,17 +338,6 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
             <Search className="h-5 w-5" strokeWidth={1.9} />
           </button>
         )}
-        {groceryItems.length > 0 && (
-          <button
-            type="button"
-            onClick={() => { void clearAllItems(); }}
-            aria-label={t("Lijst leegmaken")}
-            title={t("Lijst leegmaken")}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] border border-border bg-card text-muted-foreground transition-colors duration-150 ease-smooth hover:border-destructive/50 hover:text-destructive"
-          >
-            <Trash2 className="h-5 w-5" strokeWidth={1.9} />
-          </button>
-        )}
         </div>
       </header>
 
@@ -420,9 +425,9 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
         </div>
       )}
 
-      {/* Afdelingen als tabs: springen in plaats van scrollen. */}
-      {!zoekt && alleGroepen && alleGroepen.length > 1 && (
-        <div className="-mx-4 overflow-x-auto px-4 pb-1">
+      {/* Afdelingen als tabs: springen in plaats van scrollen. Pas bij een lange lijst. */}
+      {!zoekt && alleGroepen && alleGroepen.length > 1 && (unchecked.length >= AFDELINGEN_VANAF || deptFilter) && (
+        <div className="-mx-4 overflow-x-auto px-4 pb-1 animate-in fade-in-0 duration-200 ease-smooth [scrollbar-width:none]">
           <div className="flex w-max items-center gap-2">
             <button
               type="button"
@@ -535,7 +540,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
           {categorized.map((group) =>
             <div key={group.category}>
               {!deptFilter && <DepartmentHeading category={group.category} label={group.label} count={group.items.length} />}
-              <div className="space-y-2">
+              <div className={PLANK}>
                 {group.items.map(renderItem)}
               </div>
             </div>
@@ -544,8 +549,8 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
       }
 
       {/* Items - in the order they were added */}
-      {!categorized &&
-        <div className="space-y-2">
+      {!categorized && zichtbaar.length > 0 &&
+        <div className={PLANK}>
           {zichtbaar.map(renderItem)}
         </div>
       }
@@ -639,7 +644,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
                 <div className="flex items-center gap-3 rounded-[14px] bg-primary px-3.5 py-2.5">
                   <div className="min-w-0 flex-1 leading-tight">
                     <p className="text-[0.6875rem] text-primary-muted">
-                      {t("Totaal bij AH")}{saving > 0.004 ? t("· je bespaart {0}", [euro.format(saving)]) : bonusCount > 0 ? t("· {0} in de bonus", [bonusCount]) : ''}
+                      {t("Totaal bij AH")}{saving > 0.004 ? ' ' + t("· je bespaart {0}", [euro.format(saving)]) : bonusCount > 0 ? ' ' + t("· {0} in de bonus", [bonusCount]) : ''}
                     </p>
                     <p className="font-display text-xl font-bold tabular-nums text-primary-foreground">{euro.format(ahTotal)}</p>
                   </div>
@@ -663,33 +668,45 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
                     </a>
                   </Button>
                 </div>
-                <p className="mt-1 text-[11px] text-muted-foreground">
+                <p className="mt-1 text-xs text-muted-foreground">
                   <span className="tabular-nums">{t('{0} van {1} gevonden', [pricedItems.length, voorAh.length])}</span>{' '}
                   {plus
                     ? t("· Je bestelt bij AH, in de app of op ah.nl.")
-                    : t('· nog {0} van {1} karretjes deze maand', [remaining('mandje'), FREE_LIMIT])}
+                    : t('· nog {0} van {1} gratis deze maand', [remaining('mandje'), FREE_LIMIT])}
                 </p>
               </>
+            ) : mandjeOp ? (
+              // Op is op: één stille regel, geen knop die alleen nog "nee" kan zeggen.
+              <div className="flex min-h-11 items-center gap-2">
+                <p className="min-w-0 flex-1 text-[0.8125rem] text-muted-foreground">
+                  {t('Je {0} gratis prijschecks van deze maand zijn gebruikt.', [FREE_LIMIT])}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setOverLimit(true)}
+                  className="min-h-11 shrink-0 px-2 text-[0.8125rem] font-semibold text-primary"
+                >
+                  {t("Meer met Plus")}
+                </button>
+              </div>
             ) : (
               <>
                 <Button type="button" onClick={fetchAhPrices} disabled={pricing} className="min-h-11 w-full gap-2">
                   {pricing
                     ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("Prijzen zoeken…")}</>
-                    : <><Tag className="h-4 w-4" /> {mandjeOp ? t("Tegoed op") : t("Bekijk wat het kost bij AH")}</>}
+                    : <><Tag className="h-4 w-4" /> {t("Bekijk wat het kost bij AH")}</>}
                 </Button>
                 {!plus && (
-                  <p className="mt-1 text-center text-[11px] tabular-nums text-muted-foreground">
-                    {mandjeOp
-                      ? t("Je karretjes van deze maand zijn op")
-                      : t('Nog {0} van {1} karretjes deze maand', [remaining('mandje'), FREE_LIMIT])}
+                  <p className="mt-1 text-center text-xs tabular-nums text-muted-foreground">
+                    {t('Nog {0} van {1} gratis deze maand', [remaining('mandje'), FREE_LIMIT])}
                   </p>
                 )}
               </>
             )}
-            {PRIJSVERGELIJK_AAN && unchecked.length >= 2 && (
+            {PRIJSVERGELIJK_AAN && unchecked.length >= 2 && !mandjeOp && (
               <button
                 type="button"
-                onClick={() => (mandjeOp ? setOverLimit(true) : setVergelijken(true))}
+                onClick={() => setVergelijken(true)}
                 className="mt-2 flex min-h-11 w-full items-center justify-center gap-2 rounded-[12px] border-[1.5px] border-border-strong bg-card text-sm font-semibold text-foreground transition-transform duration-150 ease-smooth active:scale-[.98]"
               >
                 <Scale className="h-4 w-4" /> {t('Waar is dit het goedkoopst?')}

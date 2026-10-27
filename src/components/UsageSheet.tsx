@@ -17,7 +17,7 @@ interface UsageSheetProps {
 const METERS: { feature: MeteredFeature; label: string; icon: typeof Camera }[] = [
   { feature: 'recept', label: t('Recepten ophalen'), icon: Link2 },
   { feature: 'kastfoto', label: t('Kast scannen'), icon: Camera },
-  { feature: 'mandje', label: t('Karretje vullen bij AH'), icon: ShoppingBasket },
+  { feature: 'mandje', label: t('Prijzen zoeken bij AH'), icon: ShoppingBasket },
 ];
 
 const resetDate = () => {

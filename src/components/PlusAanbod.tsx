@@ -11,7 +11,7 @@ import { t } from '@/lib/i18n';
 const PERKS = [
   { icon: Link2, text: t('Onbeperkt recepten ophalen uit een link of video') },
   { icon: Camera, text: t('Onbeperkt je kast scannen met een foto') },
-  { icon: ShoppingBasket, text: t('Onbeperkt je karretje vullen bij AH') },
+  { icon: ShoppingBasket, text: t('Onbeperkt prijzen zoeken en vergelijken') },
   { icon: Sparkles, text: t('Bonuschef, receptsuggesties en voedingswaarden') },
   { icon: Tag, text: t('Eén keer voor de hele Cart Club') },
 ];

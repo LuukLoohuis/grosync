@@ -1,9 +1,12 @@
 import { useRef, useState, type MouseEvent, type PointerEvent, type ReactNode } from 'react';
 import { Check, Trash2 } from 'lucide-react';
 import { t } from '@/lib/i18n';
+import { minderBeweging, tik } from '@/lib/haptics';
 
 // How far a row must travel before letting go checks it off or throws it away.
 const THRESHOLD = 96;
+// How long a thrown-away row flies before it is gone.
+const WEG_MS = 180;
 // Movement that still counts as a tap or a scroll.
 const SLOP = 10;
 
@@ -12,13 +15,15 @@ interface SwipeToCheckProps {
   /** Swiping to the left throws the row away. Without it a row only swipes to the right. */
   onRemove?: () => void;
   children: ReactNode;
+  /** The row's own corners; a row inside a shared card has none. */
+  className?: string;
 }
 
 /**
  * Swipe a row to the right to check it off, or to the left to throw it away.
  * Touch and pen only; the check button and the row's sheet stay the main controls.
  */
-const SwipeToCheck = ({ onSwipe, onRemove, children }: SwipeToCheckProps) => {
+const SwipeToCheck = ({ onSwipe, onRemove, children, className = 'rounded-xl' }: SwipeToCheckProps) => {
   const [offset, setOffset] = useState(0);
   const [dragging, setDragging] = useState(false);
   const gesture = useRef<{ id: number; x: number; y: number; dragging: boolean } | null>(null);
@@ -57,7 +62,10 @@ const SwipeToCheck = ({ onSwipe, onRemove, children }: SwipeToCheckProps) => {
       }
     }
     const pulled = dx > 0 ? Math.max(0, dx - SLOP) : Math.min(0, dx + SLOP);
-    move(onRemove ? pulled : Math.max(0, pulled));
+    const next = onRemove ? pulled : Math.max(0, pulled);
+    // One small tick the moment letting go would count, so the thumb knows without looking.
+    if ((Math.abs(next) >= THRESHOLD) !== (Math.abs(offsetRef.current) >= THRESHOLD)) tik('licht');
+    move(next);
   };
 
   const onPointerEnd = (e: PointerEvent<HTMLDivElement>) => {
@@ -67,11 +75,18 @@ const SwipeToCheck = ({ onSwipe, onRemove, children }: SwipeToCheckProps) => {
     // The browser may still fire a click on the button under the finger.
     swallowClick.current = true;
     setDragging(false);
-    if (e.type === 'pointerup') {
-      if (offsetRef.current >= THRESHOLD) onSwipe();
-      else if (onRemove && offsetRef.current <= -THRESHOLD) onRemove();
+    const ver = offsetRef.current;
+    const raak = e.type === 'pointerup' && (ver >= THRESHOLD || (!!onRemove && ver <= -THRESHOLD));
+    if (!raak) {
+      move(0);
+      return;
     }
-    move(0);
+    // Past the line the row keeps going the way it was thrown, instead of springing back first.
+    const breedte = e.currentTarget.offsetWidth;
+    if (!minderBeweging()) move(ver > 0 ? breedte : -breedte);
+    if (ver > 0) onSwipe();
+    // Throwing away removes the row at once; give the throw its moment first.
+    else window.setTimeout(() => onRemove?.(), minderBeweging() ? 0 : WEG_MS);
   };
 
   const onClickCapture = (e: MouseEvent<HTMLDivElement>) => {
@@ -86,7 +101,7 @@ const SwipeToCheck = ({ onSwipe, onRemove, children }: SwipeToCheckProps) => {
 
   return (
     // data-veeg: a sideways swipe on a row is for the row, not for switching tabs.
-    <div data-veeg="item" className="relative overflow-hidden rounded-xl">
+    <div data-veeg="item" className={`relative overflow-hidden ${className}`}>
       {offset > 0 && (
         <div
           aria-hidden="true"
@@ -106,7 +121,7 @@ const SwipeToCheck = ({ onSwipe, onRemove, children }: SwipeToCheckProps) => {
         </div>
       )}
       <div
-        className={`relative touch-pan-y ${dragging ? '' : 'transition-transform duration-200'}`}
+        className={`relative touch-pan-y ${dragging ? '' : 'transition-transform duration-200 ease-smooth'}`}
         style={offset ? { transform: `translateX(${offset}px)` } : undefined}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}

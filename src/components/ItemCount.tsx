@@ -129,7 +129,7 @@ export const CountPill = ({ item, onOpen }: { item: GroceryItem; onOpen: () => v
     >
       <span
         className={`flex h-7 min-w-9 items-center justify-center rounded-full px-2.5 font-display text-[0.8125rem] font-bold tabular-nums transition-colors duration-150 ease-smooth ${
-          count > 1 ? 'bg-primary-soft text-primary' : 'border border-border text-muted-foreground'
+          count > 1 ? 'bg-primary-soft text-primary' : 'text-muted-foreground/80'
         }`}
       >
         {countLabel(item)}

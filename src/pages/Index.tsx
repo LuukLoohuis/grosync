@@ -7,7 +7,7 @@ import OfflineBanner from '@/components/OfflineBanner';
 import { LazyBoundary } from '@/components/LazyBoundary';
 import { useAppContext } from '@/contexts/AppContext';
 import { toast } from 'sonner';
-import { useIdleTabBar } from '@/hooks/useIdleTabBar';
+import { useScrollTabBar } from '@/hooks/useScrollTabBar';
 import { PENDING_IMPORT_KEY } from '@/lib/recipeImport';
 import { lazyPart, preloadWhenIdle } from '@/lib/lazyPart';
 import { t } from '@/lib/i18n';
@@ -42,7 +42,7 @@ const Index = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [pendingImport, setPendingImport] = useState<string | null>(null);
   const onToday = tab === 'today';
-  const barVisible = useIdleTabBar();
+  const barVisible = useScrollTabBar();
 
   // Once the first screen is up, fetch the other tabs (the list first, for the store): they
   // open without waiting, and the service worker has them when there's no signal.
@@ -159,7 +159,7 @@ const Index = () => {
   }, [searchParams, setSearchParams]);
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-background">
+    <div className="min-h-dvh overflow-x-hidden bg-background">
       {/* "Vandaag" brings its own green header */}
       {!onToday && (
         <header className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur-md">
@@ -230,7 +230,7 @@ const Index = () => {
                 key={key}
                 onClick={() => kies(key)}
                 aria-current={active ? 'page' : undefined}
-                className={`relative flex flex-col items-center justify-center gap-1 rounded-xl text-[0.625rem] font-semibold transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring ${
+                className={`relative flex flex-col items-center justify-center gap-1 rounded-xl text-[0.6875rem] font-semibold transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring ${
                   active ? 'text-primary' : 'text-muted-foreground'
                 }`}
               >

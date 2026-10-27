@@ -11,7 +11,7 @@ export const FREE_LIMIT = 3;
 export const FEATURE_LABEL: Record<MeteredFeature, string> = {
   recept: t('recepten ophalen'),
   kastfoto: t('kastfoto’s'),
-  mandje: t('karretjes'),
+  mandje: t('prijschecks'),
 };
 
 /** The month the meter runs in, in Dutch time, as the database writes it. */

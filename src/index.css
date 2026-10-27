@@ -213,6 +213,7 @@
   --animate-fade-in: fade-in 0.3s ease-out;
   --animate-check-bounce: check-bounce 0.3s ease-out;
   --animate-tab-in-right: tab-in-right 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  --animate-rij-in: rij-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
   --animate-tab-in-left: tab-in-left 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
   --animate-check-pop: check-pop 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
   --animate-tel-op: tel-op 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -243,6 +244,11 @@
   @keyframes tab-in-left {
     from { opacity: 0.4; transform: translateX(-44px); }
     to { opacity: 1; transform: translateX(0); }
+  }
+  /* Een nieuwe boodschap zakt zacht op zijn plek, net onder het invoerveld vandaan. */
+  @keyframes rij-in {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
   }
   @keyframes check-pop {
     0% { transform: scale(0.6); }
@@ -277,6 +283,12 @@
 
   h1, h2, h3 {
     @apply font-display;
+    /* Geen los woord op de laatste regel van een kop of zin. */
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
   }
 
   /* Tailwind v4 zet de cursor op knoppen op "default"; hier blijft het een hand. */
@@ -286,11 +298,12 @@
   }
 }
 
-/* Parked above the tab bar; drops down with it once the bar steps aside. */
+/* Parked above the tab bar; leaves the screen with it once the bar steps aside.
+   It never takes the bar's place: a tap meant for a tab must not land on it. */
 @utility above-tabbar {
   transition: transform var(--dur-sheet) var(--motion-smooth);
   .tabbar-hidden & {
-    transform: translateY(calc(4rem + 1px));
+    transform: translateY(calc(100% + 4rem + 1px + env(safe-area-inset-bottom)));
   }
   @media (width >= 640px) {
     .tabbar-hidden & {
