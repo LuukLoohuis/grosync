@@ -1,4 +1,5 @@
 import { searchDirk, searchJumbo, STORES, storeName, type Store } from './winkels.ts';
+import { eenheidsprijs, totalen, type Keuze } from './vergelijk.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,6 +9,8 @@ const corsHeaders = {
 // AH has no public API; this is the anonymous flow of its own app.
 const AH_HEADERS = { 'User-Agent': 'Appie/8.22.3', 'x-application': 'AHWEBSHOP', 'Content-Type': 'application/json' };
 const MAX_ITEMS = 40;
+// Comparing searches every line at all three stores; Jumbo and Dirk take 2.5–4.5 s a search.
+const MAX_COMPARE_ITEMS = 25;
 const SEARCH_CONCURRENCY = 5;
 
 type Item = { id: string; name: string };
@@ -271,6 +274,34 @@ async function chooseProducts(
   return choices;
 }
 
+// For the price comparison: the cheapest product at this store that still is the
+// ingredient, so house brands win but egg salad does not pass for eggs.
+async function chooseCheapest(
+  lines: { id: string; name: string; amount: string; searchedAs: string; candidates: Candidate[] }[],
+  store: Store,
+): Promise<Map<string, { index: number; quantity: number }>> {
+  const result = await askJson(
+    `For each grocery list line pick the CHEAPEST ${storeName[store]} product that is that ingredient, to compare what the same list costs at different supermarkets. Any brand is fine, house brands included. Respect what the line says about the product itself: "diepvries" or "frozen" means a frozen product (and without it prefer fresh), "gerookt" means smoked, "volkoren" means wholegrain. Drop dishes, snacks, ready meals, flavoured variants and multipacks unless the line asks for them. Compare by price per unit ("perUnit") among normal household sizes, then pick the package (and "quantity", the number of packages) that covers the amount for the lowest total price; quantity 1 when the amount is unknown or small. Use index -1 when no candidate is that ingredient. Return JSON {"choices":[{"id":"...","index":0,"quantity":1}]}.`,
+    JSON.stringify(lines.map((line) => ({
+      id: line.id,
+      ingredient: line.name,
+      amount: line.amount,
+      search: line.searchedAs,
+      candidates: line.candidates.map((c, index) => {
+        const unit = eenheidsprijs(c.unitSize, c.price);
+        return { index, title: c.title, size: c.unitSize, price: c.price, perUnit: unit ? `${unit.prijs} per ${unit.eenheid}` : null, category: c.category };
+      }),
+    }))),
+  );
+  const choices = new Map<string, { index: number; quantity: number }>();
+  for (const choice of result.choices || []) {
+    if (typeof choice?.id !== 'string' || !Number.isInteger(choice.index)) continue;
+    const quantity = Math.min(Math.max(Math.round(Number(choice.quantity) || 1), 1), 20);
+    choices.set(choice.id, { index: choice.index, quantity });
+  }
+  return choices;
+}
+
 // Keeps the candidates that are the ingredient itself, best fit first, so "eieren"
 // offers egg packs instead of egg salad, eierkoeken or yoghurt.
 async function sameIngredient(line: string, candidates: Candidate[], store: Store = 'AH'): Promise<Candidate[]> {
@@ -359,6 +390,61 @@ Deno.serve(async (req) => {
       const fitting = await sameIngredient(note ? `${item.name} (${note})` : item.name, merged.filter((c) => c.webshopId !== exclude), store);
       const alternatives = fitting.slice(0, 5).map(toAlternative);
       return json({ store, query, alternatives });
+    }
+
+    // What the same list costs at AH, Jumbo and Dirk. Counts as one basket fill.
+    if (body?.compare) {
+      const list: Item[] = (Array.isArray(body.compare) ? body.compare : [])
+        .filter((item: any) => typeof item?.id === 'string' && typeof item?.name === 'string' && item.name.trim())
+        .slice(0, MAX_COMPARE_ITEMS);
+      if (list.length === 0) return json({ error: 'compare needs items' }, 400);
+
+      const quota = await consumeAi(user.id, 'mandje', FREE_LIMIT);
+      if (!quota.allowed) {
+        return json({ error: 'limiet', feature: 'mandje', used: quota.used, quota: quota.quota }, 402);
+      }
+      counted = { userId: user.id, plus: quota.plus };
+
+      const terms = await searchTerms(list);
+      const perStore = await Promise.all(STORES.map(async (store) => {
+        const lines = await mapWithConcurrency(list, SEARCH_CONCURRENCY, async (item) => {
+          const term = terms.get(item.id);
+          const { candidates: found, searchedAs } = await searchWithFallback(term, 30, 20, store);
+          const singles = found.filter((c) => !isMultipack(c));
+          const candidates = (singles.length > 0 ? singles : found).slice(0, 12);
+          return { id: item.id, name: item.name, amount: term?.amount || '', searchedAs, candidates };
+        });
+        const searchable = lines.filter((line) => line.candidates.length > 0);
+        const choices = searchable.length ? await chooseCheapest(searchable, store) : new Map();
+        const keuzes: Keuze[] = [];
+        for (const line of searchable) {
+          const choice = choices.get(line.id);
+          const candidate = choice && choice.index >= 0 ? line.candidates[choice.index] : undefined;
+          if (!candidate) continue;
+          const match = toMatch(line.id, candidate, choice.quantity);
+          keuzes.push({
+            itemId: line.id,
+            store,
+            title: match.title,
+            unitSize: match.unitSize,
+            unitPrice: match.unitPrice,
+            quantity: match.quantity,
+            price: match.price,
+            priceBefore: match.priceBefore,
+            isBonus: match.isBonus,
+            bonusMechanism: match.bonusMechanism,
+            imageUrl: match.imageUrl,
+            productUrl: match.productUrl,
+            perEenheid: eenheidsprijs(candidate.unitSize, candidate.price),
+          });
+        }
+        return keuzes;
+      }));
+
+      const keuzes = perStore.flat();
+      console.log('Compare:', list.length, 'items,', STORES.map((s, i) => `${s} ${perStore[i].length}`).join(', '));
+      if (keuzes.length === 0 && !quota.plus) await releaseAi(user.id, 'mandje');
+      return json({ items: list.map((item) => item.id), stores: totalen(list.map((item) => item.id), keuzes, STORES), keuzes });
     }
 
     const { items } = body;
