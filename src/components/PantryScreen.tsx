@@ -341,7 +341,8 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
             {!plus && <p className="mt-3 text-xs text-muted-foreground">{t('{0} foto’s per maand gratis', [FREE_LIMIT])}</p>}
           </section>
 
-          <label htmlFor="kast-zelf-typen" className="-mb-2 block text-sm font-medium text-foreground">
+          <div>
+          <label htmlFor="kast-zelf-typen" className="mb-1.5 block text-sm font-medium text-foreground">
             {t("Of typ wat er staat")}
           </label>
           <div className="flex gap-2">
@@ -356,6 +357,7 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
             <Button onClick={addByHand} size="icon" className="h-11 w-11 shrink-0" aria-label={t("Toevoegen aan de kast")}>
               <Plus className="h-4 w-4" />
             </Button>
+          </div>
           </div>
         </>
       )}

@@ -289,7 +289,7 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
           {status === 'loading'
             ? t("De bonus van deze week wordt opgehaald")
             : matches.length > 0
-              ? (matches.length === 1 ? t('1 van je {0} recepten is goedkoper', [recipes.length]) : t('{0} van je {1} recepten zijn goedkoper', [matches.length, recipes.length])) + (geldig ? ` · ${geldig}` : '')
+              ? (recipes.length === 1 ? t('Je recept is goedkoper') : matches.length === 1 ? t('1 van je {0} recepten is goedkoper', [recipes.length]) : t('{0} van je {1} recepten zijn goedkoper', [matches.length, recipes.length])) + (geldig ? ` · ${geldig}` : '')
               : aantalBekeken > 0
                 ? t('{0} aanbiedingen bekeken', [aantalBekeken.toLocaleString(locale())]) + (geldig ? ` · ${geldig}` : '')
                 : t("Albert Heijn, elke woensdag nieuw")}

@@ -622,6 +622,7 @@ export const EN: Record<string, string> = {
   'De bonus van deze week wordt opgehaald': 'Fetching this week’s offers',
   '1 van je {0} recepten is goedkoper': '1 of your {0} recipes is cheaper',
   '{0} van je {1} recepten zijn goedkoper': '{0} of your {1} recipes are cheaper',
+  'Je recept is goedkoper': 'Your recipe is cheaper',
   '{0} aanbiedingen bekeken': '{0} offers checked',
   'Albert Heijn, elke woensdag nieuw': 'Albert Heijn, new every Wednesday',
   't/m {0}': 'until {0}',
