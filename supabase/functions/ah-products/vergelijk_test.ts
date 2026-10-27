@@ -180,3 +180,28 @@ Deno.test('kiesGoedkoopste: grootverpakking telt vanaf de middelste maat, niet h
     p('Royal Zongedroogde tomaten in olie', '290 g', 2.79), p('Royal Zongedroogde tomaten in balsamicoazijn', '210 g', 3.15),
   ]), ah);
 });
+
+Deno.test('ander soort product met hetzelfde woord valt af', () => {
+  assertEquals(vasteWeglaat('4 Greek-style flatbreads', 'De Zaanse Hoeve Yoghurt Griekse stijl 10% vet', 'griekse platbroden'), true);
+  assertEquals(vasteWeglaat('1 cucumber', 'AH Snoepgroente komkommer', 'komkommer'), true);
+  assertEquals(vasteWeglaat('1 cucumber', 'AH Komkommersalade', 'komkommer'), true);
+  assertEquals(vasteWeglaat('1 cucumber', 'AH 80% Groentesap komkommer spinazie', 'komkommer'), true);
+  assertEquals(vasteWeglaat('1 cucumber', 'AH Rauwkost komkommer', 'komkommer'), true);
+  assertEquals(vasteWeglaat('1 cucumber', 'AH Midi komkommers', 'komkommer'), true);
+  assertEquals(vasteWeglaat('1 cucumber', 'AH Komkommer', 'komkommer'), false);
+  assertEquals(kiesGoedkoopste([p('AH Komkommer', 'per stuk', 0.85)])?.title, 'AH Komkommer');
+});
+
+Deno.test('wat de regel of zoekterm zelf noemt blijft', () => {
+  assertEquals(vasteWeglaat('Greek yoghurt', 'AH Yoghurt Griekse stijl', 'griekse yoghurt'), false);
+  assertEquals(vasteWeglaat('tomatensoep', 'AH Tomatensoep', 'tomatensoep'), false);
+  assertEquals(vasteWeglaat('cherry tomatoes', 'AH Snoeptomaatjes', 'snoeptomaatjes'), false);
+  assertEquals(vasteWeglaat('appelsap', 'AH Appelsap', 'appelsap'), false);
+  assertEquals(vasteWeglaat('peren', 'Sappige peren', 'peren'), false);
+});
+
+Deno.test('dieetvarianten vallen af; pita per stuk wint dan', () => {
+  assertEquals(vasteWeglaat('4 Greek-style flatbreads', 'BFree Pita broodjes glutenvrij', 'pitabroodjes'), true);
+  const ah = p('AH Pita broodjes', '10 stuks', 0.79);
+  assertEquals(kiesGoedkoopste([ah, p('Souq Pita brood volkoren', '480 g', 2.49)]), ah);
+});

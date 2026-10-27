@@ -402,18 +402,23 @@ Deno.serve(async (req) => {
       const perStore = await Promise.all(STORES.map(async (store) => {
         const lines = await mapWithConcurrency(list, SEARCH_CONCURRENCY, async (item) => {
           const term = terms.get(item.id);
-          const { candidates: found, searchedAs } = await searchWithFallback(term, 30, 20, store);
-          const singles = found.filter((c) => !isMultipack(c));
           // Wider than the basket: the house brand often sits below the brands in the search.
-          const candidates = (singles.length > 0 ? singles : found).slice(0, 20);
-          return { id: item.id, name: item.name, searchedAs, candidates };
+          const fitting = (searchedAs: string, found: Candidate[]) => {
+            const singles = found.filter((c) => !isMultipack(c));
+            return (singles.length > 0 ? singles : found).slice(0, 20)
+              .filter((c) => !vasteWeglaat(item.name, c.title, searchedAs) && deeltWoord(item.name, searchedAs, c.title));
+          };
+          const first = await searchWithFallback(term, 30, 20, store);
+          const candidates = fitting(first.searchedAs, first.candidates);
+          // A search can find only the wrong things: "griekse platbroden" gives Greek
+          // yoghurt at AH. Then the second wording ("pitabroodjes") gets its turn too.
+          const second = term?.fallback?.trim() ?? '';
+          if (candidates.length > 0 || !second || second.toLowerCase() === first.searchedAs.toLowerCase()) {
+            return { id: item.id, name: item.name, searchedAs: first.searchedAs, candidates };
+          }
+          return { id: item.id, name: item.name, searchedAs: second, candidates: fitting(second, await searchStore(store, second, 30, 20)) };
         });
-        const searchable = lines
-          .map((line) => ({
-            ...line,
-            candidates: line.candidates.filter((c) => !vasteWeglaat(line.name, c.title) && deeltWoord(line.name, line.searchedAs, c.title)),
-          }))
-          .filter((line) => line.candidates.length > 0);
+        const searchable = lines.filter((line) => line.candidates.length > 0);
         const drops = await mapWithConcurrency(searchable, FILTER_CONCURRENCY, (line) =>
           notIngredient(line, store).catch((e) => {
             console.error('Filter failed:', store, line.name, e);

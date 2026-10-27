@@ -174,14 +174,23 @@ const ANDERS = [
   /\bbio\b/, /\bbiologisch\w*/,
   /\brogge\w*/, /\bspelt\w*/, /\bmeergranen\w*/,
   /\w*mix\b/,
-  /\bmini\b/,
+  /\bmini\b/, /\bmidi\b/,
+  /glutenvrij/, /lactosevrij/,
+  // Een ander soort product met hetzelfde woord erin: Griekse yoghurt voor Griekse
+  // platbroden, komkommersalade of groentesap voor komkommer. Ook midden in een woord.
+  /yoghurt/, /kwark/, /saus/, /soep/, /salade/, /sap\b/, /dressing/, /tapenade/, /hummus/,
+  /aioli/, /rauwkost/, /snoep/, /chips/,
 ];
 
 const gewoneTekst = (tekst: string) => tekst.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 
-/** Valt dit product af voor deze regel? "AH Pasta geraspte kaas" voor "geraspte kaas": ja. */
-export function vasteWeglaat(regel: string, titel: string): boolean {
-  const r = gewoneTekst(regel);
+/**
+ * Valt dit product af voor deze regel? "AH Pasta geraspte kaas" voor "geraspte kaas": ja.
+ * Een woord dat de regel of de zoekterm zelf noemt telt niet: snoeptomaatjes mogen
+ * voor "cherry tomatoes" als de zoekterm "snoeptomaatjes" was.
+ */
+export function vasteWeglaat(regel: string, titel: string, zoekterm = ''): boolean {
+  const r = gewoneTekst(`${regel} ${zoekterm}`);
   const t = gewoneTekst(titel);
   return ANDERS.some((woord) => woord.test(t) && !woord.test(r));
 }
