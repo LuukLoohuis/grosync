@@ -1,5 +1,5 @@
 import { assertEquals } from 'jsr:@std/assert@1';
-import { eenheidsprijs, eenheidsprijsVan, gelijkeHoeveelheid, kiesGoedkoopste, maatInTitel, totalen, type Keuze } from './vergelijk.ts';
+import { eenheidsprijs, eenheidsprijsVan, gelijkeHoeveelheid, kiesGoedkoopste, maatInTitel, totalen, vasteWeglaat, type Keuze } from './vergelijk.ts';
 
 Deno.test('eenheidsprijs leest de maten van AH, Jumbo en Dirk', () => {
   const per = (maat: string, prijs: number) => {
@@ -113,4 +113,24 @@ Deno.test('brood: half tegen heel vergelijkt per heel brood', () => {
   const half = metMaat('AH', 'b', 0.99, 'stuk', 0.5);
   const heel = metMaat('Dirk', 'b', 0.93, 'stuk', 1);
   assertEquals(gelijkeHoeveelheid([half, heel]), [0.99, 0.47]);
+});
+
+Deno.test('vasteWeglaat: bereid, kaas voor een doel, bio, mini, gerookt', () => {
+  assertEquals(vasteWeglaat('geraspte kaas', 'AH Pasta geraspte kaas'), true);
+  assertEquals(vasteWeglaat('geraspte kaas', 'Jumbo Geraspte Oven Gratin Kaas 40+ 150 g'), true);
+  assertEquals(vasteWeglaat('geraspte kaas', 'Jumbo Geraspte Texmex Kaas 40+ 150 g'), true);
+  assertEquals(vasteWeglaat('diepvries spinazie', 'AH Spinazie à la crème'), true);
+  assertEquals(vasteWeglaat('bananen', 'Bio fairtrade bananen'), true);
+  assertEquals(vasteWeglaat('pasta penne', 'AH Biologisch Mini penne volkoren'), true);
+  assertEquals(vasteWeglaat('kipfilet', 'Vleeschmeesters Kipfilet gerookt'), true);
+});
+
+Deno.test('vasteWeglaat: gewoon product of waar de regel zelf om vraagt blijft', () => {
+  assertEquals(vasteWeglaat('geraspte kaas', 'Rasp Mild 48+ Kaas 250 g'), false);
+  assertEquals(vasteWeglaat('pindakaas', 'AH Terra Plantaardig 100% pindakaas naturel'), false);
+  assertEquals(vasteWeglaat('pasta penne', 'AH Penne'), false);
+  assertEquals(vasteWeglaat('pastakaas', 'AH Pasta geraspte kaas'), false);
+  assertEquals(vasteWeglaat('biologische bananen', 'Bio fairtrade bananen'), true);
+  assertEquals(vasteWeglaat('bio bananen', 'Bio fairtrade bananen'), false);
+  assertEquals(vasteWeglaat('spinazie a la creme', 'Iglo Spinazie à la crème'), false);
 });

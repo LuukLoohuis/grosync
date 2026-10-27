@@ -155,3 +155,26 @@ export function kiesGoedkoopste<T extends { unitSize: string; title: string; pri
   const perEenheid = (k: { product: T; per: Eenheidsprijs }) => k.product.price / k.per.hoeveelheid;
   return gewoon.reduce((best, k) => (perEenheid(k) < perEenheid(best) ? k : best)).product;
 }
+
+/**
+ * Woorden die van een gewoon product iets anders maken. Staat het woord in de
+ * titel maar niet in de regel zelf, dan valt het product af, zonder het model.
+ * Plantaardig staat er niet in: pindakaas van AH heet zo.
+ */
+const ANDERS = [
+  /\ba la creme\b/, /\bmet (?:room|kaas|saus)\b/, /\bgekruid\b/, /\bgemarineerd\b/,
+  /\bpasta\w*/, /\bpizza\w*/, /\bgratin\b/, /\boven\b/, /\bmozzarella\b/, /\btex[ -]?mex\b/,
+  /\bparmezaans?\b/, /\bparmigiano\b/, /\bstrooikaas\b/,
+  /\bgerookt\w*/, /\bvleeswaren\b/,
+  /\bbio\b/, /\bbiologisch\w*/,
+  /\bmini\b/,
+];
+
+const gewoneTekst = (tekst: string) => tekst.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+
+/** Valt dit product af voor deze regel? "AH Pasta geraspte kaas" voor "geraspte kaas": ja. */
+export function vasteWeglaat(regel: string, titel: string): boolean {
+  const r = gewoneTekst(regel);
+  const t = gewoneTekst(titel);
+  return ANDERS.some((woord) => woord.test(t) && !woord.test(r));
+}
