@@ -413,15 +413,16 @@ Deno.serve(async (req) => {
           .filter((line) => line.candidates.length > 0);
         const drops = await mapWithConcurrency(searchable, FILTER_CONCURRENCY, (line) =>
           notIngredient(line, store).catch((e) => {
-            // Without the model nothing is known to be wrong: then the line does not count.
             console.error('Filter failed:', store, line.name, e);
             return null;
           }));
         const keuzes: Keuze[] = [];
         for (const [n, line] of searchable.entries()) {
           const drop = drops[n];
-          if (!drop) continue;
-          const candidate = kiesGoedkoopste(line.candidates.filter((_, index) => !drop.has(index)));
+          const kept = drop ? line.candidates.filter((_, index) => !drop.has(index)) : [];
+          // A search for "volkoren brood" always finds bread: when the model drops
+          // everything or fails, the fixed words alone decide.
+          const candidate = kiesGoedkoopste(kept.length > 0 ? kept : line.candidates);
           if (!candidate) continue;
           // One package: the comparison is per same amount anyway (gelijkeHoeveelheid).
           const match = toMatch(line.id, candidate, 1);

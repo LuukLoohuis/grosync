@@ -134,3 +134,15 @@ Deno.test('vasteWeglaat: gewoon product of waar de regel zelf om vraagt blijft',
   assertEquals(vasteWeglaat('bio bananen', 'Bio fairtrade bananen'), false);
   assertEquals(vasteWeglaat('spinazie a la creme', 'Iglo Spinazie à la crème'), false);
 });
+
+Deno.test('kilo en liter tellen samen: passata van 500 g tegen een fles van 700 ml', () => {
+  const pak = p('Jumbo Tomaten Gezeefd Passata 500 g', '500 g', 0.65);
+  assertEquals(kiesGoedkoopste([p('Mutti Passata la Rossa 700ml', '', 3.09), pak, p('Cirio Passata 680 ml', '680 ml', 1.79)]), pak);
+  const fles = { ...keuze('Dirk', 'p', 1.79), perEenheid: { prijs: 2.63, eenheid: 'l' as const, hoeveelheid: 0.68 } };
+  assertEquals(gelijkeHoeveelheid([metMaat('AH', 'p', 0.62, 'kg', 0.5), fles]), [0.62, 1.32]);
+});
+
+Deno.test('rogge valt af, tenzij de regel erom vraagt', () => {
+  assertEquals(vasteWeglaat('volkoren brood', 'Brood van Soma Limburgs Volkoren Roggebrood 400 g'), true);
+  assertEquals(vasteWeglaat('roggebrood', 'Brood van Soma Limburgs Volkoren Roggebrood 400 g'), false);
+});

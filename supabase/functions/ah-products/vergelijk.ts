@@ -87,6 +87,9 @@ export function eenheidsprijsVan(product: { unitSize: string; title: string; pri
   return per;
 }
 
+/** Kilo en liter tellen als één soort: passata van 500 g staat naast een fles van 700 ml. */
+const soort = (eenheid: Eenheidsprijs['eenheid']) => (eenheid === 'l' ? 'kg' : eenheid);
+
 /**
  * Wat elke winkel voor deze regel kost bij dezelfde hoeveelheid: het kleinste
  * pak van de drie, tegen de prijs per eenheid van elke winkel. Zonder vergelijkbare
@@ -94,7 +97,7 @@ export function eenheidsprijsVan(product: { unitSize: string; title: string; pri
  */
 export function gelijkeHoeveelheid(keuzes: Keuze[]): number[] {
   const eenheden = keuzes.map((k) => k.perEenheid);
-  const vergelijkbaar = eenheden.every((e) => e && e.eenheid === eenheden[0]!.eenheid);
+  const vergelijkbaar = eenheden.every((e) => e && soort(e.eenheid) === soort(eenheden[0]!.eenheid));
   if (!vergelijkbaar) return keuzes.map((k) => k.price);
   const totaal = keuzes.map((k) => k.perEenheid!.hoeveelheid * k.quantity);
   const maat = Math.min(...totaal);
@@ -134,7 +137,7 @@ const MAX_PAK_FACTOR = 2.5;
 
 /**
  * Het goedkoopste product uit wat al door het ingrediëntfilter kwam: laagste prijs
- * per eenheid, in de eenheid die de meeste kandidaten delen, zonder grootverpakkingen.
+ * per eenheid, in de eenheid die de meeste kandidaten delen (kilo en liter samen), zonder grootverpakkingen.
  * Zonder leesbare maten de laagste pakprijs. Bij gelijke prijs wint de eerste.
  */
 export function kiesGoedkoopste<T extends { unitSize: string; title: string; price: number }>(kandidaten: T[]): T | null {
@@ -145,10 +148,10 @@ export function kiesGoedkoopste<T extends { unitSize: string; title: string; pri
   if (metPrijs.length === 0) {
     return kandidaten.reduce((best, k) => (k.price < best.price ? k : best));
   }
-  const telling = new Map<Eenheidsprijs['eenheid'], number>();
-  for (const { per } of metPrijs) telling.set(per.eenheid, (telling.get(per.eenheid) ?? 0) + 1);
+  const telling = new Map<string, number>();
+  for (const { per } of metPrijs) telling.set(soort(per.eenheid), (telling.get(soort(per.eenheid)) ?? 0) + 1);
   const eenheid = [...telling.entries()].reduce((a, b) => (b[1] > a[1] ? b : a))[0];
-  const zelfde = metPrijs.filter((k) => k.per.eenheid === eenheid);
+  const zelfde = metPrijs.filter((k) => soort(k.per.eenheid) === eenheid);
   const kleinste = Math.min(...zelfde.map((k) => k.per.hoeveelheid));
   const gewoon = zelfde.filter((k) => k.per.hoeveelheid <= kleinste * MAX_PAK_FACTOR);
   // Exact per eenheid vergelijken, niet op de afgeronde centen.
@@ -167,6 +170,7 @@ const ANDERS = [
   /\bparmezaans?\b/, /\bparmigiano\b/, /\bstrooikaas\b/,
   /\bgerookt\w*/, /\bvleeswaren\b/,
   /\bbio\b/, /\bbiologisch\w*/,
+  /\brogge\w*/,
   /\bmini\b/,
 ];
 
