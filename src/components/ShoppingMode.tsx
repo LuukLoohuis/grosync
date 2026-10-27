@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowRight, Check, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import SwipeToCheck from '@/components/SwipeToCheck';
 import ItemThumb from '@/components/ItemThumb';
@@ -130,8 +130,22 @@ const ShoppingMode = ({ items, weg, onCheck, onClose, startWinkel }: ShoppingMod
     wasBezig.current = !klaar;
   }, [klaar]);
 
-  const volgende = () => setIndex((n) => Math.min(n + 1, route.length - 1));
+  // Van welke kant de afdeling binnenkomt: vooruit door de winkel, of een gangpad terug.
+  const [richting, setRichting] = useState<'vooruit' | 'terug' | null>(null);
+  const volgende = () => { setRichting('vooruit'); setIndex((n) => Math.min(n + 1, route.length - 1)); };
+  const vorige = () => { setRichting('terug'); setIndex((n) => Math.max(n - 1, 0)); };
   const laatste = index >= route.length - 1;
+
+  // Afronden met nog iets open: eerst zeggen wat er blijft liggen, niet stil sluiten.
+  const [afronden, setAfronden] = useState(false);
+  const blijftOpen = hier.filter((i) => !i.checked && !weg.has(i.id));
+  const rondAf = () => (blijftOpen.length > 0 ? setAfronden(true) : onClose());
+  const terugNaarOpen = () => {
+    const eerste = route.findIndex((c) => groups.some((g) => g.category === c && g.items.length > 0));
+    setAfronden(false);
+    setRichting('terug');
+    setIndex(Math.max(eerste, 0));
+  };
 
   // Buiten de lijst hangen, zodat niets van het scherm eronder meedoet.
   return createPortal(
@@ -200,7 +214,11 @@ const ShoppingMode = ({ items, weg, onCheck, onClose, startWinkel }: ShoppingMod
       </header>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
-        <div className="mx-auto max-w-lg space-y-2">
+        {/* Nieuwe sleutel per afdeling, zodat hij van de goede kant binnenschuift. */}
+        <div
+          key={huidig ?? 'klaar'}
+          className={`mx-auto max-w-lg space-y-2 ${richting === 'vooruit' ? 'animate-tab-in-right' : richting === 'terug' ? 'animate-tab-in-left' : ''}`}
+        >
           {klaar && (
             <div className="rounded-[14px] border border-border bg-card p-6 text-center">
               <span aria-hidden="true" className="relative mx-auto flex h-12 w-12 items-center justify-center">
@@ -261,9 +279,31 @@ const ShoppingMode = ({ items, weg, onCheck, onClose, startWinkel }: ShoppingMod
         </div>
       </div>
 
-      {!klaar && (
+      {!klaar && afronden && (
+        <footer className="shrink-0 border-t border-border bg-background px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] animate-in fade-in-0 slide-in-from-bottom-2 duration-200 ease-smooth">
+          <div className="mx-auto max-w-lg">
+            <p className="text-sm font-semibold text-foreground">
+              {blijftOpen.length === 1 ? t("Nog 1 niet gehaald") : t("Nog {0} niet gehaald", [blijftOpen.length])}
+            </p>
+            <p className="mt-0.5 line-clamp-2 text-sm text-muted-foreground">
+              {blijftOpen.map((i) => splitAmount(zonderWinkel(i.name, i.store)).name).join(', ')}
+            </p>
+            <div className="mt-3 flex gap-2">
+              <Button variant="outline" className="min-h-12 flex-1" onClick={terugNaarOpen}>{t("Terug de winkel in")}</Button>
+              <Button variant="secondary" className="min-h-12 flex-1" onClick={onClose}>{t("Laten staan")}</Button>
+            </div>
+          </div>
+        </footer>
+      )}
+
+      {!klaar && !afronden && (
         <footer className="shrink-0 border-t border-border bg-background px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          <div className="mx-auto flex max-w-lg items-center gap-3">
+          <div className="mx-auto flex max-w-lg items-center gap-2">
+            {index > 0 && (
+              <Button variant="ghost" className="min-h-12 w-12 shrink-0 px-0" onClick={vorige} aria-label={t("Vorige afdeling")}>
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            )}
             {teGaan <= BIJNA ? (
               <p className="min-w-0 flex-1 text-sm font-semibold text-foreground">
                 {teGaan === 1 ? t("Bijna klaar, nog 1!") : t("Bijna klaar, nog {0}!", [teGaan])}
@@ -274,7 +314,7 @@ const ShoppingMode = ({ items, weg, onCheck, onClose, startWinkel }: ShoppingMod
             <Button
               variant="secondary"
               className="min-h-12 shrink-0 gap-2"
-              onClick={laatste ? onClose : volgende}
+              onClick={laatste ? rondAf : volgende}
             >
               {laatste ? t("Afronden") : t("Volgende afdeling")} <ArrowRight className="h-4 w-4" />
             </Button>
