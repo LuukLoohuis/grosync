@@ -170,7 +170,7 @@ const ANDERS = [
   /\bparmezaans?\b/, /\bparmigiano\b/, /\bstrooikaas\b/,
   /\bgerookt\w*/, /\bvleeswaren\b/,
   /\bbio\b/, /\bbiologisch\w*/,
-  /\brogge\w*/,
+  /\brogge\w*/, /\bspelt\w*/, /\bmeergranen\w*/,
   /\w*mix\b/,
   /\bmini\b/,
 ];

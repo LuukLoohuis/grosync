@@ -165,3 +165,10 @@ Deno.test('deeltWoord: samenstellingen, vervoegingen en het woord van de winkel'
 Deno.test('mix valt af', () => {
   assertEquals(vasteWeglaat('volkoren brood', 'Koopmans Broodmix Fijn Volkoren Brood 450 g'), true);
 });
+
+Deno.test('spelt en meergranen vallen af voor volkoren brood', () => {
+  assertEquals(vasteWeglaat('volkoren brood', 'AH Liefde & Passie Spelt volkoren gesneden'), true);
+  assertEquals(vasteWeglaat('volkoren brood', 'Brood van Soma Waldkorn Bruin Meergranenbrood 375 g'), true);
+  assertEquals(vasteWeglaat('speltbrood', 'AH Liefde & Passie Spelt volkoren gesneden'), false);
+  assertEquals(vasteWeglaat('volkoren brood', 'AH Rond volkoren half'), false);
+});
