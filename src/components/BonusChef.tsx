@@ -40,7 +40,7 @@ const Vorm = ({ vorm, klein = false }: { vorm: string | null; klein?: boolean })
   if (!vorm) return null;
   return (
     <span
-      className={`block font-display ${klein ? 'text-[0.625rem]' : 'text-[0.625rem]'} font-semibold uppercase tracking-wider ${
+      className={`block font-display ${klein ? 'text-[0.6875rem]' : 'text-xs'} font-bold uppercase tracking-wide ${
         zegtIets(vorm) ? 'text-[hsl(var(--ah-bonus))]' : 'text-muted-foreground'
       }`}
     >
@@ -188,7 +188,7 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
     if (deel >= 0.6) {
       return (
         <article key={match.recipeId} className="rounded-[18px] bg-primary p-4">
-          <span className="inline-block rounded-[6px] bg-primary-foreground/15 px-[7px] py-1 font-display text-[0.625rem] font-bold uppercase tracking-[0.07em] text-primary-foreground">
+          <span className="block text-[0.8125rem] font-medium text-primary-muted">
             {label}
           </span>
           <h2 className="mt-2 font-display text-[1.375rem] font-bold leading-tight text-primary-foreground">{match.name}</h2>
@@ -225,7 +225,7 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
         <article key={match.recipeId} className="rounded-[14px] border border-border bg-card px-3.5 py-3">
           <div className="flex items-start gap-3">
             <span className="min-w-0 flex-1">
-              <span className="block font-display text-[0.625rem] font-semibold uppercase tracking-[0.07em] text-accent-ink">{label}</span>
+              <span className="block text-[0.8125rem] font-semibold text-accent-ink">{label}</span>
               <span className="mt-0.5 block font-display text-[1.0625rem] font-bold leading-tight text-foreground">{match.name}</span>
             </span>
             {match.saving > 0 && (
@@ -266,7 +266,7 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
         className="flex w-full items-center gap-3 rounded-[12px] border border-border bg-card px-3 py-2.5 text-left"
       >
         <span className="min-w-0 flex-1">
-          <span className="block font-display text-[0.625rem] font-semibold uppercase tracking-[0.07em] text-muted-foreground">{label}</span>
+          <span className="block text-[0.8125rem] font-semibold text-muted-foreground">{label}</span>
           <span className="mt-0.5 block truncate text-[0.96875rem] font-medium text-foreground">{match.name}</span>
           {match.hits[0] && (
             <span className="block truncate text-xs text-muted-foreground">
@@ -299,7 +299,7 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
       {/* Het wachten duurt acht seconden; dat verdient een scherm. */}
       {status === 'loading' && (
         <section className="rounded-[18px] bg-primary p-5">
-          <p className="font-display text-[0.625rem] font-semibold uppercase tracking-[0.07em] text-primary-foreground/70">
+          <p className="text-[0.8125rem] font-medium text-primary-muted">
             {t("Bonus van deze week ophalen")}
           </p>
           <p className="mt-1.5 font-display text-[1.375rem] font-bold leading-tight text-primary-foreground">
@@ -397,8 +397,8 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
           <article key={idea.name} className="rounded-[16px] border border-border bg-card p-3.5">
             <h3 className="font-display text-[1.1875rem] font-bold leading-tight text-foreground">{idea.name}</h3>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              {idea.minutes ? t("{0} min ·", [idea.minutes]) : ''}voor {idea.servings}
-              {scheelt > 0 ? t("· ± {0} goedkoper", [euro.format(scheelt)]) : ''}
+              {idea.minutes ? t("{0} min ·", [idea.minutes]) + ' ' : ''}voor {idea.servings}
+              {scheelt > 0 ? ' ' + t("· ± {0} goedkoper", [euro.format(scheelt)]) : ''}
             </p>
 
             {producten.length > 0 && (
@@ -451,7 +451,7 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
 
       {status === 'ready' && aanbiedingen.length > 0 && (
         <section>
-          <h2 className="px-1 font-display text-[0.625rem] font-semibold uppercase tracking-[0.07em] text-muted-foreground">
+          <h2 className="px-1 font-display text-[0.9375rem] font-bold tracking-[-0.01em] text-foreground">
             {matches.length > 0 ? t("Deze week in de bonus") : t("Wel in de bonus deze week")}
           </h2>
           <ul className="mt-1.5 space-y-1.5">

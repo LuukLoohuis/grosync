@@ -22,7 +22,7 @@ const SharedListContent = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-dvh bg-background">
       <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -43,7 +43,7 @@ const SharedListContent = () => {
         <div className="flex bg-muted rounded-lg p-1 gap-1">
           <button
             onClick={() => setTab('list')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-md text-sm font-medium transition-all ${
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-md text-sm font-medium transition-colors ${
               tab === 'list' ? 'bg-card shadow-flat text-foreground' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -51,7 +51,7 @@ const SharedListContent = () => {
           </button>
           <button
             onClick={() => setTab('usuals')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-md text-sm font-medium transition-all ${
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-md text-sm font-medium transition-colors ${
               tab === 'usuals' ? 'bg-card shadow-flat text-foreground' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -59,7 +59,7 @@ const SharedListContent = () => {
           </button>
           <button
             onClick={() => setTab('recipes')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-md text-sm font-medium transition-all ${
+            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-md text-sm font-medium transition-colors ${
               tab === 'recipes' ? 'bg-card shadow-flat text-foreground' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
@@ -92,8 +92,8 @@ const DELEN = [
 const InstapScherm = ({ uitnodiging, bezig, onInstappen }: { uitnodiging: Uitnodiging; bezig: boolean; onInstappen: () => void }) => {
   const { eigenaarNaam, leden } = uitnodiging;
   return (
-    <div className="min-h-screen bg-background">
-      <main className="mx-auto flex min-h-screen max-w-sm flex-col px-5 pb-8 pt-14">
+    <div className="min-h-dvh bg-background">
+      <main className="mx-auto flex min-h-dvh max-w-sm flex-col px-5 pb-8 pt-14">
         <div className="text-center">
           <div className="mb-4 flex justify-center" aria-hidden="true">
             <span className="flex h-12 w-12 items-center justify-center rounded-full border-[3px] border-background bg-primary text-sm font-medium text-primary-foreground">
@@ -232,7 +232,7 @@ const SharedList = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-dvh bg-background flex items-center justify-center">
         <p className="text-muted-foreground">{t("Laden...")}</p>
       </div>
     );
@@ -240,7 +240,7 @@ const SharedList = () => {
 
   if (notFound) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-dvh bg-background flex items-center justify-center">
         <div className="text-center">
           <p className="text-xl font-display text-foreground">{t("Uitnodiging niet gevonden")}</p>
           <p className="text-muted-foreground mt-2">{t("Controleer de link en probeer opnieuw.")}</p>

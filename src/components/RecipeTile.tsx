@@ -78,7 +78,7 @@ const RecipeTile = ({ recipe, categories, cookCount = 0, reason = null, wide = f
           </h3>
           <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
             {count} {count === 1 ? t("ingrediënt") : t("ingrediënten")}
-            {recipe.servings ? t("· voor {0}", [recipe.servings]) : ''}
+            {recipe.servings ? ' ' + t("· voor {0}", [recipe.servings]) : ''}
             {first ? ` · ${first.name}` : ''}
           </p>
         </div>

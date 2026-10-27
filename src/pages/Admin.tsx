@@ -119,7 +119,7 @@ const Admin = () => {
 
   if (!isAdmin) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background px-6 text-center">
+      <div className="flex min-h-dvh items-center justify-center bg-background px-6 text-center">
         <div>
           <p className="font-display text-xl text-foreground">Geen toegang</p>
           <Link to="/" className="mt-3 inline-block min-h-11 text-primary hover:underline">Terug naar de app</Link>
@@ -132,7 +132,7 @@ const Admin = () => {
     .reduce((sum, [feature, acties]) => sum + acties * (RATES[feature] ?? 0), 0);
 
   return (
-    <div className="min-h-screen bg-background pb-16">
+    <div className="min-h-dvh bg-background pb-16">
       <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-3xl items-center gap-2 px-4">
           <Link to="/" aria-label="Terug" className="flex h-11 w-11 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground">

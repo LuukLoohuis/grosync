@@ -49,7 +49,7 @@ const NieuwWachtwoord = ({ email }: { email?: string }) => {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-background px-5 py-10">
+    <div className="flex min-h-dvh flex-col items-center justify-center bg-background px-5 py-10">
       <div className="w-full max-w-sm">
         <div className="flex justify-center">
           <Logo className="h-auto w-[min(16rem,70vw)]" />

@@ -35,7 +35,7 @@ const MacroBar = ({ label, value, unit, max, color, icon: Icon }: {
       </div>
       <div className="h-3 bg-muted rounded-full overflow-hidden">
         <div
-          className={`h-full rounded-full transition-all duration-500 ${color.replace('text-', 'bg-')}`}
+          className={`h-full rounded-full transition-[width] duration-500 ease-smooth ${color.replace('text-', 'bg-')}`}
           style={{ width: `${pct}%` }}
         />
       </div>

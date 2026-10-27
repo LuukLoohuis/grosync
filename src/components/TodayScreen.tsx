@@ -157,7 +157,7 @@ const TodayScreen = ({ onNavigate }: { onNavigate: (tab: TodayTarget) => void })
                 </span>
               )}
               <div className="min-w-0 flex-1">
-                <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.08em] text-primary-muted">{t("Vanavond eten we")}</p>
+                <p className="text-[0.8125rem] font-medium text-primary-muted">{t("Vanavond eten we")}</p>
                 {planner.loading ? (
                   <Skeleton className="mt-1.5 h-5 w-40 bg-primary/60 dark:bg-muted" />
                 ) : (
@@ -192,7 +192,7 @@ const TodayScreen = ({ onNavigate }: { onNavigate: (tab: TodayTarget) => void })
         {/* Niets gepland, maar wel recepten: kies er hier een, met wat het je kost aan boodschappen. */}
         {!dinner && recipes.length > 0 && (
           <div className="mt-3.5 rounded-[14px] bg-primary-deep px-3.5 py-3 dark:bg-card">
-            <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.08em] text-primary-muted">
+            <p className="text-[0.8125rem] font-medium text-primary-muted">
               {t("Uit jullie recepten · kunnen vanavond")}
             </p>
             <ul className="mt-2 space-y-1.5">
@@ -202,7 +202,7 @@ const TodayScreen = ({ onNavigate }: { onNavigate: (tab: TodayTarget) => void })
                     <span className="block truncate text-[0.9375rem] font-medium">{option.name}</span>
                     <span className="block truncate text-xs text-primary-muted">
                       {halen === 0 ? t('alles in huis') : t("{0} halen", [dingen(halen)])}
-                      {korting ? (korting.voordeel > 0 ? t("· in de bonus, ± {0} minder", [euro.format(korting.voordeel)]) : t('· in de bonus')) : ''}
+                      {korting ? (korting.voordeel > 0 ? ' ' + t("· in de bonus, ± {0} minder", [euro.format(korting.voordeel)]) : ' ' + t('· in de bonus')) : ''}
                     </span>
                   </span>
                   <Button variant="accent" size="sm" className="shrink-0" onClick={() => void kiesAvondeten(option)}>
@@ -216,7 +216,7 @@ const TodayScreen = ({ onNavigate }: { onNavigate: (tab: TodayTarget) => void })
               onClick={() => onNavigate('recipes')}
               className="mt-2 inline-flex min-h-11 items-center gap-1.5 text-[0.8125rem] font-medium text-primary-muted hover:text-primary-foreground"
             >
-              {t('Alle {0} recepten', [recipes.length])} <ArrowRight className="h-3.5 w-3.5" />
+              {recipes.length === 1 ? t('Naar je recept') : t('Alle {0} recepten', [recipes.length])} <ArrowRight className="h-3.5 w-3.5" />
             </button>
           </div>
         )}
@@ -224,7 +224,7 @@ const TodayScreen = ({ onNavigate }: { onNavigate: (tab: TodayTarget) => void })
         {/* De eerste dag: er valt nog niets te kiezen. */}
         {!dinner && recipes.length === 0 && (
           <div className="mt-3.5 rounded-[14px] bg-primary-deep px-3.5 py-3.5 dark:bg-card">
-            <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.08em] text-primary-muted">{t("Vanavond")}</p>
+            <p className="text-[0.8125rem] font-medium text-primary-muted">{t("Vanavond")}</p>
             <p className="mt-1 font-display text-lg font-semibold leading-[1.2]">
               {t("Nog niets gepland — en nog geen recepten om uit te kiezen")}
             </p>
@@ -246,7 +246,7 @@ const TodayScreen = ({ onNavigate }: { onNavigate: (tab: TodayTarget) => void })
         <section className="rounded-[14px] border border-border bg-card p-3.5">
           <div className="flex items-baseline justify-between gap-2">
             <h2 className="font-display text-[1.0625rem] font-bold text-foreground">
-              {t("Op je lijst")}{teHalen.length > 0 ? t("· {0} te halen", [teHalen.length]) : ''}
+              {t("Op je lijst")}{teHalen.length > 0 ? ' ' + t("· {0} te halen", [teHalen.length]) : ''}
             </h2>
             {teHalen.length > 4 && (
               <button type="button" onClick={() => onNavigate('list')} className="shrink-0 text-xs font-medium text-primary hover:underline">

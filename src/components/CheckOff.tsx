@@ -14,7 +14,7 @@ export const CheckCircle = ({ on, large = false }: { on: boolean; large?: boolea
       <Check className={large ? 'h-4 w-4 text-primary-foreground' : 'h-3.5 w-3.5 text-primary-foreground'} strokeWidth={3} />
     </span>
   ) : (
-    <span className={`${size} rounded-full border-2 border-border-strong transition-colors duration-150 ease-smooth group-hover/check:border-primary group-hover/check:bg-primary-soft`} />
+    <span className={`${size} rounded-full border-2 border-[hsl(var(--muted-foreground)/0.8)] transition-colors duration-150 ease-smooth group-hover/check:border-primary group-hover/check:bg-primary-soft`} />
   );
 };
 

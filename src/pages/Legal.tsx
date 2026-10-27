@@ -207,7 +207,7 @@ const Legal = () => {
   const gekozen = DELEN[deel ?? 'voorwaarden'] ?? DELEN.voorwaarden;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-dvh bg-background">
       <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-2xl items-center gap-2 px-4">
           <Link
