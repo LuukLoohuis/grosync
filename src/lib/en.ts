@@ -839,6 +839,7 @@ export const EN: Record<string, string> = {
   'Aantal {0}': 'Quantity of {0}',
   '{0} weggooien': 'Remove {0}',
   'Waar is dit het goedkoopst?': 'Where is this cheapest?',
+  'beta': 'beta',
   'Waar is je lijst het goedkoopst?': 'Where is your list cheapest?',
   'De eerste {0} van {1} boodschappen, bij AH, Jumbo en Dirk.': 'The first {0} of {1} items, at AH, Jumbo and Dirk.',
   '{0} boodschappen, bij AH, Jumbo en Dirk.': '{0} items, at AH, Jumbo and Dirk.',

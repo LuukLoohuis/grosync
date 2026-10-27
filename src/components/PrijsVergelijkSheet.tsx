@@ -72,7 +72,12 @@ const PrijsVergelijkSheet = ({ open, items, onClose, onOverLimit, onKlaar }: Pri
     <Sheet open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
       <SheetContent side="bottom" className="mx-auto max-h-[90dvh] max-w-lg overflow-y-auto rounded-t-[20px]">
         <SheetHeader className="pr-10 text-left">
-          <SheetTitle className="font-display text-xl">{t('Waar is je lijst het goedkoopst?')}</SheetTitle>
+          <SheetTitle className="font-display text-xl">
+            {t('Waar is je lijst het goedkoopst?')}{' '}
+            <span className="ml-1 inline-block rounded-full bg-muted px-2 py-0.5 align-middle font-sans text-[0.6875rem] font-semibold uppercase tracking-wide text-muted-foreground">
+              {t('beta')}
+            </span>
+          </SheetTitle>
           <SheetDescription>
             {items.length > VERGELIJK_MAX_ITEMS
               ? t('De eerste {0} van {1} boodschappen, bij AH, Jumbo en Dirk.', [VERGELIJK_MAX_ITEMS, items.length])
