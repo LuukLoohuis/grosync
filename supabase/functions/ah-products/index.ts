@@ -1,5 +1,5 @@
 import { searchDirk, searchJumbo, STORES, storeName, type Store } from './winkels.ts';
-import { eenheidsprijsVan, totalen, type Keuze } from './vergelijk.ts';
+import { eenheidsprijsVan, kiesGoedkoopste, totalen, type Keuze } from './vergelijk.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -274,32 +274,28 @@ async function chooseProducts(
   return choices;
 }
 
-// For the price comparison: the cheapest product at this store that still is the
-// ingredient, so house brands win but egg salad does not pass for eggs.
-async function chooseCheapest(
-  lines: { id: string; name: string; amount: string; searchedAs: string; candidates: Candidate[] }[],
+// For the price comparison: which candidates are the ordinary ingredient itself.
+// Only that is the model's call; the cheapest of them is picked in code
+// (kiesGoedkoopste), so the totals do not depend on the model's taste.
+async function ordinaryIngredient(
+  lines: { id: string; name: string; searchedAs: string; candidates: Candidate[] }[],
   store: Store,
-): Promise<Map<string, { index: number; quantity: number }>> {
+): Promise<Map<string, number[]>> {
   const result = await askJson(
-    `For each grocery list line pick the CHEAPEST ${storeName[store]} product that is that ingredient, to compare what the same list costs at different supermarkets. Any brand is fine, house brands included. It must be the ordinary product itself: never a plant-based or vegan substitute (plantaardig, vegan, vegetarisch), smoked or deli version (gerookt, vleeswaren, beleg), organic premium, dish, snack, ready meal, flavoured variant or multipack, unless the line itself asks for it. "diepvries" or "frozen" means a frozen product, and without it prefer fresh; "volkoren" means wholegrain. Pick a normal household package (e.g. 6 or 10 eggs, 1 litre of milk, 500 g of pasta), not a bulk or family pack, and among those the lowest price per unit ("perUnit"). "quantity" is the number of packages that covers the amount; 1 when the amount is unknown or small. Use index -1 when no candidate is that ingredient. Return JSON {"choices":[{"id":"...","index":0,"quantity":1}]}.`,
+    `For each grocery list line keep the ${storeName[store]} candidates that ARE that ingredient, as an ordinary everyday product, to compare what the same list costs at different supermarkets. Any brand is fine, house brands included, and any normal size. Drop plant-based or vegan substitutes (plantaardig, vegan, vegetarisch), smoked or deli versions (gerookt, vleeswaren, beleg), organic or premium variants (biologisch, bio, extra, luxe), dishes, salads, snacks, ready meals, flavoured variants, mini or snack sizes and multipacks, unless the line itself asks for them. "diepvries" or "frozen" means only frozen products, and without it only fresh or shelf products; "volkoren" means wholegrain. The candidates come from a search ("search") that may use the store's own word for the same thing. Return JSON {"lines":[{"id":"...","indexes":[...]}]} with every id; an empty list when no candidate is that ingredient.`,
     JSON.stringify(lines.map((line) => ({
       id: line.id,
       ingredient: line.name,
-      amount: line.amount,
       search: line.searchedAs,
-      candidates: line.candidates.map((c, index) => {
-        const unit = eenheidsprijsVan(c);
-        return { index, title: c.title, size: c.unitSize || null, price: c.price, perUnit: unit ? `${unit.prijs} per ${unit.eenheid}` : null, category: c.category };
-      }),
+      candidates: line.candidates.map((c, index) => ({ index, title: c.title, size: c.unitSize || null, category: c.category })),
     }))),
   );
-  const choices = new Map<string, { index: number; quantity: number }>();
-  for (const choice of result.choices || []) {
-    if (typeof choice?.id !== 'string' || !Number.isInteger(choice.index)) continue;
-    const quantity = Math.min(Math.max(Math.round(Number(choice.quantity) || 1), 1), 20);
-    choices.set(choice.id, { index: choice.index, quantity });
+  const kept = new Map<string, number[]>();
+  for (const line of result.lines || []) {
+    if (typeof line?.id !== 'string' || !Array.isArray(line.indexes)) continue;
+    kept.set(line.id, line.indexes.filter((index: unknown) => Number.isInteger(index)));
   }
-  return choices;
+  return kept;
 }
 
 // Keeps the candidates that are the ingredient itself, best fit first, so "eieren"
@@ -411,17 +407,19 @@ Deno.serve(async (req) => {
           const term = terms.get(item.id);
           const { candidates: found, searchedAs } = await searchWithFallback(term, 30, 20, store);
           const singles = found.filter((c) => !isMultipack(c));
-          const candidates = (singles.length > 0 ? singles : found).slice(0, 12);
-          return { id: item.id, name: item.name, amount: term?.amount || '', searchedAs, candidates };
+          // Wider than the basket: the house brand often sits below the brands in the search.
+          const candidates = (singles.length > 0 ? singles : found).slice(0, 20);
+          return { id: item.id, name: item.name, searchedAs, candidates };
         });
         const searchable = lines.filter((line) => line.candidates.length > 0);
-        const choices = searchable.length ? await chooseCheapest(searchable, store) : new Map();
+        const kept = searchable.length ? await ordinaryIngredient(searchable, store) : new Map<string, number[]>();
         const keuzes: Keuze[] = [];
         for (const line of searchable) {
-          const choice = choices.get(line.id);
-          const candidate = choice && choice.index >= 0 ? line.candidates[choice.index] : undefined;
+          const fitting = (kept.get(line.id) ?? []).flatMap((index) => line.candidates[index] ?? []);
+          const candidate = kiesGoedkoopste(fitting);
           if (!candidate) continue;
-          const match = toMatch(line.id, candidate, choice.quantity);
+          // One package: the comparison is per same amount anyway (gelijkeHoeveelheid).
+          const match = toMatch(line.id, candidate, 1);
           keuzes.push({
             itemId: line.id,
             store,

@@ -1,5 +1,5 @@
 import { assertEquals } from 'jsr:@std/assert@1';
-import { eenheidsprijs, eenheidsprijsVan, gelijkeHoeveelheid, maatInTitel, totalen, type Keuze } from './vergelijk.ts';
+import { eenheidsprijs, eenheidsprijsVan, gelijkeHoeveelheid, kiesGoedkoopste, maatInTitel, totalen, type Keuze } from './vergelijk.ts';
 
 Deno.test('eenheidsprijs leest de maten van AH, Jumbo en Dirk', () => {
   const per = (maat: string, prijs: number) => {
@@ -72,4 +72,31 @@ Deno.test('gelijkeHoeveelheid: kg tegen stuks of zonder maat is gewoon de prijs'
 Deno.test('totalen rekent per regel met dezelfde hoeveelheid', () => {
   const uit = totalen(['e'], [metMaat('AH', 'e', 8.49, 'stuk', 30), metMaat('Dirk', 'e', 1.43, 'stuk', 6)], ['AH', 'Dirk']);
   assertEquals(uit.map((w) => [w.store, w.eerlijkTotaal, w.totaal]), [['Dirk', 1.43, 1.43], ['AH', 1.7, 8.49]]);
+});
+
+const p = (title: string, unitSize: string, price: number) => ({ title, unitSize, price });
+
+Deno.test('kiesGoedkoopste: laagste prijs per eenheid, niet laagste pakprijs', () => {
+  const huismerk = p('Jumbo Pindakaas Naturel 600 g', '600 g', 1.35);
+  assertEquals(kiesGoedkoopste([p('Terra pindakaas', '350 g', 2.49), huismerk, p('Calvé', '350 g', 3.49)]), huismerk);
+});
+
+Deno.test('kiesGoedkoopste: geen grootverpakking', () => {
+  const zes = p('Eieren 6 stuks', '6 stuks', 1.79);
+  assertEquals(kiesGoedkoopste([p('Eieren 30 stuks', '30 stuks', 7.49), zes, p('Eieren 10 stuks', '10 stuks', 3.2)]), zes);
+  // 10 tegen 6 is nog gewoon: dan wint de goedkoopste per stuk.
+  const tien = p('Eieren 10 stuks', '10 stuks', 2.5);
+  assertEquals(kiesGoedkoopste([zes, tien]), tien);
+});
+
+Deno.test('kiesGoedkoopste: eenheid van de meeste kandidaten, maat uit titel', () => {
+  const kilo = p('Bananen', '1 kg', 1.15);
+  assertEquals(kiesGoedkoopste([p('Bananen 5 Stuks', '', 0.5), kilo, p('Bio bananen', '1 kg', 1.99), p('Bananen tros', '1,2 kg', 1.5)]), kilo);
+  assertEquals(kiesGoedkoopste([p('Jumbo Scharreleieren 6 Stuks', '', 2.49), p('Scharreleieren 10 Stuks', '', 3.5)])?.title, 'Scharreleieren 10 Stuks');
+});
+
+Deno.test('kiesGoedkoopste: zonder maten de laagste pakprijs, leeg is null', () => {
+  const goedkoop = p('Volkoren half', '', 1.19);
+  assertEquals(kiesGoedkoopste([p('Waldkorn half', '', 1.39), goedkoop]), goedkoop);
+  assertEquals(kiesGoedkoopste([]), null);
 });

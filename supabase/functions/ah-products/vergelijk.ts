@@ -114,3 +114,31 @@ export function totalen(itemIds: string[], keuzes: Keuze[], stores: readonly Sto
     })
     .sort((a, b) => a.eerlijkTotaal - b.eerlijkTotaal || b.gevonden - a.gevonden);
 }
+
+// Een pak tot zoveel keer het kleinste passende pak telt nog als gewone maat;
+// daarboven is het een groot- of gezinsverpakking (30 eieren tegen 6).
+const MAX_PAK_FACTOR = 2.5;
+
+/**
+ * Het goedkoopste product uit wat al door het ingrediëntfilter kwam: laagste prijs
+ * per eenheid, in de eenheid die de meeste kandidaten delen, zonder grootverpakkingen.
+ * Zonder leesbare maten de laagste pakprijs. Bij gelijke prijs wint de eerste.
+ */
+export function kiesGoedkoopste<T extends { unitSize: string; title: string; price: number }>(kandidaten: T[]): T | null {
+  if (kandidaten.length === 0) return null;
+  const metPrijs = kandidaten
+    .map((product) => ({ product, per: eenheidsprijsVan(product) }))
+    .filter((k): k is { product: T; per: Eenheidsprijs } => k.per !== null);
+  if (metPrijs.length === 0) {
+    return kandidaten.reduce((best, k) => (k.price < best.price ? k : best));
+  }
+  const telling = new Map<Eenheidsprijs['eenheid'], number>();
+  for (const { per } of metPrijs) telling.set(per.eenheid, (telling.get(per.eenheid) ?? 0) + 1);
+  const eenheid = [...telling.entries()].reduce((a, b) => (b[1] > a[1] ? b : a))[0];
+  const zelfde = metPrijs.filter((k) => k.per.eenheid === eenheid);
+  const kleinste = Math.min(...zelfde.map((k) => k.per.hoeveelheid));
+  const gewoon = zelfde.filter((k) => k.per.hoeveelheid <= kleinste * MAX_PAK_FACTOR);
+  // Exact per eenheid vergelijken, niet op de afgeronde centen.
+  const perEenheid = (k: { product: T; per: Eenheidsprijs }) => k.product.price / k.per.hoeveelheid;
+  return gewoon.reduce((best, k) => (perEenheid(k) < perEenheid(best) ? k : best)).product;
+}
