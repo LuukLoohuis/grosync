@@ -10,13 +10,12 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import SwipeToCheck from '@/components/SwipeToCheck';
-import { CheckCircle, Wegvinken, useWegvinken } from '@/components/CheckOff';
+import { Wegvinken, useWegvinken } from '@/components/CheckOff';
 import { toastWithUndo } from '@/lib/undoableDelete';
 import { deelTekst, lijstAlsTekst } from '@/lib/lijstTekst';
 import GroceryItemSheet from '@/components/GroceryItemSheet';
 import ShoppingMode from '@/components/ShoppingMode';
 import SnelInvoer from '@/components/SnelInvoer';
-import ItemThumb from '@/components/ItemThumb';
 import { huiskleur, voorWinkel, winkelsOpLijst, zelfdeWinkel, zonderWinkel } from '@/lib/winkels';
 import WinkelLabel, { WinkelStip } from '@/components/WinkelLabel';
 import { useAhKoppeling } from '@/hooks/useAhKoppeling';
@@ -31,6 +30,8 @@ import { QuotaError } from '@/services/functions';
 import { sortByStoreRoute, type Department } from '@/lib/storeRouteSort';
 import { splitAmount } from '@/lib/itemAmount';
 import { countParts } from '@/lib/itemCount';
+import { historyName } from '@/hooks/usePurchaseHistory';
+import ItemRegel from '@/components/ItemRegel';
 import { CountPill, CountQuickPicks, CountStepper, useCountEditor } from '@/components/ItemCount';
 import { translateForSearch } from '@/lib/groceryTranslations';
 import type { GroceryItem } from '@/types';
@@ -217,7 +218,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
   };
 
   // Filter suggestions
-  const currentNames = groceryItems.map((i) => i.name.toLowerCase());
+  const currentNames = groceryItems.map((i) => historyName(i.name));
   const suggestions = frequentItems.filter((f) => !currentNames.includes(f.name));
 
   // Wat er bij het openen al stond, schuift niet binnen; alleen wat er daarna bijkomt.
@@ -243,28 +244,14 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
           data-count-editor={item.id}
           className={`transition-colors duration-150 ease-smooth ${editing ? 'bg-primary-soft/50' : 'bg-card'} ${nieuw(item.id) ? 'animate-rij-in' : ''}`}
         >
-          <div className="flex min-h-14 items-center gap-1 pl-1 pr-1.5">
-            <button
-              onClick={() => checkOff(item)}
-              aria-label={t("Vink {0} af", [item.name])}
-              className="group/check flex h-11 w-11 shrink-0 items-center justify-center"
-            >
-              <CheckCircle on={weg.has(item.id)} />
-            </button>
-
-            {/* De hele regel opent het venster; het vinkje blijft de snelste weg. */}
-            <button
-              type="button"
-              onClick={() => setSheetItemId(item.id)}
-              aria-label={t("Opties voor {0}", [item.name])}
-              className="flex min-w-0 flex-1 items-center gap-2.5 py-2 text-left focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <ItemThumb item={item} label={name} vergroot={false} className="h-10 w-10 rounded-[10px] text-base" />
-              <span className="min-w-0 flex-1">
-                <span className="flex items-center gap-1.5">
-                  <span className="truncate text-[0.9375rem] font-medium text-foreground">{name}</span>
-                  {item.store && <WinkelLabel winkel={item.store} />}
-                </span>
+          <ItemRegel
+            item={item}
+            naam={name}
+            af={weg.has(item.id)}
+            onVinkAf={() => checkOff(item)}
+            onOpen={() => setSheetItemId(item.id)}
+            naastNaam={item.store && <WinkelLabel winkel={item.store} />}
+            onder={<>
                 {item.note && <span className="block truncate text-xs text-foreground/75">{item.note}</span>}
                 {item.fromRecipe && (
                   <span className="block truncate text-xs text-accent-ink">uit {item.fromRecipe}</span>
@@ -275,9 +262,8 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
                 {!item.ahProduct && item.priceCheckedAt && (
                   <span className="block text-xs text-muted-foreground">{t("niet gevonden bij {0}", [koppelWinkel(item.store) ?? 'AH'])}</span>
                 )}
-              </span>
-
-              <span className={`shrink-0 text-right ${editing ? 'hidden' : ''}`}>
+            </>}
+            rechts={<span className={`shrink-0 text-right ${editing ? 'hidden' : ''}`}>
                 {item.price != null ? (
                   <>
                     <span className="block font-display text-[0.9375rem] font-bold tabular-nums text-foreground">
@@ -297,13 +283,11 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
                 ) : amount ? (
                   <span className="block text-[0.8125rem] tabular-nums text-muted-foreground">{amount}</span>
                 ) : null}
-              </span>
-            </button>
-
-            {editing
+              </span>}
+            achter={editing
               ? <CountStepper item={item} editor={countEditor} />
               : <CountPill item={item} onOpen={() => countEditor.open(item)} />}
-          </div>
+          />
           {editing && <CountQuickPicks editor={countEditor} />}
         </div>
       </SwipeToCheck>

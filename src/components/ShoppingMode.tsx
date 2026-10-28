@@ -3,8 +3,8 @@ import { createPortal } from 'react-dom';
 import { ArrowLeft, ArrowRight, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import SwipeToCheck from '@/components/SwipeToCheck';
-import ItemThumb from '@/components/ItemThumb';
-import { CheckCircle, Wegvinken } from '@/components/CheckOff';
+import ItemRegel from '@/components/ItemRegel';
+import { Wegvinken } from '@/components/CheckOff';
 import { tik } from '@/lib/haptics';
 import { stuurMelding } from '@/lib/meldingen';
 import { splitAmount } from '@/lib/itemAmount';
@@ -255,23 +255,20 @@ const ShoppingMode = ({ items, weg, onCheck, onClose, startWinkel }: ShoppingMod
             return (
               <Wegvinken key={item.id} weg={weg.has(item.id)}>
               <SwipeToCheck onSwipe={() => vinkAf(item)}>
-                <div className="flex min-h-18 items-center gap-2 rounded-[14px] border border-border bg-card py-2 pl-1 pr-4">
-                  <button
-                    onClick={() => vinkAf(item)}
-                    aria-label={t("Vink {0} af", [item.name])}
-                    className="group/check flex h-14 w-14 shrink-0 items-center justify-center"
-                  >
-                    <CheckCircle on={weg.has(item.id)} large />
-                  </button>
-                  <ItemThumb item={item} label={name} className="h-14 w-14 rounded-xl text-xl" />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate font-display text-lg font-bold tracking-[-0.01em] text-foreground">{name}</span>
+                <ItemRegel
+                  item={item}
+                  naam={name}
+                  groot
+                  af={weg.has(item.id)}
+                  onVinkAf={() => vinkAf(item)}
+                  onder={<>
                     {item.note && <span className="block text-sm leading-snug text-foreground/80">{item.note}</span>}
                     {!winkel && item.store && <WinkelLabel winkel={item.store} className="mt-0.5 inline-block" />}
                     {item.fromRecipe && <span className="block truncate text-xs text-accent-ink">uit {item.fromRecipe}</span>}
-                  </span>
-                  {amount && <span className="shrink-0 text-[0.9375rem] tabular-nums text-muted-foreground">{amount}</span>}
-                </div>
+                  </>}
+                  rechts={amount && <span className="shrink-0 pr-2.5 text-[0.9375rem] tabular-nums text-muted-foreground">{amount}</span>}
+                  className="rounded-[14px] border border-border bg-card"
+                />
               </SwipeToCheck>
               </Wegvinken>
             );

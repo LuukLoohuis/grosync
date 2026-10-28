@@ -33,6 +33,7 @@ interface AppContextType {
   usuals: UsualItem[];
   loading: boolean;
   frequentItems: FrequentItem[];
+  knownItems: FrequentItem[];
   trackPurchase: (itemName: string) => Promise<void>;
   addGroceryItem: (name: string, fromRecipe?: string) => Promise<void>;
   addGroceryItems: (items: { name: string; store?: string | null }[]) => Promise<boolean>;
@@ -154,6 +155,7 @@ export const AppProvider = ({
     usuals: usualsHook.usuals,
     loading: grocery.loading || recipeHook.loading || usualsHook.loading,
     frequentItems: purchaseHook.frequentItems,
+    knownItems: purchaseHook.knownItems,
     trackPurchase: purchaseHook.trackPurchase,
     addGroceryItem: grocery.addGroceryItem,
     addGroceryItems: grocery.addGroceryItems,

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Mic, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,7 @@ import { leesInvoer, type Ingevoerd } from '@/lib/snelInvoer';
 import { VASTE_WINKELS, winkelsOpLijst, zelfdeWinkel } from '@/lib/winkels';
 import { departmentLabel } from '@/lib/storeRouteSort';
 import ItemThumb from '@/components/ItemThumb';
-import { countParts } from '@/lib/itemCount';
+import { countParts, withCount } from '@/lib/itemCount';
 import { tik } from '@/lib/haptics';
 import { locale, t } from '@/lib/i18n';
 
@@ -45,7 +45,7 @@ interface Kaartje {
  * zodat je ziet wat erop komt voordat het erop staat.
  */
 const SnelInvoer = () => {
-  const { addGroceryItems, groceryItems, herinnering } = useAppContext();
+  const { addGroceryItems, groceryItems, herinnering, knownItems, usuals } = useAppContext();
   const bekend = winkelsOpLijst(groceryItems);
   const winkelKeuzes = [...VASTE_WINKELS, ...bekend].filter((w, i, alle) => alle.findIndex((x) => zelfdeWinkel(x, w)) === i);
   // Genoemd in de zin wint; anders wat er de vorige keer bij hoorde.
@@ -63,6 +63,32 @@ const SnelInvoer = () => {
   const herkenning = useRef<Herkenning | null>(null);
   const volgnummer = useRef(0);
   const Klasse = herkenningKlasse();
+  const lijstId = useId();
+  const [actief, setActief] = useState(-1);
+  const [dicht, setDicht] = useState(false);
+
+  // Aanvullen uit wat jullie eerder haalden en vaak nodig hebben. Alleen bij één boodschap:
+  // in "melk, eieren en brood" weet je al wat je wilt.
+  const vraag = kaal(tekst);
+  const voorstellen = (() => {
+    if (dicht || luistert || vraag.length < 2 || /,|\sen\s/i.test(tekst)) return [];
+    const namen = [...knownItems.map((k) => k.name), ...usuals.map((u) => kaal(u.name))]
+      .filter((n, i, alle) => n && alle.indexOf(n) === i && n !== vraag && !alOpLijst(n));
+    const begin = namen.filter((n) => n.startsWith(vraag));
+    const woord = namen.filter((n) => !n.startsWith(vraag) && n.split(/\s+/).some((w) => w.startsWith(vraag)));
+    return [...begin, ...woord].slice(0, 4);
+  })();
+  const toonNaam = (naam: string) => naam.charAt(0).toLocaleUpperCase('nl') + naam.slice(1);
+
+  const kies = (naam: string) => {
+    // Een getypt aantal blijft staan: "2 ban" wordt "2 Bananen".
+    const { count, unit } = countParts(tekst);
+    const metAantal = unit ? `${count} ${unit} ${toonNaam(naam)}` : count > 1 ? withCount(toonNaam(naam), count) : toonNaam(naam);
+    setTekst('');
+    setActief(-1);
+    void addGroceryItems([{ name: metAantal }]);
+    tik('licht');
+  };
 
   useEffect(() => () => herkenning.current?.abort(), []);
 
@@ -148,8 +174,19 @@ const SnelInvoer = () => {
             placeholder={luistert ? t("Zeg maar wat je nodig hebt…") : t("Wat moet je halen?")}
             aria-label={t("Wat moet je halen?")}
             value={tekst}
-            onChange={(e) => setTekst(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && verstuur()}
+            onChange={(e) => { setTekst(e.target.value); setActief(-1); setDicht(false); }}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowDown' && voorstellen.length > 0) { e.preventDefault(); setActief((a) => (a + 1) % voorstellen.length); }
+              else if (e.key === 'ArrowUp' && voorstellen.length > 0) { e.preventDefault(); setActief((a) => (a <= 0 ? voorstellen.length : a) - 1); }
+              else if (e.key === 'Escape') setDicht(true);
+              else if (e.key === 'Enter') { if (actief >= 0 && voorstellen[actief]) kies(voorstellen[actief]); else verstuur(); }
+            }}
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded={voorstellen.length > 0}
+            aria-controls={lijstId}
+            aria-activedescendant={actief >= 0 ? `${lijstId}-${actief}` : undefined}
+            autoComplete="off"
             className={`bg-card border-border font-body ${Klasse ? 'pr-12' : ''}`}
           />
           {Klasse && (
@@ -171,6 +208,27 @@ const SnelInvoer = () => {
           <Plus className="h-4 w-4" />
         </Button>
       </div>
+
+      {voorstellen.length > 0 && (
+        <ul id={lijstId} role="listbox" aria-label={t("Eerder gehaald")} className="animate-fade-in divide-y divide-border overflow-hidden rounded-[14px] border border-border bg-card">
+          {voorstellen.map((naam, i) => (
+            <li
+              key={naam}
+              id={`${lijstId}-${i}`}
+              role="option"
+              aria-selected={i === actief}
+              // Voor de blur van het veld kiezen, anders verdwijnt de lijst onder je vinger.
+              onPointerDown={(e) => e.preventDefault()}
+              onClick={() => kies(naam)}
+              className={`flex min-h-11 cursor-pointer items-center gap-2.5 px-3 text-[0.9375rem] text-foreground ${i === actief ? 'bg-primary-soft/60' : 'hover:bg-muted/60'}`}
+            >
+              <ItemThumb item={{ id: naam, name: naam, checked: false }} label={naam} vergroot={false} className="h-7 w-7 text-sm" />
+              <span className="min-w-0 flex-1 truncate">{toonNaam(naam)}</span>
+              <Plus className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+            </li>
+          ))}
+        </ul>
+      )}
 
       {kaartjes && (
         <section aria-label={t("Controleer wat erop komt")} className="rounded-[14px] border border-primary/30 bg-card p-3">

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, ChefHat, Plus, ShoppingCart } from 'lucide-react';
+import ItemRegel from '@/components/ItemRegel';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -290,33 +291,26 @@ const TodayScreen = ({ onNavigate }: { onNavigate: (tab: TodayTarget) => void })
           ) : (
             <ul className="mt-2.5 divide-y divide-border">
               {teHalen.map((item) => (
-                <li key={item.id} className="flex min-h-13 items-center gap-1.5 py-1">
-                  <button
-                    type="button"
-                    onClick={() => vinkAf(item)}
-                    aria-label={t("Vink {0} af", [item.name])}
-                    className="group/check flex h-11 w-11 shrink-0 items-center justify-center rounded-xl focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
-                  >
-                    <span className="h-6 w-6 rounded-[8px] border-2 border-primary transition-colors group-hover/check:bg-primary-soft" />
-                  </button>
-                  <span className="min-w-0 flex-1">
-                    <span className="flex items-center gap-1.5">
-                      <span className="truncate text-[0.9375rem] font-medium text-foreground">{item.name}</span>
-                      {item.ahProduct?.isBonus && (
-                        <span className="shrink-0 rounded-[5px] bg-ah-bonus/15 px-1.5 font-display text-[0.5625rem] font-bold uppercase tracking-[0.06em] text-accent-ink">
-                          {t("Bonus")}
-                        </span>
-                      )}
-                    </span>
-                    {item.ahProduct && (
+                <li key={item.id}>
+                  <ItemRegel
+                    item={item}
+                    naam={item.name}
+                    onVinkAf={() => vinkAf(item)}
+                    naastNaam={item.ahProduct?.isBonus && (
+                      <span className="shrink-0 rounded-[5px] bg-ah-bonus/15 px-1.5 font-display text-[0.5625rem] font-bold uppercase tracking-[0.06em] text-accent-ink">
+                        {t("Bonus")}
+                      </span>
+                    )}
+                    onder={item.ahProduct && (
                       <span className="block truncate text-xs text-muted-foreground">
                         {item.ahProduct.quantity}× {item.ahProduct.title}
                       </span>
                     )}
-                  </span>
-                  {item.price != null && (
-                    <span className="shrink-0 font-display text-sm font-semibold tabular-nums text-foreground">{euro.format(item.price)}</span>
-                  )}
+                    rechts={item.price != null && (
+                      <span className="shrink-0 font-display text-sm font-semibold tabular-nums text-foreground">{euro.format(item.price)}</span>
+                    )}
+                    className="-ml-1"
+                  />
                 </li>
               ))}
             </ul>
