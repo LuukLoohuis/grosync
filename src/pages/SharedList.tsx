@@ -23,7 +23,7 @@ const SharedListContent = () => {
 
   return (
     <div className="min-h-dvh bg-background">
-      <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border">
+      <header className="sticky top-0 z-10 bg-background border-b border-border">
         <div className="max-w-lg mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <img src="/favicon.png" alt="" className="h-11 w-11 shrink-0" width={44} height={44} />

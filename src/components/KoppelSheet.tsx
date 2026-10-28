@@ -210,7 +210,9 @@ const KoppelSheet = ({ open, onOpenChange }: KoppelSheetProps) => {
     uncheckedNames.forEach((name, i) => {
       const y = 40 + i * 8;
       if (y > 280) return;
-      doc.text(`☐  ${name}`, 20, y);
+      // jsPDF's standaardletter kent geen ☐, dus het vakje wordt getekend.
+      doc.rect(20, y - 3.6, 4, 4);
+      doc.text(name, 27, y);
     });
     doc.save('boodschappenlijst.pdf');
     toast.success(t("PDF gedownload"));
@@ -365,7 +367,7 @@ const KoppelSheet = ({ open, onOpenChange }: KoppelSheetProps) => {
               )}
               <p className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                 {t('Of geef de code:')}
-                <span className="rounded-md bg-muted px-2 py-0.5 font-mono text-base tracking-widest text-foreground">
+                <span className="rounded-md bg-muted px-2 py-0.5 font-mono text-base tracking-widest text-foreground" /* taste-skill-ignore: code */>
                   {toonCode(state.shareCode)}
                 </span>
               </p>
@@ -396,7 +398,7 @@ const KoppelSheet = ({ open, onOpenChange }: KoppelSheetProps) => {
                   spellCheck={false}
                   aria-invalid={codeFout}
                   aria-describedby={codeFout ? 'club-code-fout' : undefined}
-                  className="bg-card font-mono tracking-widest"
+                  className="bg-card font-mono tracking-widest" /* taste-skill-ignore: code */
                 />
                 <Button type="submit" variant="outline" className="min-h-11 shrink-0">{t('Instappen')}</Button>
               </div>

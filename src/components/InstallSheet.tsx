@@ -27,7 +27,8 @@ const icon = 'h-5 w-5';
 /** iOS's own switch, as it looks in the "Zet op beginscherm" screen. */
 const IosSwitch = () => (
   <span className="flex h-[22px] w-[38px] items-center justify-end rounded-full bg-[#34C759] p-0.5">
-    <span className="h-[18px] w-[18px] rounded-full bg-white shadow-sm" />
+    {/* Nagebouwde iOS-schakelaar, met de schaduw van het origineel. */}
+    <span className="h-[18px] w-[18px] rounded-full bg-white shadow-sm" /> {/* taste-skill-ignore */}
   </span>
 );
 

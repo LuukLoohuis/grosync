@@ -29,7 +29,7 @@ const SheetOverlay = React.forwardRef<
 SheetOverlay.displayName = SheetPrimitive.Overlay.displayName;
 
 const sheetVariants = cva(
-  "fixed z-50 gap-4 bg-background p-6 shadow-lg ease-smooth data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-200 data-[state=open]:duration-[280ms]",
+  "fixed z-50 gap-4 bg-background p-6 shadow-lg ease-smooth data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:duration-200 data-[state=open]:duration-[280ms]", // taste-skill-ignore: zwevende laag
   {
     variants: {
       side: {
@@ -58,7 +58,7 @@ const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Con
       <SheetPrimitive.Content ref={ref} className={cn(sheetVariants({ side }), className)} {...props}>
         {children}
         {/* Staat ook op een foto duidelijk in beeld. */}
-        <SheetPrimitive.Close className="absolute right-3 top-3 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background/90 text-foreground shadow-flat ring-offset-background backdrop-blur-sm transition-colors hover:bg-background focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
+        <SheetPrimitive.Close className="absolute right-3 top-3 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background text-foreground shadow-flat ring-offset-background transition-colors hover:bg-background focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none">
           <X className="h-[18px] w-[18px]" strokeWidth={2.2} />
           <span className="sr-only">Sluiten</span>
         </SheetPrimitive.Close>

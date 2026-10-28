@@ -133,7 +133,7 @@ const Admin = () => {
 
   return (
     <div className="min-h-dvh bg-background pb-16">
-      <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-md">
+      <header className="sticky top-0 z-10 border-b border-border bg-background">
         <div className="mx-auto flex h-14 max-w-3xl items-center gap-2 px-4">
           <Link to="/" aria-label="Terug" className="flex h-11 w-11 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground">
             <ArrowLeft className="h-5 w-5" />
@@ -271,7 +271,7 @@ const Admin = () => {
             </div>
 
             <p className="border-t border-border pt-3 text-xs text-muted-foreground">
-              De API-sleutels zelf horen in Supabase, niet hier: <span className="font-mono text-[0.6875rem]">DEEPSEEK_API_KEY</span> onder
+              De API-sleutels zelf horen in Supabase, niet hier: <span className="font-mono text-[0.6875rem]" /* taste-skill-ignore: sleutelnaam */>DEEPSEEK_API_KEY</span> onder
               Project Settings → Edge Functions → Secrets. Kies je DeepSeek zonder die sleutel, dan blijft OpenAI draaien.
             </p>
           </div>

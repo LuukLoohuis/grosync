@@ -149,7 +149,7 @@
   --font-display: 'Space Grotesk', system-ui, sans-serif;
   --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
   --font-body: 'IBM Plex Sans', system-ui, sans-serif;
-  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace; /* taste-skill-ignore: alleen voor codes en sleutels */
 
   --color-border: hsl(var(--border));
   --color-input: hsl(var(--input));
@@ -313,16 +313,16 @@
 }
 
 @utility shadow-flat {
-  box-shadow: var(--shadow-flat);
+  box-shadow: var(--shadow-flat); /* taste-skill-ignore: tokens voor zwevende lagen */
 }
 @utility shadow-soft {
-  box-shadow: var(--shadow-soft);
+  box-shadow: var(--shadow-soft); /* taste-skill-ignore: tokens voor zwevende lagen */
 }
 @utility shadow-card {
-  box-shadow: var(--shadow-soft);
+  box-shadow: var(--shadow-soft); /* taste-skill-ignore: tokens voor zwevende lagen */
 }
 @utility shadow-sheet {
-  box-shadow: var(--shadow-sheet);
+  box-shadow: var(--shadow-sheet); /* taste-skill-ignore: tokens voor zwevende lagen */
 }
 
 /* Respect the system setting for less motion: sheets, dialogs and toasts appear without sliding. */

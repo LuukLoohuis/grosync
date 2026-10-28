@@ -144,11 +144,11 @@ const DELEN: Record<string, Deel> = {
         <H2>Wie ze verder verwerken</H2>
         <Lijst
           items={[
-            'Supabase — database en inloggen, servers in de Europese Unie.',
-            'Vercel — de app zelf.',
-            'OpenAI en Google — het lezen van recepten en kastfoto’s.',
-            'Albert Heijn — prijzen opzoeken. Je lijst gaat als zoekterm mee, niet je account.',
-            'Stripe — betalingen, als je Plus neemt.',
+            'Supabase: database en inloggen, servers in de Europese Unie.',
+            'Vercel: de app zelf.',
+            'OpenAI en Google: het lezen van recepten en kastfoto’s.',
+            'Albert Heijn: prijzen opzoeken. Je lijst gaat als zoekterm mee, niet je account.',
+            'Stripe: betalingen, als je Plus neemt.',
           ]}
         />
 
@@ -208,7 +208,7 @@ const Legal = () => {
 
   return (
     <div className="min-h-dvh bg-background">
-      <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur-md">
+      <header className="sticky top-0 z-10 border-b border-border bg-background">
         <div className="mx-auto flex h-14 max-w-2xl items-center gap-2 px-4">
           <Link
             to="/"

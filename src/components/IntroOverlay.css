@@ -26,15 +26,6 @@
   --intro-red: #ff5a4e;
 }
 
-.intro-glow {
-  position: absolute;
-  width: 520px;
-  height: 520px;
-  border-radius: 50%;
-  opacity: 0;
-  background: radial-gradient(closest-side, color-mix(in oklab, var(--intro-green) 16%, transparent), transparent 70%);
-  animation: intro-glow 1600ms var(--intro-ease) forwards;
-}
 
 .intro-stack {
   position: relative;
@@ -56,8 +47,8 @@
   width: 100%;
   height: 100%;
   opacity: 0;
-  -webkit-mask: conic-gradient(from -20deg, #000 var(--intro-sweep), transparent calc(var(--intro-sweep) + 28deg));
-  mask: conic-gradient(from -20deg, #000 var(--intro-sweep), transparent calc(var(--intro-sweep) + 28deg));
+  -webkit-mask: conic-gradient(from -20deg, #000 var(--intro-sweep), transparent calc(var(--intro-sweep) + 28deg)); /* taste-skill-ignore: masker, geen vulling */
+  mask: conic-gradient(from -20deg, #000 var(--intro-sweep), transparent calc(var(--intro-sweep) + 28deg)); /* taste-skill-ignore: masker, geen vulling */
   animation:
     intro-sweep 900ms var(--intro-ease) 80ms forwards,
     intro-reveal 900ms var(--intro-ease) 80ms forwards,
@@ -112,10 +103,6 @@
   animation: intro-leave 560ms var(--intro-ease) forwards;
 }
 
-@keyframes intro-glow {
-  from { opacity: 0; transform: scale(0.6); }
-  to { opacity: 1; transform: scale(1); }
-}
 @keyframes intro-sweep {
   to { --intro-sweep: 360deg; }
 }
@@ -153,7 +140,6 @@
 
 /* Minder beweging: alles komt in één keer op, zonder draaien, schalen of vervagen. */
 @media (prefers-reduced-motion: reduce) {
-  .intro-glow,
   .intro-sparks {
     display: none;
   }

@@ -55,7 +55,6 @@ const IntroOverlay = () => {
       onClick={() => setWeg(true)}
       onAnimationEnd={(e) => { if (weg && e.target === e.currentTarget) setKlaar(true); }}
     >
-      <div className="intro-glow" />
       <div className="intro-stack">
         <div className="intro-emblem">
           <img src="/favicon.png" alt="" width={190} height={190} />

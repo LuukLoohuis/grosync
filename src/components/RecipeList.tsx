@@ -587,7 +587,7 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
 
           {/* Sticks under the header, so searching and filtering stay within reach
               however far you have scrolled. */}
-          <div className="sticky top-14 z-10 -mx-4 space-y-2 bg-background/95 px-4 pb-2 pt-2 backdrop-blur-md">
+          <div className="sticky top-14 z-10 -mx-4 space-y-2 bg-background px-4 pb-2 pt-2">
           <div className="flex items-center gap-2">
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

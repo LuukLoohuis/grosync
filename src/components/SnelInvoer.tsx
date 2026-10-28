@@ -162,7 +162,7 @@ const SnelInvoer = () => {
                 luistert ? 'text-destructive' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              {luistert && <span aria-hidden="true" className="absolute h-8 w-8 animate-ping rounded-full bg-destructive/20" />}
+              {luistert && <span aria-hidden="true" className="absolute h-8 w-8 animate-ping rounded-full bg-destructive/20" /> /* taste-skill-ignore: toont dat de microfoon luistert */}
               <Mic className="relative h-4 w-4" />
             </button>
           )}

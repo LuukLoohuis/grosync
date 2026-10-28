@@ -162,7 +162,7 @@ const Index = () => {
     <div className="min-h-dvh overflow-x-hidden bg-background">
       {/* "Vandaag" brings its own green header */}
       {!onToday && (
-        <header className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur-md">
+        <header className="sticky top-0 z-20 border-b border-border bg-background">
           <div className="mx-auto flex h-14 max-w-lg items-center gap-3 px-4">
             <img src="/favicon.png" alt="" className="h-9 w-9 shrink-0 rounded-[10px]" width={36} height={36} />
             <h1 className="flex-1 truncate font-display text-xl font-bold tracking-[-0.01em] text-foreground">{t("CoupleCart")}</h1>

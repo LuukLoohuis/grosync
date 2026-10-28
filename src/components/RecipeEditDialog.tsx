@@ -93,7 +93,7 @@ const RecipeEditDialog = ({ recipe, open: openProp, onOpenChange }: RecipeEditDi
             <label className="text-sm text-muted-foreground mb-1 flex items-center gap-1">
               <Link className="h-3.5 w-3.5" /> {t("Recept URL (optioneel)")}
             </label>
-            <Input type="url" placeholder="https://example.com/recipe" value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} />
+            <Input type="url" placeholder={t("Plak de link van het recept")} value={sourceUrl} onChange={(e) => setSourceUrl(e.target.value)} />
           </div>
           <div>
             <label className="text-sm text-muted-foreground mb-1 block">{t("Ingrediënten (één per regel)")}</label>

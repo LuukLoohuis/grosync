@@ -46,7 +46,7 @@ const Schakelaar = ({ aan, label, uitleg, onChange, disabled }: {
       aria-hidden="true"
       className={`relative h-7 w-12 shrink-0 rounded-full transition-colors duration-150 ease-smooth ${aan ? 'bg-primary' : 'bg-border-strong'}`}
     >
-      <span className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow-sm transition-transform duration-150 ease-smooth ${aan ? 'translate-x-[1.375rem]' : 'translate-x-0.5'}`} />
+      <span className={`absolute top-0.5 h-6 w-6 rounded-full bg-white transition-transform duration-150 ease-smooth ${aan ? 'translate-x-[1.375rem]' : 'translate-x-0.5'}`} />
     </span>
   </button>
 );

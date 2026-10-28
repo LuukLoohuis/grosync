@@ -60,7 +60,7 @@ const RecipeDetailSheet = ({ recipe, onClose, onAddToList, onEdit, onMacros, onC
             onClick={() => void toggleFavorite(shown.id)}
             aria-label={shown.favorite ? t('Uit je favorieten halen') : t('Favoriet maken')}
             aria-pressed={shown.favorite === true}
-            className="absolute right-15 top-3 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background/90 text-foreground shadow-flat backdrop-blur-sm transition-colors hover:bg-background focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+            className="absolute right-15 top-3 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-border bg-background text-foreground shadow-flat transition-colors hover:bg-background focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
           >
             <Heart
               className={`h-[18px] w-[18px] ${shown.favorite ? 'text-destructive' : 'text-muted-foreground'}`}

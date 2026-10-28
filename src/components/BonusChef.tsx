@@ -316,7 +316,7 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
             />
           </div>
           <p className="mt-2 flex items-baseline justify-between gap-2 text-[0.8125rem] text-primary-foreground/75">
-            <span>{t("Je hoeft niet te wachten — het staat er zo.")}</span>
+            <span>{t("Je hoeft niet te wachten, het staat er zo.")}</span>
             {wacht < DUURT_MS && (
               <span className="shrink-0 tabular-nums">{t('nog ± {0} sec', [Math.max(1, Math.ceil((DUURT_MS - wacht) / 1000))])}</span>
             )}

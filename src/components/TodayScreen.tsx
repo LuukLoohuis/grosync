@@ -226,7 +226,7 @@ const TodayScreen = ({ onNavigate }: { onNavigate: (tab: TodayTarget) => void })
           <div className="mt-3.5 rounded-[14px] bg-primary-deep px-3.5 py-3.5 dark:bg-card">
             <p className="text-[0.8125rem] font-medium text-primary-muted">{t("Vanavond")}</p>
             <p className="mt-1 font-display text-lg font-semibold leading-[1.2]">
-              {t("Nog niets gepland — en nog geen recepten om uit te kiezen")}
+              {t("Nog niets gepland en nog geen recepten om uit te kiezen")}
             </p>
             <p className="mt-1 text-xs text-primary-muted">
               {t("Zet er één in. Vanaf dan staat hier elke dag wat jullie eten, en de boodschappen ervoor gaan vanzelf op de lijst.")}

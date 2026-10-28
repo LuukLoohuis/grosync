@@ -116,7 +116,7 @@ const MacrosDialog = ({ recipe, onMacrosCalculated, open, onOpenChange }: Macros
       )}
       <DialogContent className="bg-background sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="font-display text-xl">{t('Voedingswaarden — {0}', [recipe.name])}</DialogTitle>
+          <DialogTitle className="font-display text-xl">{t('Voedingswaarden van {0}', [recipe.name])}</DialogTitle>
         </DialogHeader>
 
         {macros ? (

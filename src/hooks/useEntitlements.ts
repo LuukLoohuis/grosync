@@ -18,7 +18,7 @@ export const FEATURE_LABEL: Record<MeteredFeature, string> = {
 const currentPeriod = () => {
   const now = new Date();
   const dutch = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Amsterdam' }));
-  return `${dutch.getFullYear()}-${String(dutch.getMonth() + 1).padStart(2, '0')}`;
+  return `${dutch.getFullYear()}-${String(dutch.getMonth() + 1).padStart(2, '0')}`; // taste-skill-ignore: maand, geen nummering
 };
 
 interface UseEntitlementsOptions {

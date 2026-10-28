@@ -89,7 +89,7 @@ const RecipeTile = ({ recipe, categories, cookCount = 0, reason = null, wide = f
         onClick={onToggleFavorite}
         aria-label={recipe.favorite ? t('Haal {0} uit je favorieten', [recipe.name]) : t('Maak {0} favoriet', [recipe.name])}
         aria-pressed={recipe.favorite === true}
-        className="absolute left-1.5 top-1.5 flex h-10 w-10 items-center justify-center rounded-full bg-background/85 text-foreground shadow-flat backdrop-blur-sm transition-colors duration-150 ease-smooth hover:bg-background focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+        className="absolute left-1.5 top-1.5 flex h-10 w-10 items-center justify-center rounded-full bg-background text-foreground shadow-flat transition-colors duration-150 ease-smooth hover:bg-background focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
       >
         <Heart
           className={`h-4 w-4 transition-colors ${recipe.favorite ? 'text-destructive' : 'text-muted-foreground'}`}
@@ -102,7 +102,7 @@ const RecipeTile = ({ recipe, categories, cookCount = 0, reason = null, wide = f
         type="button"
         onClick={onAddToList}
         aria-label={t("Zet {0} op je lijst", [recipe.name])}
-        className="absolute right-1.5 top-1.5 flex h-10 w-10 items-center justify-center rounded-full bg-background/85 text-foreground shadow-flat backdrop-blur-sm transition-colors duration-150 ease-smooth hover:bg-background focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+        className="absolute right-1.5 top-1.5 flex h-10 w-10 items-center justify-center rounded-full bg-background text-foreground shadow-flat transition-colors duration-150 ease-smooth hover:bg-background focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
       >
         <ShoppingCart className="h-4 w-4" />
       </button>
