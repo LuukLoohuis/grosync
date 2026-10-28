@@ -244,14 +244,15 @@ const Legal = () => {
           ))}
         </nav>
 
-        <p className="mt-4 text-xs text-muted-foreground">Laatst herzien op {HERZIEN}</p>
-
-        <article>{gekozen.inhoud}</article>
-
-        <p className="mt-8 rounded-[14px] border border-border bg-card p-4 text-sm text-muted-foreground">
+        {/* Bovenaan, want het menu "Hulp en voorwaarden" komt hier uit. */}
+        <p className="mt-4 rounded-[14px] border border-border bg-card p-4 text-sm text-muted-foreground">
           Hulp nodig of een vraag over je abonnement? Mail {mail} en je krijgt binnen een paar dagen
           antwoord.
         </p>
+
+        <p className="mt-4 text-xs text-muted-foreground">Laatst herzien op {HERZIEN}</p>
+
+        <article>{gekozen.inhoud}</article>
       </main>
     </div>
   );

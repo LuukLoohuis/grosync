@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Bell, Heart, LogOut, MoreVertical, Gauge, LifeBuoy, FileText, Sparkles, SquarePlus, Users } from 'lucide-react';
+import { Bell, Heart, LogOut, MoreVertical, Gauge, LifeBuoy, Sparkles, SquarePlus, Users } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useAuth } from '@/hooks/useAuth';
 import { useInstallHint } from '@/hooks/useInstallHint';
@@ -73,8 +73,11 @@ const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
           <Sparkles className="h-3.5 w-3.5" strokeWidth={2.2} /> {t("Plus")}
         </button>
       )}
-      <button type="button" onClick={() => setShareOpen(true)} aria-label={t("Cart Club")} title={t("Cart Club")} className={iconButton}>
-        <Users className="h-5 w-5" strokeWidth={1.9} />
+      {/* Met naam erbij: alleen een icoon zegt een nieuw lid niet dat hier het delen zit. */}
+      <button type="button" onClick={() => setShareOpen(true)} className={`${iconButton} w-auto gap-1.5 px-2.5 text-[0.8125rem] font-semibold`}>
+        <Users className="h-[18px] w-[18px]" strokeWidth={1.9} />
+        <span className="sm:hidden">{t("Club")}</span>
+        <span className="hidden sm:inline">{t("Cart Club")}</span>
       </button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
@@ -84,12 +87,17 @@ const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-60">
           {gast && <AccountMenuItem onSelect={() => setAccountOpen(true)} />}
-          <DropdownMenuItem className="gap-2 min-h-11 cursor-pointer font-semibold text-accent-ink focus:text-accent-ink" onSelect={() => setUsageOpen(true)}>
-            <Sparkles className="h-4 w-4" />
-            <span className="flex-1">{t("CoupleCart Plus")}</span>
-            <span className="text-xs font-normal text-muted-foreground">{plus ? t("actief") : t("en je tegoed")}</span>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
+          {/* Zonder Plus staat dezelfde knop al in de kop; hier alleen als hij daar weg is. */}
+          {plus && (
+            <>
+              <DropdownMenuItem className="gap-2 min-h-11 cursor-pointer font-semibold text-accent-ink focus:text-accent-ink" onSelect={() => setUsageOpen(true)}>
+                <Sparkles className="h-4 w-4" />
+                <span className="flex-1">{t("CoupleCart Plus")}</span>
+                <span className="text-xs font-normal text-muted-foreground">{t("actief")}</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
+          )}
           <DropdownMenuLabel>{t("Thema")}</DropdownMenuLabel>
           <DropdownMenuRadioGroup value={theme ?? 'system'} onValueChange={setTheme} className="grid grid-cols-3 gap-1 px-1 pb-1">
             {THEMES.map(([value, label]) => (
@@ -121,13 +129,9 @@ const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
               <a href="#/admin"><Gauge className="h-4 w-4" /> {t("Beheer")}</a>
             </DropdownMenuItem>
           )}
+          {/* Op de pagina met voorwaarden staat onderaan ook het hulpadres. */}
           <DropdownMenuItem asChild className="gap-2 min-h-11 cursor-pointer">
-            <a href="#/info/voorwaarden"><FileText className="h-4 w-4" /> {t("Voorwaarden en privacy")}</a>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild className="gap-2 min-h-11 cursor-pointer">
-            <a href="mailto:info.couplecart@gmail.com?subject=Hulp%20bij%20CoupleCart">
-              <LifeBuoy className="h-4 w-4" /> {t("Hulp nodig?")}
-            </a>
+            <a href="#/info/voorwaarden"><LifeBuoy className="h-4 w-4" /> {t("Hulp en voorwaarden")}</a>
           </DropdownMenuItem>
           <DropdownMenuItem asChild className="gap-2 min-h-11 cursor-pointer">
             <a href="https://ko-fi.com/couplecart" target="_blank" rel="noopener noreferrer">

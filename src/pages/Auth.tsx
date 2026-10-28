@@ -150,6 +150,17 @@ const handleGoogleLogin = async () => {
           <Logo className="h-auto w-[min(16rem,70vw)]" />
         </div>
 
+        {!vergeten && (
+          <div className="mt-5 text-center">
+            <h1 className="font-display text-2xl font-bold text-foreground">
+              {isSignUp ? t('Maak je account') : t('Samen boodschappen doen')}
+            </h1>
+            <p className="mx-auto mt-1.5 max-w-[19rem] text-[0.9375rem] leading-[1.45] text-muted-foreground">
+              {t('Eén lijst voor jullie samen. Wat de een toevoegt, ziet de ander meteen.')}
+            </p>
+          </div>
+        )}
+
         <InstallTip className="mt-6" />
 
         <div className="mt-7 space-y-3">
@@ -302,10 +313,13 @@ const handleGoogleLogin = async () => {
               }
             }}
             disabled={loading}
-            className="mt-6 min-h-11 w-full rounded-xl text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+            className="mt-6 min-h-11 w-full rounded-xl text-sm font-semibold text-foreground underline-offset-4 transition-colors hover:underline focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
           >
-            {loading ? t("Even geduld…") : t("Doorgaan zonder account")}
+            {loading ? t("Even geduld…") : t("Eerst proberen zonder account")}
           </button>
+        )}
+        {!vergeten && (
+          <p className="mt-0.5 text-center text-xs text-muted-foreground">{t('Een account maken kan later altijd.')}</p>
         )}
 
         <p className="mt-6 text-center text-xs text-muted-foreground">
