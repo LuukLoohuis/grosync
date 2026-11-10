@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Check, ChevronDown, Plus, Trash2, X, Merge, TrendingUp, Loader2, ShoppingBasket, ShoppingCart, Tag, MoreHorizontal, RefreshCw, Search, Scale, Share2, Store } from 'lucide-react';
+import { Check, ChevronDown, Plus, Trash2, X, Merge, TrendingUp, ShoppingBasket, ShoppingCart, Tag, MoreHorizontal, RefreshCw, Search, Scale, Share2, Store } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppContext } from '@/contexts/AppContext';
 import { AH_MAX_ITEMS, ahBasketUrl, matchAhProducts } from '@/services/ahApi';
@@ -26,6 +26,7 @@ import DepartmentHeading from '@/components/DepartmentHeading';
 import AhProductSheet from '@/components/AhProductSheet';
 import PlusSheet from '@/components/PlusSheet';
 import PrijsVergelijkSheet from '@/components/PrijsVergelijkSheet';
+import ZoekVoortgang from '@/components/ZoekVoortgang';
 import { FREE_LIMIT } from '@/hooks/useEntitlements';
 import { QuotaError } from '@/services/functions';
 import { sortByStoreRoute, type Department } from '@/lib/storeRouteSort';
@@ -50,6 +51,10 @@ const ahSearchUrl = (name: string) => `https://www.ah.nl/zoeken?query=${toSearch
 
 // Vanaf zoveel open boodschappen verschijnt het vergrootglas.
 const ZOEK_VANAF = 15;
+// Zo lang zoekt ah-products meestal; de voortgang loopt iets voor en wacht dan op het antwoord.
+const AH_ZOEKTIJD_MS = 6000;
+// Even het vinkje laten zien voordat het totaal verschijnt.
+const AH_KLAAR_PAUZE_MS = 450;
 
 // Zoeken zonder op hoofdletters of accenten te letten: "creme" vindt "crème".
 const kaal = (tekst: string) => tekst.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -83,6 +88,8 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
   const [winkelFilter, setWinkelFilter] = useState<string | null>(null);
   const [shopping, setShopping] = useState(false);
   const [pricing, setPricing] = useState(false);
+  // De eerste prijscheck: welke boodschappen er gezocht worden, en of het antwoord binnen is.
+  const [zoektPrijzen, setZoektPrijzen] = useState<{ namen: string[]; klaar: boolean } | null>(null);
   const [overLimit, setOverLimit] = useState(false);
   const [vergelijken, setVergelijken] = useState(false);
   const [showChecked, setShowChecked] = useState(false);
@@ -144,9 +151,17 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
     if (batch.length === 0) return;
     if (mandjeOp) { setOverLimit(true); return; }
     setPricing(true);
+    // Bij de eerste check laat de balk zien wat er gebeurt; verversen houdt het totaal in beeld.
+    const eerste = !hasPrices;
+    if (eerste) setZoektPrijzen({ namen: batch.map((i) => i.name), klaar: false });
     try {
       const { matches, unmatched } = await matchAhProducts(batch.map(({ id, name }) => ({ id, name })));
-      await applyAhMatches(matches, unmatched ?? []);
+      if (eerste) setZoektPrijzen((z) => (z ? { ...z, klaar: true } : z));
+      // Wegschrijven terwijl het vinkje staat, zodat het totaal daarna meteen klopt.
+      await Promise.all([
+        applyAhMatches(matches, unmatched ?? []),
+        eerste ? new Promise((klaar) => window.setTimeout(klaar, AH_KLAAR_PAUZE_MS)) : null,
+      ]);
       toast.success(matches.length === batch.length
         ? t("Alle {0} boodschappen gevonden bij AH", [matches.length])
         : t('{0} van {1} boodschappen gevonden bij AH', [matches.length, batch.length]));
@@ -161,6 +176,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
       }
     } finally {
       void refreshEntitlements();
+      setZoektPrijzen(null);
       setPricing(false);
     }
   };
@@ -566,7 +582,20 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
               : 'bottom-0 pb-[env(safe-area-inset-bottom)]'}`}
         >
           <div className="mx-auto max-w-lg px-4 py-2">
-            {hasPrices ? (
+            {zoektPrijzen ? (
+              <div>
+                <ZoekVoortgang
+                  winkels={['AH']}
+                  namen={zoektPrijzen.namen}
+                  klaar={zoektPrijzen.klaar}
+                  zoektijdMs={AH_ZOEKTIJD_MS}
+                  slot={t('Kiest per boodschap het beste product…')}
+                />
+                <p role="status" className="sr-only">
+                  {zoektPrijzen.klaar ? t('Prijzen gevonden') : t('Prijzen zoeken bij AH…')}
+                </p>
+              </div>
+            ) : hasPrices ? (
               <>
                 {/* Groen vlak met het totaal, oranje knop naar het mandje. */}
                 <div className="flex items-center gap-3 rounded-[14px] bg-primary px-3.5 py-2.5">
@@ -620,9 +649,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
             ) : (
               <>
                 <Button type="button" variant="outline" onClick={fetchAhPrices} disabled={pricing} className="min-h-11 w-full gap-2">
-                  {pricing
-                    ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("Prijzen zoeken…")}</>
-                    : <><Tag className="h-4 w-4" /> {t("Bekijk wat het kost bij AH")}</>}
+                  <Tag className="h-4 w-4" /> {t("Bekijk wat het kost bij AH")}
                 </Button>
                 {!plus && (
                   <p className="mt-1 text-center text-xs tabular-nums text-muted-foreground">
