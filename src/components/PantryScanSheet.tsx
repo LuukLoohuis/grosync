@@ -8,6 +8,8 @@ import { sortByStoreRoute } from '@/lib/storeRouteSort';
 import type { ScanHit } from '@/services/pantryApi';
 import type { PantryItem } from '@/types';
 import { t } from '@/lib/i18n';
+import StappenVoortgang from '@/components/StappenVoortgang';
+import { kastStappen } from '@/lib/aiStappen';
 
 interface PantryScanSheetProps {
   hits: ScanHit[] | null;
@@ -16,6 +18,8 @@ interface PantryScanSheetProps {
   /** Opent de camera opnieuw; wat die vindt komt bij deze lijst. */
   onAnotherPhoto: () => void;
   scanning: boolean;
+  /** Hoeveel foto's er nu gelezen worden. */
+  scanFotos?: number;
   /** Wat er al in de kast staat: voor "staat er al", en om te zien wat er niet meer staat. */
   known: PantryItem[];
 }
@@ -57,7 +61,7 @@ const nietMeerGezien = (gezien: string[], kast: PantryItem[]): PantryItem[] => {
  * Wat de foto zag, in drie groepen: wat zeker is staat aangevinkt, wat je al hebt
  * staat erbij zonder vinkje, en twijfelgevallen staan onderaan met een reden.
  */
-const PantryScanSheet = ({ hits, onClose, onConfirm, onAnotherPhoto, scanning, known }: PantryScanSheetProps) => {
+const PantryScanSheet = ({ hits, onClose, onConfirm, onAnotherPhoto, scanning, scanFotos = 1, known }: PantryScanSheetProps) => {
   const [chosen, setChosen] = useState<Set<string>>(new Set());
   const [shown, setShown] = useState<ScanHit[]>([]);
   const [extra, setExtra] = useState('');
@@ -241,6 +245,8 @@ const PantryScanSheet = ({ hits, onClose, onConfirm, onAnotherPhoto, scanning, k
             <Plus className="h-4 w-4" />
           </Button>
         </div>
+
+        {scanning && <StappenVoortgang stappen={kastStappen(scanFotos)} className="mt-3" />}
 
         <div className="mt-3 flex gap-2 pb-2">
           <Button variant="outline" className="min-h-12 flex-1 gap-2" onClick={onAnotherPhoto} disabled={scanning}>

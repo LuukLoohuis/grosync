@@ -1,5 +1,6 @@
 import type { FetchedRecipe } from '@/services/recipeApi';
 import { t } from '@/lib/i18n';
+import type { Stap } from '@/lib/stappen';
 
 export type ImportInput = { kind: 'url'; url: string } | { kind: 'text'; text: string };
 
@@ -36,15 +37,32 @@ export const SOURCE_LABELS: Record<SourceKey, string> = {
   text: t('Uit geplakte tekst'),
 };
 
+const VIDEO_HOSTS = /youtu\.?be|instagram\.com|tiktok\.com|facebook\.com|fb\.watch/i;
+
 /**
- * fetch-url-meta answers only when it is done, so these steps follow the elapsed
- * time rather than the real progress.
+ * What fetch-url-meta does, as steps for StappenVoortgang. It answers only when
+ * it is done, so the steps follow the elapsed time rather than the real progress.
+ * Video links first try the caption and only then watch the video.
  */
-export function progressLabel(elapsedMs: number, input: ImportInput): string {
-  if (input.kind === 'text') return t('Recept zoeken…');
-  if (elapsedMs < 3000) return t('Link lezen…');
-  if (elapsedMs < 12000) return t('Recept zoeken…');
-  return /youtu\.?be|instagram\.com/i.test(input.url) ? t('Nog even, we kijken de video…') : t('Nog even geduld…');
+export function importStappen(input: ImportInput): Stap[] {
+  if (input.kind === 'text') {
+    return [
+      { label: t('Tekst lezen'), ms: 1500 },
+      { label: t('Ingrediënten en bereiding ordenen'), ms: 6000 },
+    ];
+  }
+  if (VIDEO_HOSTS.test(input.url)) {
+    return [
+      { label: t('Link openen'), ms: 2500 },
+      { label: t('Beschrijving lezen, anders de video bekijken'), ms: 12000 },
+      { label: t('Ingrediënten en bereiding uitschrijven'), ms: 8000 },
+    ];
+  }
+  return [
+    { label: t('Pagina openen'), ms: 2500 },
+    { label: t('Recept op de pagina zoeken'), ms: 4000 },
+    { label: t('Ingrediënten en bereiding ordenen'), ms: 6000 },
+  ];
 }
 
 const ESTIMATE_PREFIX = /^ca\.\s*/i;

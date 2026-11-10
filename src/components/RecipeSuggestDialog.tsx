@@ -1,5 +1,7 @@
 import { useState, type ReactNode } from 'react';
-import { Lightbulb, Loader2, Plus, ShoppingBag } from 'lucide-react';
+import { Lightbulb, Plus, ShoppingBag } from 'lucide-react';
+import StappenVoortgang from '@/components/StappenVoortgang';
+import { suggestieStappen } from '@/lib/aiStappen';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useAppContext } from '@/contexts/AppContext';
@@ -68,10 +70,7 @@ const RecipeSuggestDialog = ({ trigger }: { trigger?: ReactNode } = {}) => {
         </DialogHeader>
 
         {loading && (
-          <div className="flex flex-col items-center gap-3 py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">{t("Even kijken wat er met je lijst te koken valt…")}</p>
-          </div>
+          <StappenVoortgang stappen={suggestieStappen(groceryItems.filter((i) => !i.checked).length, pantryStaples.length > 0)} className="my-4" />
         )}
 
         {!loading && suggestions.length === 0 && (

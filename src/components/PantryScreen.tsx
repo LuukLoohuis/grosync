@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Camera, Check, ListChecks, Loader2, Plus, Search, X } from 'lucide-react';
+import { Camera, Check, ListChecks, Plus, Search, X } from 'lucide-react';
+import StappenVoortgang from '@/components/StappenVoortgang';
+import { kastStappen } from '@/lib/aiStappen';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -67,6 +69,8 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
   const [zoeken, setZoeken] = useState(false);
   const [zoekterm, setZoekterm] = useState('');
   const [scanning, setScanning] = useState(false);
+  // Hoeveel foto's er in deze ronde gelezen worden, voor de voortgang.
+  const [scanFotos, setScanFotos] = useState(1);
   const [hits, setHits] = useState<ScanHit[] | null>(null);
   const [openItemId, setOpenItemId] = useState<string | null>(null);
   const [filter, setFilter] = useState<Department | 'kruiden' | 'bijna' | null>(null);
@@ -107,6 +111,7 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
   // Een kast past zelden in één foto, dus meerdere planken landen in één lijst.
   const takePhotos = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
+    setScanFotos(files.length);
     setScanning(true);
     try {
       for (const file of Array.from(files)) {
@@ -226,11 +231,14 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
               disabled={scanning}
               onClick={scan}
             >
-              {scanning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+              <Camera className="h-4 w-4" />
             </Button>
           </>
         )}
       </header>
+
+      {/* De foto wordt gelezen en het lijstje is er nog niet: laat zien wat er gebeurt. */}
+      {scanning && !hits && <StappenVoortgang key={scanFotos} stappen={kastStappen(scanFotos)} />}
 
       {pantry.length > 0 && (
         <>
@@ -336,7 +344,7 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
               {t("CoupleCart leest welke producten erop staan. Je ziet eerst wat er herkend is en vinkt zelf af wat klopt.")}
             </p>
             <Button variant="secondary" className="mt-4 min-h-[50px] w-full gap-2" onClick={scan} disabled={scanning}>
-              {scanning ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("Foto lezen…")}</> : <><Camera className="h-4 w-4" /> {t("Foto maken")}</>}
+              <Camera className="h-4 w-4" /> {scanning ? t("Foto lezen…") : t("Foto maken")}
             </Button>
             {!plus && <p className="mt-3 text-xs text-muted-foreground">{t('{0} foto’s per maand gratis', [FREE_LIMIT])}</p>}
           </section>
@@ -409,6 +417,7 @@ const PantryScreen = ({ onNavigate }: PantryScreenProps) => {
         onConfirm={keep}
         onAnotherPhoto={() => fileInput.current?.click()}
         scanning={scanning}
+        scanFotos={scanFotos}
         known={pantry}
       />
       <PantryItemSheet item={openItem} onClose={() => setOpenItemId(null)} onAddToList={toList} />

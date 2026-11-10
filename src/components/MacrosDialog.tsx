@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Flame, Beef, Wheat, Droplets, Leaf, Loader2, Calculator } from 'lucide-react';
+import { Flame, Beef, Wheat, Droplets, Leaf, Calculator } from 'lucide-react';
+import StappenVoortgang from '@/components/StappenVoortgang';
+import { macroStappen } from '@/lib/aiStappen';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Recipe, Macros } from '@/types';
@@ -119,11 +121,13 @@ const MacrosDialog = ({ recipe, onMacrosCalculated, open, onOpenChange }: Macros
           <DialogTitle className="font-display text-xl">{t('Voedingswaarden van {0}', [recipe.name])}</DialogTitle>
         </DialogHeader>
 
-        {macros ? (
+        {calculating ? (
+          <StappenVoortgang stappen={macroStappen(recipe.ingredients.length)} />
+        ) : macros ? (
           <>
             <MacrosContent macros={macros} />
             <Button variant="outline" size="sm" className="w-full gap-2" onClick={handleCalculate} disabled={calculating}>
-              {calculating ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("Herberekenen...")}</> : <><Calculator className="h-4 w-4" /> {t("Opnieuw berekenen")}</>}
+              <Calculator className="h-4 w-4" /> {t("Opnieuw berekenen")}
             </Button>
           </>
         ) : (
@@ -132,7 +136,7 @@ const MacrosDialog = ({ recipe, onMacrosCalculated, open, onOpenChange }: Macros
             <p className="font-bold">{t("Nog geen voedingswaarden")}</p>
             <p className="text-sm">{t("Bereken ze op basis van de ingrediënten.")}</p>
             <Button className="gap-2" onClick={handleCalculate} disabled={calculating}>
-              {calculating ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("Berekenen...")}</> : <><Calculator className="h-4 w-4" /> {t("Voedingswaarden berekenen")}</>}
+              <Calculator className="h-4 w-4" /> {t("Voedingswaarden berekenen")}
             </Button>
           </div>
         )}

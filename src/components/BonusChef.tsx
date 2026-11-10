@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ChefHat, Loader2, Plus, RefreshCw, Sparkles } from 'lucide-react';
+import { ChefHat, Plus, RefreshCw, Sparkles } from 'lucide-react';
+import StappenVoortgang from '@/components/StappenVoortgang';
+import { bonusStappen } from '@/lib/aiStappen';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import AddToListSheet from '@/components/AddToListSheet';
@@ -370,7 +372,7 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
           </p>
           {aanbiedingen.length >= 10 && (
             <Button variant="secondary" className="mt-4 min-h-[50px] w-full gap-2" onClick={() => void think()} disabled={thinking}>
-              {thinking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              <Sparkles className="h-4 w-4" />
               {thinking ? t("Even koken…") : t("Laat iets verzinnen uit de bonus")}
             </Button>
           )}
@@ -384,13 +386,17 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
           <h2 className="font-display text-[1.0625rem] font-semibold text-foreground">{t("Drie avonden uit de bonus")}</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">{t("Gemaakt met wat deze week in de aanbieding ligt.")}</p>
           <Button variant="secondary" className="mt-3 min-h-11 w-full gap-2" onClick={() => void think()} disabled={thinking}>
-            {thinking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+            <Sparkles className="h-4 w-4" />
             {thinking ? t("Even koken…") : ideas.length > 0 ? t("Drie andere verzinnen") : t("Laat iets verzinnen")}
           </Button>
         </section>
       )}
 
-      {ideas.map((idea) => {
+      {thinking && (
+        <StappenVoortgang stappen={bonusStappen(result?.sample?.length ?? 0, pantryStaples.length > 0)} />
+      )}
+
+      {!thinking && ideas.map((idea) => {
         const producten = idea.usedBonus.map((naam) => ({ naam, offer: offerVoor(naam) }));
         const scheelt = producten.reduce((som, { offer }) => som + voordeelVan(offer), 0);
         return (
@@ -497,7 +503,7 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
 
       {status === 'ready' && recipes.length === 0 && aanbiedingen.length >= 10 && (
         <Button variant="outline" className="min-h-[50px] w-full gap-2" onClick={() => void think()} disabled={thinking}>
-          {thinking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+          <Sparkles className="h-4 w-4" />
           {t("Laat iets verzinnen uit de bonus")}
         </Button>
       )}

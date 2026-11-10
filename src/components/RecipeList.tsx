@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowUpDown, Heart, Lightbulb, Plus, Search, Settings2, Link, X, Loader2, Languages, ClipboardPaste } from 'lucide-react';
+import { ArrowUpDown, Heart, Lightbulb, Plus, Search, Settings2, Link, X, Languages, ClipboardPaste } from 'lucide-react';
 import { useAppContext } from '@/contexts/AppContext';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -17,7 +17,9 @@ import RecipeSuggestDialog from '@/components/RecipeSuggestDialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import EstimateBadge from '@/components/EstimateBadge';
 import AddToListSheet from '@/components/AddToListSheet';
-import { SOURCE_LABELS, detectImportInput, isEstimated, progressLabel, withoutEstimate, type SourceKey } from '@/lib/recipeImport';
+import StappenVoortgang from '@/components/StappenVoortgang';
+import { vertaalStappen } from '@/lib/aiStappen';
+import { SOURCE_LABELS, detectImportInput, importStappen, isEstimated, withoutEstimate, type ImportInput, type SourceKey } from '@/lib/recipeImport';
 import CategoryPicker from '@/components/CategoryPicker';
 import RecipeTile from '@/components/RecipeTile';
 import { repairRecipeImage } from '@/lib/recipeImageRepair';
@@ -53,7 +55,8 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
   const [importValue, setImportValue] = useState('');
   const [importNotice, setImportNotice] = useState<'instagram' | 'notfound' | null>(null);
   const [sourceLabel, setSourceLabel] = useState<string | null>(null);
-  const [progress, setProgress] = useState<string | null>(null);
+  // Wat er nu opgehaald wordt; null als er niets loopt.
+  const [importBezig, setImportBezig] = useState<ImportInput | null>(null);
   const [listRecipeId, setListRecipeId] = useState<string | null>(null);
   const [categoryRecipeId, setCategoryRecipeId] = useState<string | null>(null);
   const [managing, setManaging] = useState(false);
@@ -73,7 +76,7 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
 
   const resetForm = () => {
     setName(''); setDescription(''); setIngredientText(''); setInstructions(''); setSourceUrl(''); setManual(false); setFetchedMacros(null); setFetchedImageUrl(undefined); setServings(4); setTranslating(false);
-    setImportValue(''); setImportNotice(null); setSourceLabel(null); setProgress(null); setCategories([]);
+    setImportValue(''); setImportNotice(null); setSourceLabel(null); setImportBezig(null); setCategories([]);
   };
 
   // Fills the form from a fetch-url-meta response. Returns false when nothing usable came back.
@@ -120,9 +123,7 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
     if (!input) return;
     setImportNotice(null);
     setFetchingMeta(true);
-    const started = Date.now();
-    setProgress(progressLabel(0, input));
-    const ticker = setInterval(() => setProgress(progressLabel(Date.now() - started, input)), 1000);
+    setImportBezig(input);
     try {
       if (input.kind === 'url') setSourceUrl(input.url);
       const data = input.kind === 'url' ? await fetchRecipeFromUrl(input.url) : await fetchRecipeFromText(input.text);
@@ -148,8 +149,7 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
       }
     } finally {
       void refreshEntitlements();
-      clearInterval(ticker);
-      setProgress(null);
+      setImportBezig(null);
       setFetchingMeta(false);
     }
   };
@@ -420,10 +420,10 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
                     void runImport(importValue);
                   }}
                 >
-                  {fetchingMeta ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("Bezig…")}</> : importOp ? t("Meer met Plus") : t("Recept ophalen")}
+                  {fetchingMeta ? t("Bezig…") : importOp ? t("Meer met Plus") : t("Recept ophalen")}
                 </Button>
               </div>
-              <p className="min-h-5 text-sm text-muted-foreground" role="status" aria-live="polite">{progress}</p>
+              {importBezig && <StappenVoortgang stappen={importStappen(importBezig)} />}
               {!plus && (
                 <p className="text-xs text-muted-foreground">
                   {importOp
@@ -491,13 +491,14 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
                 <div className="flex flex-wrap items-center gap-2">
                   <button type="button" onClick={resetForm} className="min-h-11 px-1 text-sm text-muted-foreground hover:underline">{t("← Terug")}</button>
                   <Button type="button" variant="outline" onClick={translateRecipeHandler} disabled={translating || (!name.trim() && !ingredientText.trim())} className="gap-2">
-                    {translating ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("Vertalen...")}</> : <><Languages className="h-4 w-4" /> {t("Vertaal naar NL")}</>}
+                    <Languages className="h-4 w-4" /> {translating ? t("Vertalen…") : t("Vertaal naar NL")}
                   </Button>
                   <Button type="button" variant="outline" onClick={calculateMacrosHandler} className="gap-2">
                     {t("Voedingswaarden")}
                   </Button>
                   <Button onClick={handleAdd} className="min-w-full sm:min-w-0 sm:flex-1">{t("Recept opslaan")}</Button>
                 </div>
+                {translating && <StappenVoortgang stappen={vertaalStappen(ingredientText, instructions)} />}
               </div>
             </div>
           )}
