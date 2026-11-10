@@ -204,7 +204,14 @@ const SnelInvoer = () => {
             </button>
           )}
         </div>
-        <Button onClick={verstuur} size="icon" className="shrink-0 h-11 w-11" aria-label={t("Toevoegen")}>
+        {/* Gevuld pas als er iets te versturen is: op de lijst is Winkelmodus de hoofdknop. */}
+        <Button
+          onClick={verstuur}
+          size="icon"
+          variant={tekst.trim() ? 'default' : 'ghost'}
+          className={`shrink-0 h-11 w-11 ${tekst.trim() ? '' : 'bg-primary-soft'}`}
+          aria-label={t("Toevoegen")}
+        >
           <Plus className="h-4 w-4" />
         </Button>
       </div>

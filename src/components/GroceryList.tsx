@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { Check, ChevronDown, Plus, Trash2, X, Merge, TrendingUp, Loader2, ShoppingBasket, ShoppingCart, Tag, MoreVertical, RefreshCw, Search, Scale, Share2, Store } from 'lucide-react';
+import { Check, ChevronDown, Plus, Trash2, X, Merge, TrendingUp, Loader2, ShoppingBasket, ShoppingCart, Tag, MoreHorizontal, RefreshCw, Search, Scale, Share2, Store } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppContext } from '@/contexts/AppContext';
 import { AH_MAX_ITEMS, ahBasketUrl, matchAhProducts } from '@/services/ahApi';
@@ -16,12 +16,13 @@ import { deelTekst, lijstAlsTekst } from '@/lib/lijstTekst';
 import GroceryItemSheet from '@/components/GroceryItemSheet';
 import ShoppingMode from '@/components/ShoppingMode';
 import SnelInvoer from '@/components/SnelInvoer';
-import { huiskleur, voorWinkel, winkelsOpLijst, zelfdeWinkel, zonderWinkel } from '@/lib/winkels';
-import WinkelLabel, { WinkelStip } from '@/components/WinkelLabel';
+import { voorWinkel, winkelsOpLijst, zelfdeWinkel, zonderWinkel } from '@/lib/winkels';
+import WinkelLabel from '@/components/WinkelLabel';
+import LijstFilter from '@/components/LijstFilter';
 import { useAhKoppeling } from '@/hooks/useAhKoppeling';
 import { koppelWinkel, PRIJSVERGELIJK_AAN, productWinkel } from '@/lib/ahKoppeling';
 import EmptyState from '@/components/EmptyState';
-import DepartmentHeading, { DEPARTMENT_CHIP, DEPARTMENT_DOT } from '@/components/DepartmentHeading';
+import DepartmentHeading from '@/components/DepartmentHeading';
 import AhProductSheet from '@/components/AhProductSheet';
 import PlusSheet from '@/components/PlusSheet';
 import PrijsVergelijkSheet from '@/components/PrijsVergelijkSheet';
@@ -49,8 +50,6 @@ const ahSearchUrl = (name: string) => `https://www.ah.nl/zoeken?query=${toSearch
 
 // Vanaf zoveel open boodschappen verschijnt het vergrootglas.
 const ZOEK_VANAF = 15;
-// En vanaf zoveel de rij met afdelingen; bij een korte lijst zie je alles al.
-const AFDELINGEN_VANAF = 8;
 
 // Zoeken zonder op hoofdletters of accenten te letten: "creme" vindt "crème".
 const kaal = (tekst: string) => tekst.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -322,6 +321,38 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
             <Search className="h-5 w-5" strokeWidth={1.9} />
           </button>
         )}
+        {groceryItems.length > 0 && (
+          <>
+          {/* Wat je zelden doet, zit in een menu in plaats van in beeld. */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                aria-label={t("Meer met deze lijst")}
+                className="flex h-11 w-11 items-center justify-center rounded-[12px] border border-border bg-card text-muted-foreground hover:text-foreground"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              {unchecked.length > 0 && (
+                <DropdownMenuItem className="min-h-11 cursor-pointer gap-2" onSelect={() => { void deelLijst(); }}>
+                  <Share2 className="h-4 w-4" /> {t("Delen als tekst")}
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem className="min-h-11 cursor-pointer gap-2" onSelect={() => { void mergeDuplicateItems(); }}>
+                <Merge className="h-4 w-4" /> {t("Dubbele samenvoegen")}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                className="min-h-11 cursor-pointer gap-2 text-destructive focus:text-destructive"
+                onSelect={() => { void clearAllItems(); }}
+              >
+                <Trash2 className="h-4 w-4" /> {t("Lijst leegmaken")}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          </>
+        )}
         </div>
       </header>
 
@@ -366,8 +397,9 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
       <SnelInvoer />
 
       {!zoekt && suggestions.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          <TrendingUp className="mt-1 h-4 w-4 text-muted-foreground" />
+        <div className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none]">
+          <div className="flex w-max items-center gap-2">
+          <TrendingUp aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground" />
           {suggestions.map((item) => (
             <button
               key={item.name}
@@ -377,119 +409,31 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
               + {item.name}
             </button>
           ))}
-        </div>
-      )}
-
-      {/* Winkels: alleen als er labels op de lijst staan. */}
-      {!zoekt && winkels.length > 0 && (
-        <div role="radiogroup" aria-label={t("Winkel")} className="-mx-4 overflow-x-auto px-4">
-          <div className="flex w-max items-center gap-2">
-            <Store aria-hidden="true" className="h-4 w-4 text-muted-foreground" />
-            {[null, ...winkels].map((w) => {
-              const aan = w === actieveWinkel;
-              const aantal = w ? unchecked.filter((i) => zelfdeWinkel(i.store, w)).length : unchecked.length;
-              return (
-                <button
-                  key={w ?? ''}
-                  type="button"
-                  role="radio"
-                  aria-checked={aan}
-                  onClick={() => { setWinkelFilter(w); setDeptFilter(null); }}
-                  className={`inline-flex min-h-10 items-center gap-1.5 rounded-full px-3.5 text-[0.8125rem] font-semibold transition-colors duration-150 ease-smooth ${
-                    aan ? (huiskleur(w) ?? 'bg-foreground text-background') : 'bg-muted text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  {!aan && <WinkelStip winkel={w} />}
-                  {w ?? t("Alle winkels")}
-                  <span className="tabular-nums opacity-70">{aantal}</span>
-                </button>
-              );
-            })}
           </div>
         </div>
       )}
 
-      {/* Afdelingen als tabs: springen in plaats van scrollen. Pas bij een lange lijst. */}
-      {!zoekt && alleGroepen && alleGroepen.length > 1 && (unchecked.length >= AFDELINGEN_VANAF || deptFilter) && (
-        <div className="-mx-4 overflow-x-auto px-4 pb-1 animate-in fade-in-0 duration-200 ease-smooth [scrollbar-width:none]">
-          <div className="flex w-max items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setDeptFilter(null)}
-              aria-pressed={deptFilter === null}
-              className={`min-h-11 rounded-full px-3.5 font-display text-xs font-bold transition-colors duration-150 ease-smooth ${
-                deptFilter === null ? 'bg-primary text-primary-foreground' : 'border border-border text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {t("Alles")}
-            </button>
-            {alleGroepen.map((group) => (
-              <button
-                key={group.category}
-                type="button"
-                onClick={() => setDeptFilter(deptFilter === group.category ? null : group.category)}
-                aria-pressed={deptFilter === group.category}
-                className={`inline-flex min-h-11 items-center gap-1.5 rounded-full px-3.5 font-display text-xs font-bold transition-colors duration-150 ease-smooth ${
-                  deptFilter === group.category
-                    ? `${DEPARTMENT_CHIP[group.category]} text-foreground ring-1 ring-current`
-                    : 'border border-border text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                <span className={`h-2 w-2 rounded-full ${DEPARTMENT_DOT[group.category]}`} />
-                {group.label.split(' ')[0].replace(',', '')}
-                <span className="tabular-nums opacity-70">{group.items.length}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
+      {/* Eén werkbalk: filter links, Winkelmodus als enige gevulde knop rechts. */}
       {groceryItems.length > 0 && (
-        <div className="flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() => changeOrder(order === 'department' ? 'added' : 'department')}
-            className="min-h-11 text-sm font-medium text-muted-foreground hover:text-foreground"
-          >
-            {order === 'department' ? t("Op afdeling") : t("Op volgorde")}
-          </button>
+        <div className="flex items-center justify-between gap-2">
+          <LijstFilter
+            winkels={winkels.length > 0
+              ? [null, ...winkels].map((w) => ({ winkel: w, aantal: w ? unchecked.filter((i) => zelfdeWinkel(i.store, w)).length : unchecked.length }))
+              : []}
+            actieveWinkel={actieveWinkel}
+            onWinkel={setWinkelFilter}
+            groepen={(alleGroepen ?? []).map((g) => ({ category: g.category, label: g.label, count: g.items.length }))}
+            afdeling={deptFilter}
+            onAfdeling={setDeptFilter}
+            order={order}
+            onOrder={(o) => { changeOrder(o); setDeptFilter(null); }}
+          />
 
-          <div className="flex items-center gap-1">
-            {unchecked.length > 0 && (
-              <Button variant="outline" className="min-h-11 gap-2" onClick={() => setShopping(true)}>
-                <Store className="h-4 w-4" /> {t("Winkelmodus")}
-              </Button>
-            )}
-
-          {/* Wat je zelden doet, zit in een menu in plaats van in beeld. */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                aria-label={t("Meer met deze lijst")}
-                className="flex h-11 w-11 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
-              >
-                <MoreVertical className="h-4 w-4" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              {unchecked.length > 0 && (
-                <DropdownMenuItem className="min-h-11 cursor-pointer gap-2" onSelect={() => { void deelLijst(); }}>
-                  <Share2 className="h-4 w-4" /> {t("Delen als tekst")}
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuItem className="min-h-11 cursor-pointer gap-2" onSelect={() => { void mergeDuplicateItems(); }}>
-                <Merge className="h-4 w-4" /> {t("Dubbele samenvoegen")}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="min-h-11 cursor-pointer gap-2 text-destructive focus:text-destructive"
-                onSelect={() => { void clearAllItems(); }}
-              >
-                <Trash2 className="h-4 w-4" /> {t("Lijst leegmaken")}
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          </div>
+          {unchecked.length > 0 && (
+            <Button className="min-h-11 shrink-0 gap-2" onClick={() => setShopping(true)}>
+              <Store className="h-4 w-4" /> {t("Winkelmodus")}
+            </Button>
+          )}
 
         </div>
       )}
@@ -675,7 +619,7 @@ const GroceryList = ({ onNavigate, aboveTabBar = true }: GroceryListProps) => {
               </div>
             ) : (
               <>
-                <Button type="button" onClick={fetchAhPrices} disabled={pricing} className="min-h-11 w-full gap-2">
+                <Button type="button" variant="outline" onClick={fetchAhPrices} disabled={pricing} className="min-h-11 w-full gap-2">
                   {pricing
                     ? <><Loader2 className="h-4 w-4 animate-spin" /> {t("Prijzen zoeken…")}</>
                     : <><Tag className="h-4 w-4" /> {t("Bekijk wat het kost bij AH")}</>}
