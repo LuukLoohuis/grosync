@@ -6,7 +6,12 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { isGast } from '@/lib/accountUpgrade';
 import { BetalenUitError, PLUS_PRIJS, startCheckout, type PlusPlan } from '@/services/plusApi';
-import { t } from '@/lib/i18n';
+import { locale, t } from '@/lib/i18n';
+
+const euro = new Intl.NumberFormat(locale(), { style: 'currency', currency: 'EUR' });
+// Het jaarplan per maand, en wat dat per maand scheelt: het enige label, en het klopt altijd.
+const JAAR_PER_MAAND = PLUS_PRIJS.jaar.cent / 12 / 100;
+const SCHEELT_PER_MAAND = PLUS_PRIJS.maand.cent / 100 - JAAR_PER_MAAND;
 
 const PERKS = [
   { icon: Link2, text: t('Onbeperkt recepten ophalen uit een link of video') },
@@ -63,26 +68,36 @@ const PlusAanbod = () => {
         </>
       ) : (
         <>
-          <div className="mt-4 grid grid-cols-2 gap-2">
+          <div className="mt-5 grid grid-cols-2 gap-2">
             {(['maand', 'jaar'] as PlusPlan[]).map((plan) => (
               <button
                 key={plan}
                 type="button"
                 onClick={() => afrekenen(plan)}
                 disabled={bezig !== null}
-                className={`flex min-h-18 flex-col items-center justify-center rounded-[12px] px-2 text-center transition-transform duration-150 ease-smooth active:scale-[.98] disabled:opacity-60 ${
+                aria-label={plan === 'jaar'
+                  ? t('{0} per jaar, {1} per maand, scheelt {2} per maand', [PLUS_PRIJS.jaar.bedrag, euro.format(JAAR_PER_MAAND), euro.format(SCHEELT_PER_MAAND)])
+                  : t('{0} per maand', [PLUS_PRIJS.maand.bedrag])}
+                className={`relative flex min-h-18 flex-col items-center justify-center rounded-[12px] px-2 pb-2.5 pt-4 text-center transition-transform duration-150 ease-smooth active:scale-[.98] disabled:opacity-60 ${
                   plan === 'jaar' ? 'bg-primary text-primary-foreground' : 'border-[1.5px] border-border-strong bg-card text-foreground'
                 }`}
               >
+                {plan === 'jaar' && (
+                  <span aria-hidden="true" className="absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-accent-soft px-2 py-0.5 text-[0.6875rem] font-semibold tabular-nums text-accent-ink ring-1 ring-border">
+                    {t('Scheelt {0}/mnd', [euro.format(SCHEELT_PER_MAAND)])}
+                  </span>
+                )}
                 {bezig === plan ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
                 ) : (
                   <>
                     <span className="font-display text-lg font-bold tabular-nums">{PLUS_PRIJS[plan].bedrag}</span>
-                    <span className="text-[0.6875rem] opacity-80">{PLUS_PRIJS[plan].label.toLowerCase()}</span>
-                    <span className={`mt-0.5 text-[0.625rem] ${plan === 'jaar' ? 'text-primary-muted' : 'text-muted-foreground'}`}>
-                      {PLUS_PRIJS[plan].bij}
-                    </span>
+                    <span className="text-xs opacity-80">{PLUS_PRIJS[plan].label.toLowerCase()}</span>
+                    {plan === 'jaar' && (
+                      <span className="mt-0.5 text-[0.6875rem] tabular-nums text-primary-muted">
+                        {t('dat is {0} per maand', [euro.format(JAAR_PER_MAAND)])}
+                      </span>
+                    )}
                   </>
                 )}
               </button>
