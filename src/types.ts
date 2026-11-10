@@ -49,6 +49,8 @@ export interface Macros {
 
 export interface Recipe {
   id: string;
+  /** Van wie het recept is; in een Cart Club kan dat een ander lid zijn. */
+  userId?: string;
   name: string;
   description: string;
   ingredients: string[];

@@ -27,6 +27,7 @@ import { PRESETS, countPerCategory, dotOf, findCategory, sameName, suggestCatego
 import { useCookCounts } from '@/hooks/useCookCounts';
 import type { Recipe } from '@/types';
 import { t } from '@/lib/i18n';
+import { clubNaam } from '@/lib/clubNaam';
 
 interface RecipeListProps {
   /** A link or text shared into the app; opens the import dialog and starts fetching. */
@@ -36,7 +37,7 @@ interface RecipeListProps {
 }
 
 const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListProps) => {
-  const { loading, recipes, addRecipe, removeRecipe, updateRecipeImage, updateRecipe, recipeCategories, addRecipeCategory, plus, remaining, refreshEntitlements, userId, pantry, toggleFavorite } = useAppContext();
+  const { loading, recipes, addRecipe, removeRecipe, updateRecipeImage, updateRecipe, recipeCategories, addRecipeCategory, plus, remaining, refreshEntitlements, userId, pantry, toggleFavorite, recipeLeden, magReceptBewerken } = useAppContext();
   const [open, setOpen] = useState(false);
   const [manual, setManual] = useState(false);
   const [name, setName] = useState('');
@@ -67,6 +68,8 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
   const [filter, setFilter] = useState<string | null>(null);
   // Los van de categorieën: alleen wat je met een hartje hebt gemarkeerd.
   const [alleenFavoriet, setAlleenFavoriet] = useState(false);
+  // In een Cart Club: alleen de recepten van één lid. null is iedereen.
+  const [vanLid, setVanLid] = useState<string | null>(null);
 
   const resetForm = () => {
     setName(''); setDescription(''); setIngredientText(''); setInstructions(''); setSourceUrl(''); setManual(false); setFetchedMacros(null); setFetchedImageUrl(undefined); setServings(4); setTranslating(false);
@@ -295,6 +298,7 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
     const needle = search.trim().toLowerCase();
     const found = recipes.filter((recipe) => {
       if (alleenFavoriet && !recipe.favorite) return false;
+      if (vanLid && recipe.userId !== vanLid) return false;
       if (filter && !(recipe.categories ?? []).some((label) => sameName(label, filter))) return false;
       if (!needle) return true;
       // Searching on an ingredient answers "wat kan ik met kip?" without extra UI.
@@ -306,7 +310,23 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
     return sort === 'naam'
       ? [...found].sort((a, b) => a.name.localeCompare(b.name, 'nl'))
       : [...found].reverse();
-  }, [recipes, filter, search, sort, alleenFavoriet]);
+  }, [recipes, filter, search, sort, alleenFavoriet, vanLid]);
+
+  // Wie er recepten in het overzicht heeft, in de volgorde van de club. Pas
+  // met recepten van twee mensen valt er iets te kiezen.
+  const lidKeuzes = useMemo(() => {
+    const per = new Map<string, number>();
+    for (const recipe of recipes) if (recipe.userId) per.set(recipe.userId, (per.get(recipe.userId) ?? 0) + 1);
+    const keuzes = recipeLeden
+      .filter((lid) => per.has(lid.userId))
+      .map((lid) => ({ userId: lid.userId, naam: clubNaam(recipeLeden, lid.userId), count: per.get(lid.userId) ?? 0 }));
+    return keuzes.length >= 2 ? keuzes : [];
+  }, [recipes, recipeLeden]);
+
+  // Stapt iemand uit de club terwijl je op die persoon filtert, dan komt alles terug.
+  useEffect(() => {
+    if (vanLid && !lidKeuzes.some((lid) => lid.userId === vanLid)) setVanLid(null);
+  }, [vanLid, lidKeuzes]);
 
   const cookCounts = useCookCounts(userId);
   // Het gerecht dat jullie het vaakst maakten; pas noemenswaardig vanaf twee keer.
@@ -619,6 +639,29 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
           </button>
           </div>
 
+          {lidKeuzes.length > 0 && (
+            <div className="-mx-4 overflow-x-auto px-4" role="group" aria-label={t('Recepten per clublid')}>
+              <div className="flex w-max items-center gap-2">
+                {[{ userId: null as string | null, naam: t('Iedereen'), count: recipes.length }, ...lidKeuzes].map((lid) => {
+                  const active = vanLid === lid.userId;
+                  return (
+                    <button
+                      key={lid.userId ?? 'iedereen'}
+                      type="button"
+                      onClick={() => setVanLid(active && lid.userId ? null : lid.userId)}
+                      aria-pressed={active}
+                      className={`inline-flex min-h-11 items-center gap-1.5 rounded-full px-3 font-display text-xs font-bold tracking-[-0.01em] transition-colors duration-150 ease-smooth ${
+                        active ? 'bg-foreground text-background' : 'border border-border text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {lid.naam} <span className="tabular-nums opacity-70">{lid.count}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {filterNames.length > 0 && (
             <div className="-mx-4 overflow-x-auto px-4 pb-1">
               <div className="flex w-max items-center gap-2">
@@ -707,7 +750,8 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
                     wide={wide}
                     onOpen={() => setDetailId(recipe.id)}
                     onAddToList={() => setListRecipeId(recipe.id)}
-                    onToggleFavorite={() => void toggleFavorite(recipe.id)}
+                    van={lidKeuzes.length > 0 && !vanLid ? clubNaam(recipeLeden, recipe.userId) : null}
+                    onToggleFavorite={magReceptBewerken(recipe) ? () => void toggleFavorite(recipe.id) : undefined}
                     onImageBroken={() => repairRecipeImage(recipe, updateRecipeImage)}
                   />
                 </div>

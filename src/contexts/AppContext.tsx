@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect } from 'react';
 import { useGroceryItems, type GroceryDetails } from '@/hooks/useGroceryItems';
 import type { Herinnering } from '@/lib/onthouden';
-import { useRecipes } from '@/hooks/useRecipes';
+import { useRecipes, type ClubLid } from '@/hooks/useRecipes';
 import { useUsuals } from '@/hooks/useUsuals';
 import { usePantryStaples } from '@/hooks/usePantryStaples';
 import { useRecipeCategories } from '@/hooks/useRecipeCategories';
@@ -30,6 +30,10 @@ interface AppContextType {
   household: { rol: Rol; refresh: () => Promise<void>; leave: () => Promise<boolean> };
   groceryItems: GroceryItem[];
   recipes: Recipe[];
+  /** Iedereen in de Cart Club, met jezelf erbij; leeg of alleen jij zonder club. */
+  recipeLeden: ClubLid[];
+  /** Mag je dit recept aanpassen? Recepten van andere clubleden kun je alleen bekijken. */
+  magReceptBewerken: (recipe: Recipe) => boolean;
   usuals: UsualItem[];
   loading: boolean;
   frequentItems: FrequentItem[];
@@ -96,7 +100,11 @@ export const AppProvider = ({
   household?: { rol: Rol; refresh: () => Promise<void>; leave: () => Promise<boolean> };
 }) => {
   const grocery = useGroceryItems({ userId });
-  const recipeHook = useRecipes({ userId });
+  const recipeHook = useRecipes({ userId, selfId, clubKey: household.rol });
+  const magReceptBewerken = useCallback(
+    (recipe: Recipe) => !recipe.userId || recipe.userId === userId || recipe.userId === selfId,
+    [userId, selfId],
+  );
   const usualsHook = useUsuals({ userId });
   const purchaseHook = usePurchaseHistory(userId);
   const pantry = usePantryStaples(userId);
@@ -152,6 +160,8 @@ export const AppProvider = ({
     household,
     groceryItems: grocery.groceryItems,
     recipes: recipeHook.recipes,
+    recipeLeden: recipeHook.leden,
+    magReceptBewerken,
     usuals: usualsHook.usuals,
     loading: grocery.loading || recipeHook.loading || usualsHook.loading,
     frequentItems: purchaseHook.frequentItems,

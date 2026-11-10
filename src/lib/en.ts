@@ -879,4 +879,13 @@ export const EN: Record<string, string> = {
   'Gehaald': 'Picked up',
   'Bijna klaar, nog 1!': 'Almost done, 1 to go!',
   'Bijna klaar, nog {0}!': 'Almost done, {0} to go!',
+  // Recepten in de Cart Club
+  'Jij': 'You',
+  'Clublid': 'Club member',
+  'Iedereen': 'Everyone',
+  'Van {0}': 'By {0}',
+  'Recepten per clublid': 'Recipes per club member',
+  'Dit recept is van {0}. Alleen {0} kan het aanpassen.': 'This recipe is by {0}. Only {0} can change it.',
+  'Bewaar bij jouw recepten': 'Save to your recipes',
+  '“{0}” staat nu ook bij jouw recepten': '“{0}” is now in your recipes too',
 };

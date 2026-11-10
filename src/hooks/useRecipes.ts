@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Recipe } from '@/types';
 import { deleteWithUndo } from '@/lib/undoableDelete';
@@ -6,63 +6,92 @@ import { toast } from 'sonner';
 import { t } from '@/lib/i18n';
 
 interface UseRecipesOptions {
+  /** Van wie de lijst is waar de app op draait (bij een lid: de eigenaar). */
   userId?: string | null;
+  /** Wie er ingelogd is. */
+  selfId?: string | null;
+  /** Verandert als de club verandert (instappen, uitstappen), zodat de leden opnieuw geladen worden. */
+  clubKey?: string;
 }
 
-export const useRecipes = ({ userId }: UseRecipesOptions = {}) => {
+/** Iemand in de Cart Club van wie recepten in het overzicht kunnen staan. */
+export interface ClubLid {
+  userId: string;
+  naam: string | null;
+  jij: boolean;
+}
+
+const mapRow = (d: any): Recipe => ({
+  id: d.id,
+  userId: d.user_id,
+  name: d.name,
+  description: d.description,
+  ingredients: d.ingredients || [],
+  instructions: d.instructions || undefined,
+  imageUrl: d.image_url || undefined,
+  sourceUrl: d.source_url || undefined,
+  macros: d.macros || undefined,
+  servings: d.servings || 4,
+  categories: d.categories || [],
+  favorite: d.favorite === true,
+});
+
+export const useRecipes = ({ userId, selfId = userId, clubKey = '' }: UseRecipesOptions = {}) => {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [leden, setLeden] = useState<ClubLid[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Wiens recepten er in het overzicht staan: de lijst waar de app op draait,
+  // jijzelf en iedereen anders in de club. Zonder club is dat alleen jij.
+  const ids = useMemo(() => {
+    const set = new Set<string>();
+    if (userId) set.add(userId);
+    if (selfId) set.add(selfId);
+    for (const lid of leden) set.add(lid.userId);
+    return [...set].sort();
+  }, [userId, selfId, leden]);
+  const idsKey = ids.join(',');
+
   useEffect(() => {
-    if (!userId) { setLoading(false); return; }
+    if (!userId) { setLeden([]); return; }
+    let weg = false;
+    void supabase.rpc('cart_club_leden').then(({ data, error }) => {
+      if (weg) return;
+      if (error) { console.error('Loading Cart Club members failed:', error); setLeden([]); return; }
+      setLeden((data ?? []).map((l) => ({ userId: l.user_id, naam: l.naam, jij: l.jij })));
+    });
+    return () => { weg = true; };
+  }, [userId, selfId, clubKey]);
+
+  useEffect(() => {
+    if (!idsKey) { setLoading(false); return; }
+    let weg = false;
 
     const load = async () => {
       const { data } = await supabase
         .from('recipes')
         .select('*')
-        .eq('user_id', userId)
+        .in('user_id', idsKey.split(','))
         .order('created_at', { ascending: true });
-
-      setRecipes(
-        (data || []).map((d) => ({
-          id: d.id,
-          name: d.name,
-          description: d.description,
-          ingredients: d.ingredients || [],
-          instructions: d.instructions || undefined,
-          imageUrl: d.image_url || undefined,
-          sourceUrl: d.source_url || undefined,
-          macros: d.macros as any || undefined,
-          servings: (d as any).servings || 4,
-          categories: (d as any).categories || [],
-          favorite: (d as any).favorite === true,
-        }))
-      );
+      if (weg) return;
+      setRecipes((data || []).map(mapRow));
       setLoading(false);
     };
 
     load();
-  }, [userId]);
+    return () => { weg = true; };
+  }, [idsKey]);
 
   // Real-time subscription
   useEffect(() => {
-    if (!userId) return;
+    if (!idsKey) return;
 
     const channel = supabase
-      .channel(`recipes-${userId}`)
+      .channel(`recipes-${idsKey}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'recipes', filter: `user_id=eq.${userId}` },
+        { event: '*', schema: 'public', table: 'recipes', filter: `user_id=in.(${idsKey})` },
         (payload) => {
-          const mapRow = (d: any): Recipe => ({
-            id: d.id, name: d.name, description: d.description,
-            ingredients: d.ingredients || [], instructions: d.instructions || undefined,
-            imageUrl: d.image_url || undefined, sourceUrl: d.source_url || undefined,
-            macros: d.macros || undefined, servings: d.servings || 4,
-            categories: d.categories || [],
-            favorite: d.favorite === true,
-          });
-
           if (payload.eventType === 'INSERT') {
             setRecipes((prev) => {
               if (prev.find((r) => r.id === (payload.new as any).id)) return prev;
@@ -78,7 +107,7 @@ export const useRecipes = ({ userId }: UseRecipesOptions = {}) => {
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [userId]);
+  }, [idsKey]);
 
   const addRecipe = useCallback(async (recipe: Omit<Recipe, 'id'>) => {
     if (!userId) return null;
@@ -106,14 +135,7 @@ export const useRecipes = ({ userId }: UseRecipesOptions = {}) => {
       // Optimistic update: add to local state immediately
       setRecipes((prev) => {
         if (prev.find((r) => r.id === data.id)) return prev;
-        return [...prev, {
-          id: data.id, name: data.name, description: data.description,
-          ingredients: data.ingredients || [], instructions: data.instructions || undefined,
-          imageUrl: data.image_url || undefined, sourceUrl: data.source_url || undefined,
-          macros: data.macros as any || undefined, servings: data.servings || 4,
-          categories: (data as any).categories || [],
-          favorite: (data as any).favorite === true,
-        }];
+        return [...prev, mapRow(data)];
       });
     }
     return data?.id || null;
@@ -177,5 +199,5 @@ export const useRecipes = ({ userId }: UseRecipesOptions = {}) => {
     if (error) console.error('Failed to save recipe image:', error);
   }, []);
 
-  return { recipes, loading, addRecipe, updateRecipe, removeRecipe, updateRecipeImage, toggleFavorite };
+  return { recipes, leden, loading, addRecipe, updateRecipe, removeRecipe, updateRecipeImage, toggleFavorite };
 };

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useSheetSwipeClose } from '@/hooks/useSheetSwipeClose';
-import { ExternalLink, Flame, Heart, Pencil, ShoppingCart, Tags, Trash2, Users } from 'lucide-react';
+import { Copy, ExternalLink, Flame, Heart, Pencil, ShoppingCart, Tags, Trash2, Users } from 'lucide-react';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import CategoryChip from '@/components/CategoryChip';
@@ -12,6 +12,8 @@ import { isEstimated, withoutEstimate } from '@/lib/recipeImport';
 import { repairRecipeImage } from '@/lib/recipeImageRepair';
 import type { Recipe } from '@/types';
 import { t } from '@/lib/i18n';
+import { toast } from 'sonner';
+import { clubNaam } from '@/lib/clubNaam';
 
 interface RecipeDetailSheetProps {
   recipe: Recipe | null;
@@ -24,7 +26,7 @@ interface RecipeDetailSheetProps {
 
 /** The whole recipe, one swipe away from the grid. */
 const RecipeDetailSheet = ({ recipe, onClose, onAddToList, onEdit, onMacros, onCategories }: RecipeDetailSheetProps) => {
-  const { recipeCategories, removeRecipe, toggleFavorite, updateRecipeImage } = useAppContext();
+  const { recipeCategories, removeRecipe, toggleFavorite, updateRecipeImage, magReceptBewerken, recipeLeden, addRecipe } = useAppContext();
   const [shown, setShown] = useState<Recipe | null>(recipe);
   // Een verlopen foto: onthoud welke link faalde en laat de server een verse halen.
   const [failedUrl, setFailedUrl] = useState<string | null>(null);
@@ -35,6 +37,25 @@ const RecipeDetailSheet = ({ recipe, onClose, onAddToList, onEdit, onMacros, onC
   const servings = shown?.servings || 4;
   const steps = splitSteps(shown?.instructions);
   const { velProps, scrollRef } = useSheetSwipeClose(onClose);
+  // Een recept van een ander clublid kun je bekijken en op de lijst zetten,
+  // maar niet aanpassen; wil je dat, dan bewaar je een eigen kopie.
+  const eigen = !shown || magReceptBewerken(shown);
+  const van = shown && !eigen ? clubNaam(recipeLeden, shown.userId) : null;
+  const [kopieert, setKopieert] = useState(false);
+  const bewaarKopie = async () => {
+    if (!shown || kopieert) return;
+    setKopieert(true);
+    try {
+      const { id: _id, userId: _van, favorite: _hart, ...rest } = shown;
+      await addRecipe(rest);
+      toast.success(t('“{0}” staat nu ook bij jouw recepten', [shown.name]));
+      onClose();
+    } catch {
+      toast.error(t('Bewaren lukte niet. Probeer het opnieuw.'));
+    } finally {
+      setKopieert(false);
+    }
+  };
 
   const act = (run: (recipe: Recipe) => void) => {
     if (!shown) return;
@@ -54,7 +75,7 @@ const RecipeDetailSheet = ({ recipe, onClose, onAddToList, onEdit, onMacros, onC
           aria-hidden="true"
           className="absolute left-1/2 top-2 z-10 h-1 w-9 -translate-x-1/2 rounded-full bg-foreground/25"
         />
-        {shown && (
+        {shown && eigen && (
           <button
             type="button"
             onClick={() => void toggleFavorite(shown.id)}
@@ -84,6 +105,7 @@ const RecipeDetailSheet = ({ recipe, onClose, onAddToList, onEdit, onMacros, onC
         )}
         <SheetHeader className="px-5 pb-3 pr-14 pt-5 text-left">
           <SheetTitle className="font-display text-xl leading-tight">{shown?.name}</SheetTitle>
+          {van && <p className="font-display text-xs font-bold text-muted-foreground">{t('Van {0}', [van])}</p>}
           {shown?.description && <SheetDescription>{shown.description}</SheetDescription>}
         </SheetHeader>
           <div className="px-5">
@@ -92,13 +114,13 @@ const RecipeDetailSheet = ({ recipe, onClose, onAddToList, onEdit, onMacros, onC
               const category = findCategory(recipeCategories, label);
               return <CategoryChip key={label} name={category.name} color={category.color} />;
             })}
-            <button
+            {eigen && <button
               type="button"
               onClick={() => act(onCategories)}
               className="inline-flex min-h-8 items-center gap-1 rounded-full border border-dashed border-border-strong px-2 font-display text-[0.6875rem] font-bold text-muted-foreground"
             >
               <Tags className="h-3 w-3" /> {t("Categorie")}
-            </button>
+            </button>}
           </div>
 
           <div className="mt-4 flex items-center justify-between">
@@ -146,6 +168,7 @@ const RecipeDetailSheet = ({ recipe, onClose, onAddToList, onEdit, onMacros, onC
             </a>
           )}
 
+          {eigen ? (
           <div className="mt-5 grid grid-cols-3 gap-2">
             <Button variant="outline" className="h-auto min-h-12 flex-col gap-1 px-1 py-2 text-[11px] font-medium" onClick={() => act(onEdit)}>
               <Pencil className="h-4 w-4" /> {t("Bewerken")}
@@ -161,6 +184,16 @@ const RecipeDetailSheet = ({ recipe, onClose, onAddToList, onEdit, onMacros, onC
               <Trash2 className="h-4 w-4" /> {t("Verwijderen")}
             </Button>
           </div>
+          ) : (
+            <div className="mt-5 space-y-2">
+              <p className="text-xs text-muted-foreground">
+                {t('Dit recept is van {0}. Alleen {0} kan het aanpassen.', [van])}
+              </p>
+              <Button variant="outline" className="min-h-12 w-full gap-2" disabled={kopieert} onClick={() => void bewaarKopie()}>
+                <Copy className="h-4 w-4" /> {t('Bewaar bij jouw recepten')}
+              </Button>
+            </div>
+          )}
           </div>
         </div>
 

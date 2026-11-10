@@ -16,7 +16,10 @@ interface RecipeTileProps {
   wide?: boolean;
   onOpen: () => void;
   onAddToList: () => void;
-  onToggleFavorite: () => void;
+  /** Zonder: het recept is van een ander clublid en het hartje blijft weg. */
+  onToggleFavorite?: () => void;
+  /** In een Cart Club met recepten van meer mensen: van wie dit recept is. */
+  van?: string | null;
   /** De foto laadt niet; de lijst kan dan een verse laten ophalen. */
   onImageBroken?: () => void;
 }
@@ -30,7 +33,7 @@ const wordsOf = (recipe: Recipe, hoeveel: number) =>
  * het er geen, dan vertelt een vlak met de ingrediënten waar het over gaat — dat
  * zegt meer dan een beginletter, en de helft van wat je plakt heeft geen foto.
  */
-const RecipeTile = ({ recipe, categories, cookCount = 0, reason = null, wide = false, onOpen, onAddToList, onToggleFavorite, onImageBroken }: RecipeTileProps) => {
+const RecipeTile = ({ recipe, categories, cookCount = 0, reason = null, wide = false, van = null, onOpen, onAddToList, onToggleFavorite, onImageBroken }: RecipeTileProps) => {
   const labels = recipe.categories ?? [];
   const first = labels.length > 0 ? findCategory(categories, labels[0]) : null;
   const count = recipe.ingredients.length;
@@ -62,6 +65,9 @@ const RecipeTile = ({ recipe, categories, cookCount = 0, reason = null, wide = f
         )}
 
         <div className="p-2.5">
+          {van && (
+            <p className="mb-0.5 truncate font-display text-[0.6875rem] font-bold text-muted-foreground">{t('Van {0}', [van])}</p>
+          )}
           {reason && (
             <span className="mb-1 inline-block rounded-[5px] bg-accent-soft px-1.5 py-0.5 font-display text-[0.5625rem] font-bold uppercase tracking-[0.06em] text-accent-ink">
               {reason}
@@ -84,7 +90,7 @@ const RecipeTile = ({ recipe, categories, cookCount = 0, reason = null, wide = f
         </div>
       </button>
 
-      <button
+      {onToggleFavorite && <button
         type="button"
         onClick={onToggleFavorite}
         aria-label={recipe.favorite ? t('Haal {0} uit je favorieten', [recipe.name]) : t('Maak {0} favoriet', [recipe.name])}
@@ -96,7 +102,7 @@ const RecipeTile = ({ recipe, categories, cookCount = 0, reason = null, wide = f
           fill={recipe.favorite ? 'currentColor' : 'none'}
           strokeWidth={recipe.favorite ? 0 : 2}
         />
-      </button>
+      </button>}
 
       <button
         type="button"
