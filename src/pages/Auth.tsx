@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { Separator } from '@/components/ui/separator';
 import InstallTip from '@/components/InstallTip';
 import { authFoutmelding } from '@/lib/authFout';
+import { useTurnstile } from '@/hooks/useTurnstile';
 import { t } from '@/lib/i18n';
 
 const Auth = () => {
@@ -29,6 +30,8 @@ const Auth = () => {
   // nietBevestigd: the address has no confirmed account yet, so offer the mail again.
   const [fout, setFout] = useState<{ tekst: string; nietBevestigd?: boolean } | null>(null);
   const [opnieuwBezig, setOpnieuwBezig] = useState(false);
+  // Bot-check (Cloudflare Turnstile) voor alles hier behalve Google; Supabase controleert het token.
+  const captcha = useTurnstile('auth');
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -74,11 +77,12 @@ const handleGoogleLogin = async () => {
     setFout(null);
 
     try {
+      const captchaToken = await captcha.neemToken();
       if (isSignUp) {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: window.location.origin },
+          options: { emailRedirectTo: window.location.origin, captchaToken },
         });
         if (error) throw error;
         // With email confirmation on, Supabase answers an address that already has an account
@@ -89,7 +93,7 @@ const handleGoogleLogin = async () => {
         }
         toast.success(t("Verificatie e-mail verstuurd! Check je inbox en spamfolder."), { duration: 8000 });
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { error } = await supabase.auth.signInWithPassword({ email, password, options: { captchaToken } });
         if (error) throw error;
       }
     } catch (error) {
@@ -99,17 +103,20 @@ const handleGoogleLogin = async () => {
         nietBevestigd: (error as AuthError).code === 'email_not_confirmed',
       });
     } finally {
+      captcha.reset();
       setLoading(false);
     }
   };
 
   const stuurBevestigingOpnieuw = async () => {
     setOpnieuwBezig(true);
+    const captchaToken = await captcha.neemToken();
     const { error } = await supabase.auth.resend({
       type: 'signup',
       email,
-      options: { emailRedirectTo: window.location.origin },
+      options: { emailRedirectTo: window.location.origin, captchaToken },
     });
+    captcha.reset();
     setOpnieuwBezig(false);
     if (error) {
       // Keep the button: after a rate limit, trying again a bit later is exactly what helps.
@@ -127,7 +134,9 @@ const handleGoogleLogin = async () => {
     setFout(null);
     // The mail links back to this app (#access_token=…&type=recovery). Supabase does not say
     // whether the address has an account, so "Check je mail" does not either.
-    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
+    const captchaToken = await captcha.neemToken();
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin, captchaToken });
+    captcha.reset();
     setLoading(false);
     if (error) {
       console.warn('Password reset mail failed:', error);
@@ -244,6 +253,14 @@ const handleGoogleLogin = async () => {
             </Button>
           </form>
 
+          {/* Turnstile: leeg en zonder hoogte, tenzij Cloudflare om een vinkje vraagt. */}
+          <div ref={captcha.ref} className="empty:hidden" />
+          {captcha.mislukt && (
+            <p role="alert" className="text-left text-sm text-muted-foreground">
+              {t('De beveiligingscheck laadt niet. Ververs de pagina of probeer het straks opnieuw.')}
+            </p>
+          )}
+
           {fout && (
             <div className="space-y-2">
               <p role="alert" className="rounded-[12px] border border-destructive/30 bg-destructive/10 px-3 py-2.5 text-left text-sm text-destructive">
@@ -306,9 +323,13 @@ const handleGoogleLogin = async () => {
             type="button"
             onClick={async () => {
               setLoading(true);
-              const { error } = await supabase.auth.signInAnonymously();
+              const captchaToken = await captcha.neemToken();
+              const { error } = await supabase.auth.signInAnonymously({ options: { captchaToken } });
+              captcha.reset();
               if (error) {
-                toast.error(t("Er ging iets mis bij het starten als gast"));
+                toast.error(error.code === 'captcha_failed'
+                  ? t(authFoutmelding(error, 'inloggen'))
+                  : t("Er ging iets mis bij het starten als gast"));
                 setLoading(false);
               }
             }}

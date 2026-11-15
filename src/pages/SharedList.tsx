@@ -12,6 +12,7 @@ import OfflineBanner from '@/components/OfflineBanner';
 import { t } from '@/lib/i18n';
 import { initialen } from '@/lib/cartClub';
 import { meldNieuwLid } from '@/lib/meldingen';
+import { useTurnstile } from '@/hooks/useTurnstile';
 
 const SharedListContent = () => {
   const [tab, setTab] = useState<'list' | 'usuals' | 'recipes'>('list');
@@ -152,6 +153,13 @@ const SharedList = () => {
   const [notFound, setNotFound] = useState(false);
   const [uitnodiging, setUitnodiging] = useState<Uitnodiging | null>(null);
   const [bezig, setBezig] = useState(false);
+  // Zonder sessie wordt instappen een gastaccount; daarvoor vraagt Supabase een bot-check.
+  const [zonderSessie, setZonderSessie] = useState(false);
+  const { neemToken, reset: resetCaptcha } = useTurnstile('gast', zonderSessie, true);
+
+  useEffect(() => {
+    void supabase.auth.getSession().then(({ data: { session } }) => setZonderSessie(!session));
+  }, []);
 
   // Wisselt de code in voor lidmaatschap van de club; vanaf dan geeft RLS
   // toegang tot de rijen van de oprichter.
@@ -162,7 +170,9 @@ const SharedList = () => {
     // naar auth.uid(). Wie nog niet ingelogd is krijgt een gastaccount.
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
-      const { error: signInError } = await supabase.auth.signInAnonymously();
+      const captchaToken = await neemToken();
+      const { error: signInError } = await supabase.auth.signInAnonymously({ options: { captchaToken } });
+      resetCaptcha();
       if (signInError) {
         setBezig(false);
         toast.error(t('Instappen lukte niet. Probeer het opnieuw.'));
@@ -194,7 +204,7 @@ const SharedList = () => {
     setUserId(ownerId);
     setBezig(false);
     setLoading(false);
-  }, [shareCode]);
+  }, [shareCode, neemToken, resetCaptcha]);
 
   useEffect(() => {
     if (!shareCode) return;

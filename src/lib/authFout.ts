@@ -53,6 +53,8 @@ export const authFoutmelding = (fout: AuthFout | null | undefined, stap: AuthSta
       return 'We kunnen nu geen mail naar dit adres sturen. Probeer het later opnieuw of gebruik Google.';
     case 'over_email_send_rate_limit':
       return 'Er zijn net te veel mails verstuurd. Probeer het over een paar minuten opnieuw.';
+    case 'captcha_failed':
+      return 'De beveiligingscheck lukte niet. Ververs de pagina en probeer het opnieuw.';
     case 'over_request_rate_limit':
       return 'Je probeerde het net te vaak. Wacht een paar minuten en probeer het dan opnieuw.';
     default:

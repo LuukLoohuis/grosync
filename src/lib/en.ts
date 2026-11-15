@@ -864,6 +864,8 @@ export const EN: Record<string, string> = {
   'Er is al een account met dit e-mailadres. Log in, of kies ‘Wachtwoord vergeten?’.': 'There is already an account with this email address. Sign in, or choose ‘Forgot password?’.',
   'Dit is je huidige wachtwoord. Kies een nieuw wachtwoord.': 'That is your current password. Please choose a new one.',
   'Je probeerde het net te vaak. Wacht een paar minuten en probeer het dan opnieuw.': 'Too many attempts just now. Wait a few minutes, then try again.',
+  'De beveiligingscheck lukte niet. Ververs de pagina en probeer het opnieuw.': 'The security check didn’t work. Refresh the page and try again.',
+  'De beveiligingscheck laadt niet. Ververs de pagina of probeer het straks opnieuw.': 'The security check isn’t loading. Refresh the page or try again later.',
   'Geen verbinding. Controleer je internet en probeer het opnieuw.': 'No connection. Check your internet and try again.',
   'Deze link werkt niet meer. Vraag via ‘Wachtwoord vergeten?’ een nieuwe aan.': 'This link no longer works. Request a new one via ‘Forgot password?’.',
   'Stuur de bevestigingsmail opnieuw': 'Send the confirmation email again',
