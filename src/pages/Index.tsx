@@ -4,7 +4,7 @@ import { ShoppingCart, ChefHat, Boxes, Home, Tag, Loader2, type LucideIcon } fro
 import TodayScreen from '@/components/TodayScreen';
 import HeaderActions from '@/components/HeaderActions';
 import OfflineBanner from '@/components/OfflineBanner';
-import { LazyBoundary } from '@/components/LazyBoundary';
+import { LazyBoundary, LazySheet } from '@/components/LazyBoundary';
 import { useAppContext } from '@/contexts/AppContext';
 import { toast } from 'sonner';
 import { useScrollTabBar } from '@/hooks/useScrollTabBar';
@@ -17,6 +17,7 @@ const GroceryList = lazyPart(() => import('@/components/GroceryList'));
 const RecipeList = lazyPart(() => import('@/components/RecipeList'));
 const BonusChef = lazyPart(() => import('@/components/BonusChef'));
 const PantryScreen = lazyPart(() => import('@/components/PantryScreen'));
+const PlusWelkom = lazyPart(() => import('@/components/PlusWelkom'));
 
 const TabLoading = () => (
   <div role="status" className="flex justify-center py-16 text-muted-foreground">
@@ -37,6 +38,7 @@ const TABS: { key: AppTab; label: string; icon: LucideIcon }[] = [
 
 const Index = () => {
   const [tab, setTab] = useState<AppTab>('today');
+  const [welkomOpen, setWelkomOpen] = useState(false);
   const { groceryItems, refreshEntitlements } = useAppContext();
   const uncheckedCount = groceryItems.filter((i) => !i.checked).length;
   const [searchParams, setSearchParams] = useSearchParams();
@@ -119,7 +121,7 @@ const Index = () => {
     if (!plus) return;
     setSearchParams({}, { replace: true });
     if (plus === 'gelukt') {
-      toast.success(t("Welkom bij Plus"), { description: t("Alles staat voor je open.") });
+      setWelkomOpen(true);
       // Stripe meldt het via de webhook; even later staat het er.
       window.setTimeout(() => { void refreshEntitlements(); }, 2500);
     } else {
@@ -248,6 +250,9 @@ const Index = () => {
           })}
         </div>
       </nav>
+      <LazySheet open={welkomOpen} onClose={() => setWelkomOpen(false)}>
+        <PlusWelkom open={welkomOpen} onOpenChange={setWelkomOpen} />
+      </LazySheet>
     </div>
   );
 };
