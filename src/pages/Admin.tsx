@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Cpu, Loader2, RefreshCw, Search, Star } from 'lucide-react';
+import { ArrowLeft, Bell, Cpu, Loader2, RefreshCw, Search, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAppContext } from '@/contexts/AppContext';
+import { useAdminMeldingen } from '@/hooks/useAdminMeldingen';
 import { supabase } from '@/integrations/supabase/client';
 import { locale } from '@/lib/i18n';
 
@@ -62,6 +63,11 @@ const SCAN_MODELS: { value: string; label: string; hint: string }[] = [
 ];
 
 const euro = (value: number) => `€ ${value.toFixed(2).replace('.', ',')}`;
+const tijdstip = (value: string) =>
+  new Date(value).toLocaleString(locale(), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+const MELDING_TEKST: Record<string, string> = { plus_gekocht: 'heeft Plus gekocht' };
+
 const datum = (value: string | null) => (value ? new Date(value).toLocaleDateString(locale(), { day: 'numeric', month: 'short' }) : '—');
 
 const Tile = ({ label, value, hint }: { label: string; value: string | number; hint?: string }) => (
@@ -74,6 +80,7 @@ const Tile = ({ label, value, hint }: { label: string; value: string | number; h
 
 const Admin = () => {
   const { isAdmin } = useAppContext();
+  const meldingen = useAdminMeldingen(isAdmin);
   const [overview, setOverview] = useState<Overview | null>(null);
   const [usage, setUsage] = useState<UsageRow[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -81,8 +88,10 @@ const Admin = () => {
   const [loading, setLoading] = useState(true);
   const [ai, setAi] = useState<AiSettings>({ provider: '', text_model: '', scan_model: '' });
 
+  const { vernieuw } = meldingen;
   const load = useCallback(async () => {
     setLoading(true);
+    void vernieuw();
     const [kpi, months, people, settings] = await Promise.all([
       supabase.rpc('admin_overview'),
       supabase.rpc('admin_usage', { _months: 6 }),
@@ -96,7 +105,7 @@ const Admin = () => {
     setUsage((months.data as UsageRow[]) ?? []);
     setUsers((people.data as AdminUser[]) ?? []);
     setLoading(false);
-  }, [search]);
+  }, [search, vernieuw]);
 
   useEffect(() => { if (isAdmin) void load(); }, [isAdmin, load]);
 
@@ -108,6 +117,10 @@ const Admin = () => {
       .upsert({ key: 'ai', value: next, updated_at: new Date().toISOString() });
     if (error) { toast.error(error.message); return; }
     toast.success('Modelkeuze opgeslagen');
+  };
+
+  const markeerGelezen = async () => {
+    try { await meldingen.allesGelezen(); } catch (error) { toast.error((error as Error).message); }
   };
 
   const togglePlus = async (person: AdminUser) => {
@@ -146,6 +159,47 @@ const Admin = () => {
       </header>
 
       <main className="mx-auto max-w-3xl space-y-6 px-4 py-5">
+        <section aria-labelledby="meldingen-kop">
+          <div className="mb-2 flex items-center gap-2">
+            <h2 id="meldingen-kop" className="flex flex-1 items-center gap-2 font-display text-[0.9375rem] font-bold text-foreground">
+              <Bell className="h-4 w-4" /> Meldingen
+              {meldingen.ongelezen > 0 && (
+                <span className="rounded-full bg-primary px-2 py-0.5 text-xs tabular-nums text-primary-foreground">
+                  {meldingen.ongelezen} nieuw
+                </span>
+              )}
+            </h2>
+            {meldingen.ongelezen > 0 && (
+              <Button variant="ghost" className="min-h-11 text-xs" onClick={markeerGelezen}>Alles gelezen</Button>
+            )}
+          </div>
+          {meldingen.meldingen.length === 0 ? (
+            <p className="rounded-[14px] border border-border bg-card p-3 text-sm text-muted-foreground">
+              {meldingen.laden ? 'Laden…' : 'Nog geen meldingen. Koopt iemand Plus, dan zie je het hier.'}
+            </p>
+          ) : (
+            <ul className="divide-y divide-border/60 rounded-[14px] border border-border bg-card">
+              {meldingen.meldingen.map((melding) => (
+                <li key={melding.id} className="flex items-center gap-3 px-3 py-2.5">
+                  <span
+                    aria-hidden
+                    className={`h-2 w-2 shrink-0 rounded-full ${melding.gelezen_op ? 'bg-transparent' : 'bg-primary'}`}
+                  />
+                  <Star className="h-4 w-4 shrink-0 fill-current text-primary" />
+                  <p className={`min-w-0 flex-1 truncate text-sm ${melding.gelezen_op ? 'text-muted-foreground' : 'text-foreground'}`}>
+                    <span className="font-medium">{melding.email || 'Een gast'}</span>{' '}
+                    {MELDING_TEKST[melding.soort] ?? melding.soort}
+                    {!melding.gelezen_op && <span className="sr-only"> (nieuw)</span>}
+                  </p>
+                  <time dateTime={melding.gemaakt_op} className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                    {tijdstip(melding.gemaakt_op)}
+                  </time>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
         {loading && !overview && (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             {[0, 1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-20 rounded-[14px]" />)}

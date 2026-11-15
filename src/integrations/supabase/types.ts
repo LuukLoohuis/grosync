@@ -39,6 +39,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_meldingen: {
+        Row: {
+          email: string | null
+          gelezen_op: string | null
+          gemaakt_op: string
+          id: number
+          soort: string
+          user_id: string | null
+        }
+        Insert: {
+          email?: string | null
+          gelezen_op?: string | null
+          gemaakt_op?: string
+          id?: number
+          soort: string
+          user_id?: string | null
+        }
+        Update: {
+          email?: string | null
+          gelezen_op?: string | null
+          gemaakt_op?: string
+          id?: number
+          soort?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       grocery_items: {
         Row: {
           ah_category: string | null
@@ -528,6 +555,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_meldingen_gelezen: { Args: Record<string, never>; Returns: number }
       admin_overview: { Args: Record<string, never>; Returns: Json }
       admin_set_plus: { Args: { _user: string; _on: boolean; _note?: string | null }; Returns: boolean }
       admin_usage: {

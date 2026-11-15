@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useInstallHint } from '@/hooks/useInstallHint';
 import { PlusMerk } from '@/components/PlusMerk';
 import { useAppContext } from '@/contexts/AppContext';
+import { useAdminMeldingen } from '@/hooks/useAdminMeldingen';
 import AccountSheet, { AccountMenuItem } from '@/components/AccountSheet';
 import GastUitlogDialog from '@/components/GastUitlogDialog';
 import { LazySheet } from '@/components/LazyBoundary';
@@ -41,6 +42,7 @@ const SEGMENT = 'min-h-10 justify-center rounded-lg px-2 text-[0.8125rem] font-m
 const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
   const { session, signOut } = useAuth();
   const { isAdmin, plus } = useAppContext();
+  const adminMeldingen = useAdminMeldingen(isAdmin);
   const { theme, setTheme } = useTheme();
   const [shareOpen, setShareOpen] = useState(false);
   const [usageOpen, setUsageOpen] = useState(false);
@@ -86,8 +88,11 @@ const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
       </button>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <button type="button" aria-label={t("Thema en meer")} title={t("Thema en meer")} className={iconButton}>
+          <button type="button" aria-label={t("Thema en meer")} title={t("Thema en meer")} className={`relative ${iconButton}`}>
             <MoreVertical className="h-5 w-5" strokeWidth={1.9} />
+            {adminMeldingen.ongelezen > 0 && (
+              <span aria-hidden className="absolute right-2 top-2 h-2 w-2 rounded-full bg-primary ring-2 ring-background" />
+            )}
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-60">
@@ -120,7 +125,15 @@ const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
           <DropdownMenuSeparator />
           {isAdmin && (
             <DropdownMenuItem asChild className="gap-2 min-h-11 cursor-pointer">
-              <a href="#/admin"><Gauge className="h-4 w-4" /> {t("Beheer")}</a>
+              <a href="#/admin">
+                <Gauge className="h-4 w-4" /> {t("Beheer")}
+                {adminMeldingen.ongelezen > 0 && (
+                  <span className="ml-auto rounded-full bg-primary px-1.5 text-xs tabular-nums text-primary-foreground">
+                    {adminMeldingen.ongelezen}
+                    <span className="sr-only"> nieuwe meldingen</span>
+                  </span>
+                )}
+              </a>
             </DropdownMenuItem>
           )}
           {/* Op de pagina met voorwaarden staat onderaan ook het hulpadres. */}
