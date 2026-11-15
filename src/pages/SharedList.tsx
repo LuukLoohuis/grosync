@@ -11,7 +11,7 @@ import UsualsList from '@/components/UsualsList';
 import OfflineBanner from '@/components/OfflineBanner';
 import { t } from '@/lib/i18n';
 import { initialen } from '@/lib/cartClub';
-import { meldNieuwLid } from '@/lib/meldingen';
+import { meldAanvraag, meldNieuwLid } from '@/lib/meldingen';
 import { useTurnstile } from '@/hooks/useTurnstile';
 
 const SharedListContent = () => {
@@ -132,13 +132,13 @@ const InstapScherm = ({ uitnodiging, bezig, onInstappen }: { uitnodiging: Uitnod
 
         <div className="mt-auto space-y-3 pt-8">
           <Button className="min-h-12 w-full gap-2 text-base" onClick={onInstappen} disabled={bezig}>
-            {bezig && <Loader2 className="h-4 w-4 animate-spin" />} {t('Instappen')}
+            {bezig && <Loader2 className="h-4 w-4 animate-spin" />} {t('Vraag om erbij te mogen')}
           </Button>
           <Button variant="ghost" className="min-h-11 w-full" onClick={() => window.location.assign(`${window.location.origin}/#/`)}>
             {t('Nee, bedankt')}
           </Button>
           <p className="text-center text-xs text-muted-foreground">
-            {t('Uitstappen kan altijd. Wat je zelf al had, blijft bewaard.')}
+            {t('{0} krijgt je vraag en laat je toe. Uitstappen kan altijd; wat je zelf al had, blijft bewaard.', [eigenaarNaam ?? t('De oprichter')])}
           </p>
         </div>
       </main>
@@ -146,11 +146,69 @@ const InstapScherm = ({ uitnodiging, bezig, onInstappen }: { uitnodiging: Uitnod
   );
 };
 
+type Stand = 'laden' | 'uitnodiging' | 'wacht' | 'geweigerd' | 'vol' | 'onbekend' | 'lid';
+
+/** Na het vragen: wachten tot de oprichter je toelaat. Gaat vanzelf verder. */
+const WachtScherm = ({ uitnodiging, stand, bezig, onIntrekken, onOpnieuw }: {
+  uitnodiging: Uitnodiging | null;
+  stand: 'wacht' | 'geweigerd' | 'vol';
+  bezig: boolean;
+  onIntrekken: () => void;
+  onOpnieuw: () => void;
+}) => {
+  const naam = uitnodiging?.eigenaarNaam ?? null;
+  const titel = stand === 'wacht'
+    ? (naam ? t('Gevraagd aan {0}', [naam]) : t('Je vraag is verstuurd'))
+    : stand === 'vol'
+      ? t('Er staan al te veel vragen open')
+      : t('Je vraag staat niet meer open');
+  const uitleg = stand === 'wacht'
+    ? (naam
+      ? t('Zodra {0} je toelaat, ga je vanzelf verder. Laat dit scherm gerust open.', [naam])
+      : t('Zodra de oprichter je toelaat, ga je vanzelf verder. Laat dit scherm gerust open.'))
+    : stand === 'vol'
+      ? t('Vraag de oprichter om eerst de open vragen in Cart Club af te handelen, en probeer het dan opnieuw.')
+      : t('De oprichter heeft je vraag afgewezen of hij is verlopen. Je kunt het opnieuw vragen.');
+  return (
+    <div className="min-h-dvh bg-background">
+      <main className="mx-auto flex min-h-dvh max-w-sm flex-col px-5 pb-8 pt-14 text-center">
+        <div className="mb-4 flex justify-center" aria-hidden="true">
+          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-sm font-medium text-primary-foreground">
+            {initialen(naam) || <Users className="h-5 w-5" />}
+          </span>
+        </div>
+        <h1 className="font-display text-2xl text-foreground">{titel}</h1>
+        <p className="mt-2 text-sm text-muted-foreground" role="status">{uitleg}</p>
+        {stand === 'wacht' && (
+          <p className="mt-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> {t('Wachten op toelating…')}
+          </p>
+        )}
+        <div className="mt-auto space-y-3 pt-8">
+          {stand === 'wacht' ? (
+            <Button variant="ghost" className="min-h-11 w-full" onClick={onIntrekken} disabled={bezig}>
+              {t('Vraag intrekken')}
+            </Button>
+          ) : (
+            <Button className="min-h-12 w-full gap-2 text-base" onClick={onOpnieuw} disabled={bezig}>
+              {bezig && <Loader2 className="h-4 w-4 animate-spin" />} {t('Opnieuw vragen')}
+            </Button>
+          )}
+          <Button variant="ghost" className="min-h-11 w-full" onClick={() => window.location.assign(`${window.location.origin}/#/`)}>
+            {t('Naar mijn eigen lijst')}
+          </Button>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+const WACHT_POLL_MS = 5_000;
+
 const SharedList = () => {
   const { shareCode } = useParams<{ shareCode: string }>();
   const [userId, setUserId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
+  const [stand, setStand] = useState<Stand>('laden');
   const [uitnodiging, setUitnodiging] = useState<Uitnodiging | null>(null);
   const [bezig, setBezig] = useState(false);
   // Zonder sessie wordt instappen een gastaccount; daarvoor vraagt Supabase een bot-check.
@@ -161,13 +219,28 @@ const SharedList = () => {
     void supabase.auth.getSession().then(({ data: { session } }) => setZonderSessie(!session));
   }, []);
 
-  // Wisselt de code in voor lidmaatschap van de club; vanaf dan geeft RLS
-  // toegang tot de rijen van de oprichter.
-  const stapIn = useCallback(async () => {
+  // Je bent lid: met een eigen account naar de app zelf, als gast blijf je op deze kijkpagina.
+  const naarClub = useCallback(async (nieuw: boolean) => {
+    if (!shareCode) return;
+    const { data: ownerId, error } = await supabase.rpc('join_shared_list', { _share_code: shareCode });
+    if (error || !ownerId) { setStand('onbekend'); setBezig(false); return; }
+    if (nieuw) await meldNieuwLid();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session && !session.user.is_anonymous) {
+      window.location.replace(`${window.location.origin}/#/`);
+      window.location.reload();
+      return;
+    }
+    setUserId(ownerId);
+    setStand('lid');
+    setBezig(false);
+  }, [shareCode]);
+
+  // Vraagt de oprichter om erbij te mogen. Wie al lid is, gaat meteen door.
+  const vraag = useCallback(async () => {
     if (!shareCode) return;
     setBezig(true);
-    // De deelpagina heeft een sessie nodig: de policies op de lijst kijken
-    // naar auth.uid(). Wie nog niet ingelogd is krijgt een gastaccount.
+    // De policies kijken naar auth.uid(); wie nog niet ingelogd is krijgt een gastaccount.
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       const captchaToken = await neemToken();
@@ -180,81 +253,92 @@ const SharedList = () => {
       }
     }
 
-    const { data: ownerId, error } = await supabase
-      .rpc('join_shared_list', { _share_code: shareCode });
-
-    if (error || !ownerId) {
+    const { data, error } = await supabase.rpc('vraag_toegang', { _share_code: shareCode });
+    if (error) {
+      console.error('Asking to join failed:', error);
       setBezig(false);
-      setUitnodiging(null);
-      setNotFound(true);
-      setLoading(false);
+      toast.error(t('Instappen lukte niet. Probeer het opnieuw.'));
       return;
     }
-
-    await meldNieuwLid();
-
-    // Met een eigen account zit je nu in de club en hoor je in de app zelf,
-    // niet op deze kijkpagina. Gasten blijven hier.
-    if (session && !session.user.is_anonymous) {
-      window.location.replace(`${window.location.origin}/#/`);
-      window.location.reload();
-      return;
-    }
-    setUitnodiging(null);
-    setUserId(ownerId);
+    if (data === 'lid') { await naarClub(false); return; }
+    if (data === 'wacht') void meldAanvraag();
+    setStand(data === 'wacht' || data === 'vol' ? data : 'onbekend');
     setBezig(false);
-    setLoading(false);
-  }, [shareCode, neemToken, resetCaptcha]);
+  }, [shareCode, neemToken, resetCaptcha, naarClub]);
+
+  const trekIn = async () => {
+    if (!shareCode) return;
+    setBezig(true);
+    await supabase.rpc('trek_aanvraag_in', { _share_code: shareCode });
+    setBezig(false);
+    window.location.assign(`${window.location.origin}/#/`);
+  };
 
   useEffect(() => {
     if (!shareCode) return;
-
     const laad = async () => {
-      // Eerst de uitnodiging laten zien; instappen pas na een tik.
+      // Eerst de uitnodiging laten zien; vragen pas na een tik.
       const { data, error } = await supabase.rpc('cart_club_uitnodiging', { _share_code: shareCode });
       const rij = data?.[0];
-      // Kan de uitnodiging niet gelezen worden (geen verbinding, of de
-      // databasefunctie staat er nog niet), dan meteen instappen zoals vroeger.
       if (error) {
         console.error('Reading Cart Club invite failed:', error);
-        await stapIn();
+        setStand('uitnodiging');
         return;
       }
-      if (!rij) {
-        setNotFound(true);
-        setLoading(false);
-        return;
-      }
-      if (rij.al_lid) {
-        await stapIn();
-        return;
-      }
+      if (!rij) { setStand('onbekend'); return; }
       setUitnodiging({ eigenaarNaam: rij.eigenaar_naam, leden: rij.leden });
-      setLoading(false);
+      if (rij.al_lid) { await naarClub(false); return; }
+      setStand(rij.aangevraagd ? 'wacht' : 'uitnodiging');
     };
-
     void laad();
-  }, [shareCode, stapIn]);
+  }, [shareCode, naarClub]);
 
-  if (uitnodiging && !loading) {
-    return <InstapScherm uitnodiging={uitnodiging} bezig={bezig} onInstappen={() => void stapIn()} />;
+  // Tijdens het wachten: elke paar seconden kijken of de oprichter je al toeliet.
+  useEffect(() => {
+    if (stand !== 'wacht' || !shareCode) return;
+    let weg = false;
+    const kijk = async () => {
+      const { data } = await supabase.rpc('cart_club_uitnodiging', { _share_code: shareCode });
+      const rij = data?.[0];
+      if (weg || !rij) return;
+      if (rij.al_lid) { weg = true; await naarClub(true); return; }
+      if (!rij.aangevraagd) setStand('geweigerd');
+    };
+    const timer = window.setInterval(() => void kijk(), WACHT_POLL_MS);
+    return () => { weg = true; window.clearInterval(timer); };
+  }, [stand, shareCode, naarClub]);
+
+  if (stand === 'uitnodiging' && uitnodiging) {
+    return <InstapScherm uitnodiging={uitnodiging} bezig={bezig} onInstappen={() => void vraag()} />;
   }
 
-  if (loading) {
+  if (stand === 'wacht' || stand === 'geweigerd' || stand === 'vol') {
     return (
-      <div className="min-h-dvh bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">{t("Laden...")}</p>
-      </div>
+      <WachtScherm
+        uitnodiging={uitnodiging}
+        stand={stand}
+        bezig={bezig}
+        onIntrekken={() => void trekIn()}
+        onOpnieuw={() => void vraag()}
+      />
     );
   }
 
-  if (notFound) {
+  if (stand === 'onbekend' || (stand === 'uitnodiging' && !uitnodiging)) {
     return (
       <div className="min-h-dvh bg-background flex items-center justify-center">
         <div className="text-center">
           <p className="text-xl font-display text-foreground">{t("Uitnodiging niet gevonden")}</p>
           <p className="text-muted-foreground mt-2">{t("Controleer de link en probeer opnieuw.")}</p>
         </div>
+      </div>
+    );
+  }
+
+  if (stand !== 'lid' || !userId) {
+    return (
+      <div className="min-h-dvh bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">{t("Laden...")}</p>
       </div>
     );
   }

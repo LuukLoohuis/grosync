@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { FileDown, Link2, Loader2, LogOut, MessageCircle, QrCode, Unlink, UserMinus, UserPlus, Users } from 'lucide-react';
+import { Check, FileDown, Link2, Loader2, LogOut, MessageCircle, QrCode, Unlink, UserMinus, UserPlus, Users, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { lijstAlsTekst } from '@/lib/lijstTekst';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,10 @@ type LinkState =
   | { status: 'ready'; shareCode: string | null };
 
 interface Lid { user_id: string; naam: string | null; eigenaar: boolean; jij: boolean }
+interface Aanvraag { user_id: string; naam: string | null; sinds: string }
+
+// Zolang het scherm open is: zo vaak kijken of er iemand bij wil.
+const AANVRAGEN_POLL_MS = 10_000;
 
 // jsPDF is big and only needed for "Als PDF", so it loads once this sheet opens. By the time
 // you tap the button it is in, and the tap still counts as the one that starts the download.
@@ -51,6 +55,7 @@ const KoppelSheet = ({ open, onOpenChange }: KoppelSheetProps) => {
   const { groceryItems, selfId, household, plus, refreshEntitlements } = useAppContext();
   const [state, setState] = useState<LinkState>({ status: 'loading' });
   const [leden, setLeden] = useState<Lid[] | null>(null);
+  const [aanvragen, setAanvragen] = useState<Aanvraag[]>([]);
   const [busy, setBusy] = useState(false);
   const [qr, setQr] = useState<string | null>(null);
   const [code, setCode] = useState('');
@@ -62,6 +67,13 @@ const KoppelSheet = ({ open, onOpenChange }: KoppelSheetProps) => {
     const { data, error } = await supabase.rpc('cart_club_leden');
     if (error) { console.error('Loading Cart Club members failed:', error); return; }
     setLeden(data ?? []);
+  }, []);
+
+  // Wie een uitnodiging gebruikte en wacht tot jij hem toelaat.
+  const laadAanvragen = useCallback(async () => {
+    const { data, error } = await supabase.rpc('cart_club_aanvragen');
+    if (error) { console.error('Loading Cart Club requests failed:', error); return; }
+    setAanvragen(data ?? []);
   }, []);
 
   const load = useCallback(async () => {
@@ -86,6 +98,35 @@ const KoppelSheet = ({ open, onOpenChange }: KoppelSheetProps) => {
     void laadLeden();
     if (!lid) void load();
   }, [open, lid, load, laadLeden]);
+
+  useEffect(() => {
+    if (!open || lid) return;
+    void laadAanvragen();
+    const timer = window.setInterval(() => void laadAanvragen(), AANVRAGEN_POLL_MS);
+    return () => window.clearInterval(timer);
+  }, [open, lid, laadAanvragen]);
+
+  const laatToe = async (a: Aanvraag) => {
+    setBusy(true);
+    const { data, error } = await supabase.rpc('laat_lid_toe', { _user: a.user_id });
+    setBusy(false);
+    if (error || !data) {
+      toast.error(t('Toelaten lukte niet. Probeer het opnieuw.'));
+      void laadAanvragen();
+      return;
+    }
+    toast.success(t('{0} zit nu in de club', [a.naam ?? t('Gast')]));
+    void laadAanvragen();
+    void laadLeden();
+  };
+
+  const weiger = async (a: Aanvraag) => {
+    setBusy(true);
+    const { error } = await supabase.rpc('weiger_aanvraag', { _user: a.user_id });
+    setBusy(false);
+    if (error) { toast.error(t('Weigeren lukte niet. Probeer het opnieuw.')); return; }
+    setAanvragen((huidig) => huidig.filter((x) => x.user_id !== a.user_id));
+  };
 
   useEffect(() => {
     if (open) loadPdf().catch(() => undefined);
@@ -274,6 +315,46 @@ const KoppelSheet = ({ open, onOpenChange }: KoppelSheetProps) => {
         </SheetHeader>
 
         <div className="flex-1 space-y-5 overflow-y-auto px-5 pb-5">
+          {!lid && aanvragen.length > 0 && (
+            <section aria-labelledby="club-aanvragen" className="rounded-[14px] border border-primary/40 bg-primary-soft/40 p-3">
+              <h3 id="club-aanvragen" className="text-sm font-medium text-foreground">
+                {aanvragen.length === 1 ? t('1 wil erbij') : t('{0} willen erbij', [aanvragen.length])}
+              </h3>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {t('Laat alleen mensen toe die je kent. Wie erbij komt, ziet en bewerkt alles.')}
+              </p>
+              <ul className="mt-2 divide-y divide-border">
+                {aanvragen.map((a) => (
+                  <li key={a.user_id} className="flex min-h-12 items-center gap-2 py-2">
+                    <span aria-hidden="true" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-card text-xs font-medium text-foreground">
+                      {initialen(a.naam) || <Users className="h-4 w-4" />}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-sm text-foreground">{a.naam ?? t('Gast zonder account')}</span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="min-h-11 gap-1 text-muted-foreground hover:text-destructive"
+                      disabled={busy}
+                      onClick={() => void weiger(a)}
+                      aria-label={t('{0} weigeren', [a.naam ?? t('Gast')])}
+                    >
+                      <X className="h-4 w-4" /> {t('Weigeren')}
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="min-h-11 gap-1"
+                      disabled={busy}
+                      onClick={() => void laatToe(a)}
+                      aria-label={t('{0} toelaten', [a.naam ?? t('Gast')])}
+                    >
+                      <Check className="h-4 w-4" /> {t('Toelaten')}
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
           {leden && ledenAantal > 1 && (
             <section aria-labelledby="club-leden">
               <h3 id="club-leden" className="mb-1 text-sm font-medium text-foreground">
@@ -389,6 +470,9 @@ const KoppelSheet = ({ open, onOpenChange }: KoppelSheetProps) => {
                 <span className="rounded-md bg-muted px-2 py-0.5 font-mono text-base tracking-widest text-foreground" /* taste-skill-ignore: code */>
                   {toonCode(state.shareCode)}
                 </span>
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {t('Wie je uitnodiging gebruikt, verschijnt hier. Jij beslist wie erbij mag.')}
               </p>
             </section>
           )}

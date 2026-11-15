@@ -592,8 +592,16 @@ export type Database = {
       }
       cart_club_uitnodiging: {
         Args: { _share_code: string }
-        Returns: { eigenaar_naam: string | null; leden: number; al_lid: boolean }[]
+        Returns: { eigenaar_naam: string | null; leden: number; al_lid: boolean; aangevraagd: boolean }[]
       }
+      cart_club_aanvragen: {
+        Args: Record<PropertyKey, never>
+        Returns: { user_id: string; naam: string | null; sinds: string }[]
+      }
+      vraag_toegang: { Args: { _share_code: string }; Returns: string }
+      laat_lid_toe: { Args: { _user: string }; Returns: boolean }
+      weiger_aanvraag: { Args: { _user: string }; Returns: undefined }
+      trek_aanvraag_in: { Args: { _share_code: string }; Returns: undefined }
       user_has_shared_list: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {

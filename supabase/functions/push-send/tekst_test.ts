@@ -54,3 +54,9 @@ Deno.test('stille uren in de tijdzone van de ontvanger', () => {
   // Een onbekende tijdzone valt terug op Amsterdam.
   assertEquals(stilNu(laat, 'Nergens/Niets'), true);
 });
+
+Deno.test('een aanvraag noemt wie erbij wil, of iemand', () => {
+  assertEquals(bericht({ soort: 'aanvraag' }, 'Noor').title, 'Noor wil in je Cart Club');
+  assertEquals(bericht({ soort: 'aanvraag' }, null).title, 'Iemand wil in je Cart Club');
+  assertEquals(isSoort('aanvraag'), true);
+});

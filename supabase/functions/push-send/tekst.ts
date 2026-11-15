@@ -1,7 +1,7 @@
 // Wat er in een melding staat en wanneer er niets gestuurd wordt. Los van
 // index.ts, zodat het zonder netwerk te testen is (deno test).
 
-export const SOORTEN = ['toegevoegd', 'winkel', 'klaar', 'voorraad', 'club'] as const;
+export const SOORTEN = ['toegevoegd', 'winkel', 'klaar', 'voorraad', 'club', 'aanvraag'] as const;
 export type Soort = typeof SOORTEN[number];
 
 export const isSoort = (waarde: unknown): waarde is Soort =>
@@ -62,6 +62,13 @@ export function bericht({ soort, namen = [], aantal }: Gebeurtenis, afzender: st
       return { soort, tab: 'pantry', title: `${namen[0] ?? 'Iets'} is op`, body: `${wie} zag het in de voorraad. Op de lijst zetten?` };
     case 'club':
       return { soort, tab: 'list', title: `${wie} zit nu in je Cart Club`, body: 'Jullie zien vanaf nu dezelfde lijst.' };
+    case 'aanvraag':
+      return {
+        soort,
+        tab: 'list',
+        title: `${afzender?.trim() || 'Iemand'} wil in je Cart Club`,
+        body: 'Open Cart Club om toe te laten of te weigeren.',
+      };
   }
 }
 

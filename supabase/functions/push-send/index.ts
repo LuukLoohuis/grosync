@@ -68,6 +68,24 @@ async function clubVan(token: string): Promise<Lid[] | null> {
   return response.json();
 }
 
+/** De gebruiker achter het token, of null. */
+async function wieBenIk(token: string): Promise<string | null> {
+  const response = await fetch(`${env('SUPABASE_URL')}/auth/v1/user`, {
+    headers: { apikey: env('SUPABASE_ANON_KEY'), Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) return null;
+  const user = await response.json().catch(() => null);
+  return typeof user?.id === 'string' ? user.id : null;
+}
+
+/** Naam zoals de club hem toont; een gast heeft er geen. */
+async function naamVan(userId: string): Promise<string | null> {
+  const response = await rest('rpc/cart_club_naam', { method: 'POST', body: JSON.stringify({ _user: userId }) });
+  if (!response.ok) return null;
+  const naam = await response.json().catch(() => null);
+  return typeof naam === 'string' ? naam : null;
+}
+
 type Abonnement = { id: string; user_id: string; endpoint: string; p256dh: string; auth: string };
 
 async function verstuur(soort: Soort, ontvangers: string[], payload: string) {
@@ -82,9 +100,11 @@ async function verstuur(soort: Soort, ontvangers: string[], payload: string) {
 
   const nu = new Date();
   const kortGeleden = new Set(recent.map((r) => r.recipient));
+  // Een aanvraag valt onder dezelfde instelling als 'nieuw in de club'.
+  const instelling = soort === 'aanvraag' ? 'club' : soort;
   const wie = ontvangers.filter((id) => {
     const s = instellingen.find((i) => i.user_id === id) ?? { ...STANDAARD, user_id: id };
-    if (!s[soort]) return false;
+    if (!s[instelling]) return false;
     if (s.stille_uren && stilNu(nu, s.tijdzone)) return false;
     return !kortGeleden.has(id);
   });
@@ -137,6 +157,17 @@ Deno.serve(async (req) => {
     const token = req.headers.get('Authorization')?.replace(/^Bearer\s+/i, '');
     if (!token) return json({ error: 'Niet ingelogd' }, 401);
     if (!isSoort(body?.soort)) return json({ error: 'Onbekende soort' }, 400);
+
+    // Wie om toegang vroeg: de melding gaat naar de oprichter(s) bij wie die
+    // aanvraag echt open staat, niet naar een club naar keuze.
+    if (body.soort === 'aanvraag') {
+      const ik = await wieBenIk(token);
+      if (!ik) return json({ error: 'Niet ingelogd' }, 401);
+      const open = await lees<{ owner_id: string }>(`club_aanvragen?select=owner_id&user_id=eq.${ik}`);
+      const naam = await naamVan(ik);
+      const payload = JSON.stringify(bericht({ soort: 'aanvraag' }, naam));
+      return json({ verstuurd: await verstuur('aanvraag', open.map((a) => a.owner_id), payload) });
+    }
 
     const leden = await clubVan(token);
     if (!leden) return json({ error: 'Niet ingelogd' }, 401);

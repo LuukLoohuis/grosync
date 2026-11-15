@@ -6,7 +6,7 @@ import { currentInstallWay, isIos } from '@/lib/installHint';
 // seintjes zelf. Wat er in een melding staat en of hij uitgaat, beslist de
 // functie push-send; de app zegt alleen wat er gebeurde.
 
-export type Soort = 'toegevoegd' | 'winkel' | 'klaar' | 'voorraad' | 'club';
+export type Soort = 'toegevoegd' | 'winkel' | 'klaar' | 'voorraad' | 'club' | 'aanvraag';
 
 /**
  * kan-niet: deze browser heeft geen pushmeldingen.
@@ -130,6 +130,12 @@ export function stuurMelding(soort: Soort, extra: { namen?: string[]; aantal?: n
  */
 export async function meldNieuwLid(): Promise<void> {
   const verzoek = supabase.functions.invoke('push-send', { body: { soort: 'club' } }).catch(() => null);
+  await Promise.race([verzoek, new Promise((klaar) => setTimeout(klaar, 1500))]);
+}
+
+/** Je vroeg om in een Cart Club te mogen; de oprichter krijgt een melding. De server zoekt uit wie. */
+export async function meldAanvraag(): Promise<void> {
+  const verzoek = supabase.functions.invoke('push-send', { body: { soort: 'aanvraag' } }).catch(() => null);
   await Promise.race([verzoek, new Promise((klaar) => setTimeout(klaar, 1500))]);
 }
 
