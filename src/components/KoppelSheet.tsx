@@ -411,7 +411,7 @@ const KoppelSheet = ({ open, onOpenChange }: KoppelSheetProps) => {
                   id="club-code"
                   value={code}
                   onChange={(e) => { setCode(e.target.value); setCodeFout(false); }}
-                  placeholder="7F3A-9C1B"
+                  placeholder="7F3A-9C1B-04DE"
                   autoCapitalize="characters"
                   autoComplete="off"
                   spellCheck={false}
@@ -422,7 +422,7 @@ const KoppelSheet = ({ open, onOpenChange }: KoppelSheetProps) => {
                 <Button type="submit" variant="outline" className="min-h-11 shrink-0">{t('Instappen')}</Button>
               </div>
               {codeFout && (
-                <p id="club-code-fout" className="text-sm text-destructive">{t('Een code heeft 8 tekens, zoals 7F3A-9C1B.')}</p>
+                <p id="club-code-fout" className="text-sm text-destructive">{t('Een code heeft 12 tekens, zoals 7F3A-9C1B-04DE.')}</p>
               )}
             </form>
           )}

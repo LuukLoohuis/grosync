@@ -75,7 +75,7 @@ const NieuwWachtwoord = ({ email }: { email?: string }) => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={6}
+                minLength={8}
                 autoFocus
                 className="pr-12"
               />

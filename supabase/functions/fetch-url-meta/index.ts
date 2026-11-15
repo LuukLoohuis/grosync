@@ -43,6 +43,43 @@ async function consumeAi(userId: string, feature: string, limit: number): Promis
 /** Free gets three a month of each thing that costs real money, per household; Plus gets everything. */
 const FREE_LIMIT = 3;
 
+/** Photos fetched again for recipes whose link expired: no model runs, but each one lands in storage. */
+const FOTO_LIMIT = 50;
+
+/**
+ * Whether the server may fetch this address on a user's behalf: only http(s) on a
+ * public host. Blocks localhost, private and link-local ranges (cloud metadata) and
+ * internal names, so nobody can use this function to reach the network it runs in.
+ */
+function publiekeUrl(raw: unknown): URL | null {
+  if (typeof raw !== 'string' || raw.length > 2048) return null;
+  let url: URL;
+  try { url = new URL(raw); } catch { return null; }
+  if (url.protocol !== 'https:' && url.protocol !== 'http:') return null;
+  if (url.username || url.password) return null;
+  if (url.port && url.port !== '80' && url.port !== '443') return null;
+  const host = url.hostname.toLowerCase().replace(/^\[|\]$/g, '').replace(/\.$/, '');
+  if (!host.includes('.') && !host.includes(':')) return null;
+  if (/(^|\.)(localhost|local|internal|intranet|lan|home|corp|localdomain|supabase\.internal)$/.test(host)) return null;
+  if (host.includes(':')) {
+    // IPv6 literal: only global unicast, and no IPv4-mapped tricks.
+    if (host === '::' || host === '::1' || /^(fc|fd|fe[89ab]|ff)/.test(host) || host.includes('.') || /^::ffff:/.test(host)) return null;
+    return url;
+  }
+  if (/^[0-9.]+$/.test(host) || /^0x/i.test(host)) {
+    const parts = host.split('.').map(Number);
+    if (parts.length !== 4 || parts.some((p) => !Number.isInteger(p) || p < 0 || p > 255)) return null;
+    const [a, b] = parts;
+    if (a === 0 || a === 10 || a === 127 || a >= 224) return null;
+    if (a === 169 && b === 254) return null;
+    if (a === 172 && b >= 16 && b <= 31) return null;
+    if (a === 192 && b === 168) return null;
+    if (a === 100 && b >= 64 && b <= 127) return null;
+    if (a === 198 && (b === 18 || b === 19)) return null;
+  }
+  return url;
+}
+
 // Tekstmodel: standaard OpenAI, maar zet DEEPSEEK_API_KEY en alles wat tekst is
 // loopt via DeepSeek (dezelfde API-vorm, een stuk goedkoper). Beelden en video
 // kan DeepSeek niet lezen; die blijven bij OpenAI of Gemini.
@@ -114,12 +151,17 @@ async function storeImage(imageUrl: string | null, budgetMs: number): Promise<st
   if (!supabaseUrl || !key) return null;
   // Already ours.
   if (imageUrl.startsWith(`${supabaseUrl}/storage/v1/object/public/${IMAGE_BUCKET}/`)) return imageUrl;
+  if (!publiekeUrl(imageUrl)) return null;
   try {
     const response = await fetch(imageUrl, {
       headers: { 'User-Agent': BROWSER_UA, Accept: 'image/*' },
       redirect: 'follow',
       signal: AbortSignal.timeout(Math.min(20_000, budgetMs - 3_000)),
     });
+    if (response.url && !publiekeUrl(response.url)) {
+      console.error('Image redirected to a non-public address:', imageUrl.slice(0, 100));
+      return null;
+    }
     if (!response.ok) {
       console.error('Image download failed:', response.status, imageUrl.slice(0, 100));
       return null;
@@ -314,6 +356,7 @@ async function extractRecipeFromVideoFile(videoUrl: string, timeoutMs: number): 
   const deadline = Date.now() + timeoutMs;
   let fileName: string | null = null;
   try {
+    if (!publiekeUrl(videoUrl)) return emptyRecipe();
     const download = await fetch(videoUrl, { headers: { 'User-Agent': IPHONE_SAFARI } });
     if (!download.ok) {
       console.error('Video download failed:', download.status);
@@ -419,6 +462,7 @@ async function scrapePage(url: string, { plain = false } = {}): Promise<{ conten
   try {
     console.log('Falling back to simple fetch:', url);
     const response = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; CoupleCart/1.0)' } });
+    if (response.url && !publiekeUrl(response.url)) throw new Error('Redirected to a non-public address');
     const html = await response.text();
     const content = html
       .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
@@ -769,7 +813,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { url, text, imageOnly } = await req.json();
+    const { url: rawUrl, text, imageOnly } = await req.json();
+    // Only public http(s) addresses; anything else is treated as no link at all.
+    const url = rawUrl ? publiekeUrl(rawUrl)?.href ?? '' : '';
+    if (rawUrl && !url) {
+      return new Response(JSON.stringify({ error: 'Invalid URL' }), {
+        status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     if (!url && !text) {
       return new Response(JSON.stringify({ error: 'URL or text is required' }), {
         status: 400,
@@ -781,6 +832,13 @@ Deno.serve(async (req) => {
 
     // Just the photo again, for a recipe whose link expired. No model runs, so no quota.
     if (imageOnly) {
+      // Its own monthly allowance, so nobody can use the photo bucket as free storage.
+      const fotoQuota = await consumeAi(user.id, 'foto', FOTO_LIMIT);
+      if (!fotoQuota.allowed) {
+        return new Response(JSON.stringify({ imageUrl: null }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
       const found = url ? await imageForUrl(String(url)) : null;
       const imageUrl = (await storeImage(found, deadline - Date.now())) ?? found;
       return new Response(JSON.stringify({ imageUrl }), {

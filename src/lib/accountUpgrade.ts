@@ -52,7 +52,7 @@ export const accountFoutmelding = (code: string | undefined, route: AccountRoute
     case 'validation_failed':
       return 'Dit e-mailadres klopt niet. Kijk het nog even na.';
     case 'weak_password':
-      return 'Kies een sterker wachtwoord van minstens 6 tekens.';
+      return 'Kies een sterker wachtwoord van minstens 8 tekens.';
     case 'otp_expired':
       return 'Deze bevestigingslink is verlopen of al gebruikt. Vraag een nieuwe aan.';
     case 'email_not_confirmed':

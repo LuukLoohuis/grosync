@@ -28,7 +28,7 @@ describe('authFoutmelding', () => {
 
   it('leest validation_failed bij een nieuw wachtwoord als het wachtwoord, elders als het adres', () => {
     expect(authFoutmelding({ code: 'validation_failed' }, 'nieuw-wachtwoord'))
-      .toBe('Kies een sterker wachtwoord van minstens 6 tekens.');
+      .toBe('Kies een sterker wachtwoord van minstens 8 tekens.');
     expect(authFoutmelding({ code: 'validation_failed' }, 'vergeten'))
       .toBe('Dit e-mailadres klopt niet. Kijk het nog even na.');
   });

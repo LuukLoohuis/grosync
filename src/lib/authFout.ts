@@ -15,7 +15,7 @@ export interface AuthFout {
 /** Waar het misging. Een paar codes betekenen per scherm iets anders. */
 export type AuthStap = 'inloggen' | 'aanmaken' | 'vergeten' | 'nieuw-wachtwoord';
 
-const ZWAK_WACHTWOORD = 'Kies een sterker wachtwoord van minstens 6 tekens.';
+const ZWAK_WACHTWOORD = 'Kies een sterker wachtwoord van minstens 8 tekens.';
 const ADRES_KLOPT_NIET = 'Dit e-mailadres klopt niet. Kijk het nog even na.';
 const ALGEMEEN = 'Er ging iets mis. Probeer het opnieuw.';
 

@@ -1,15 +1,16 @@
 /**
  * Cart Club: de club van mensen die één CoupleCart delen. De uitnodiging is de
- * share_code van shared_lists (8 tekens, kleine letters). Op het scherm staat
- * hij als twee blokjes van vier in hoofdletters, zodat je hem kunt voorlezen.
+ * share_code van shared_lists (12 tekens, kleine letters; sinds 2026-11-15, daarvoor 8).
+ * Op het scherm staat hij als drie blokjes van vier in hoofdletters, zodat je hem
+ * kunt voorlezen.
  */
 
 export const clubUrl = (code: string, origin = window.location.origin) => `${origin}/#/shared/${code}`;
 
-/** "7f3a9c1b" → "7F3A-9C1B". */
+/** "7f3a9c1b04de" → "7F3A-9C1B-04DE". */
 export const toonCode = (code: string) => {
   const c = code.toUpperCase();
-  return c.length === 8 ? `${c.slice(0, 4)}-${c.slice(4)}` : c;
+  return c.length === 12 ? `${c.slice(0, 4)}-${c.slice(4, 8)}-${c.slice(8)}` : c;
 };
 
 /**
@@ -20,7 +21,7 @@ export const toonCode = (code: string) => {
 export const leesCode = (invoer: string): string | null => {
   const uitLink = invoer.match(/\/shared\/([A-Za-z0-9-]+)/);
   const ruw = (uitLink ? uitLink[1] : invoer).toLowerCase().replace(/[\s-]/g, '');
-  return /^[0-9a-z]{8}$/.test(ruw) ? ruw : null;
+  return /^[0-9a-z]{12}$/.test(ruw) ? ruw : null;
 };
 
 /** Twee letters voor het rondje: "Sanne de Vries" → "SV", "noor" → "NO". */

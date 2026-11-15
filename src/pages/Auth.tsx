@@ -214,7 +214,7 @@ const handleGoogleLogin = async () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  minLength={6}
+                  minLength={8}
                   className="pr-12"
                 />
                 <button
