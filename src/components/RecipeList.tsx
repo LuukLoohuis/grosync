@@ -12,6 +12,7 @@ import { fetchRecipeFromUrl, fetchRecipeFromText, translateRecipe, calculateMacr
 import { QuotaError } from '@/services/functions';
 import { normalizeSteps } from '@/lib/recipeSteps';
 import PlusSheet from '@/components/PlusSheet';
+import { PlusLabel, PlusMerk } from '@/components/PlusMerk';
 import { FREE_LIMIT } from '@/hooks/useEntitlements';
 import RecipeSuggestDialog from '@/components/RecipeSuggestDialog';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -497,6 +498,7 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
                   </Button>
                   <Button type="button" variant="outline" onClick={calculateMacrosHandler} className="gap-2">
                     {t("Voedingswaarden")}
+                    {!plus && <PlusLabel />}
                   </Button>
                   <Button onClick={handleAdd} className="min-w-full sm:min-w-0 sm:flex-1">{t("Recept opslaan")}</Button>
                 </div>
@@ -589,11 +591,12 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
                 trigger={
                   <button
                     type="button"
-                    aria-label={t("Wat kun je koken?")}
+                    aria-label={plus ? t("Wat kun je koken?") : t("Wat kun je koken? Hoort bij Plus")}
                     title={t("Wat kun je koken?")}
-                    className="flex h-11 w-11 items-center justify-center rounded-[12px] border border-border bg-card text-foreground transition-colors duration-150 ease-smooth hover:border-border-strong"
+                    className="relative flex h-11 w-11 items-center justify-center rounded-[12px] border border-border bg-card text-foreground transition-colors duration-150 ease-smooth hover:border-border-strong"
                   >
                     <Lightbulb className="h-5 w-5" strokeWidth={1.9} />
+                    {!plus && <PlusMerk maat="sm" className="absolute -right-1.5 -top-1.5 ring-2 ring-background" />}
                   </button>
                 }
               />

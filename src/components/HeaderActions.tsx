@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Bell, Heart, LogOut, MoreVertical, Gauge, LifeBuoy, Sparkles, SquarePlus, Users } from 'lucide-react';
+import { Bell, Heart, LogOut, MoreVertical, Gauge, LifeBuoy, SquarePlus, Users } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useAuth } from '@/hooks/useAuth';
 import { useInstallHint } from '@/hooks/useInstallHint';
+import { PlusMerk } from '@/components/PlusMerk';
 import { useAppContext } from '@/contexts/AppContext';
 import AccountSheet, { AccountMenuItem } from '@/components/AccountSheet';
 import GastUitlogDialog from '@/components/GastUitlogDialog';
@@ -60,19 +61,23 @@ const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
 
   return (
     <div className="-mr-2 flex items-center">
-      {!plus && (
-        <button
-          type="button"
-          onClick={() => setUsageOpen(true)}
-          aria-label={t("CoupleCart Plus")}
-          title={t("CoupleCart Plus")}
-          className={`mr-1 flex h-8 shrink-0 items-center gap-1 rounded-full bg-accent px-2.5 text-xs font-bold text-accent-foreground transition-[filter] hover:brightness-105 focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 ${
-            onDark ? 'focus-visible:ring-primary-foreground focus-visible:ring-offset-primary dark:focus-visible:ring-foreground' : 'focus-visible:ring-ring'
-          }`}
-        >
-          <Sparkles className="h-3.5 w-3.5" strokeWidth={2.2} /> {t("Plus")}
-        </button>
-      )}
+      {/* Zonder Plus een rustig pilletje met het zegel; met Plus alleen het zegel, als teken dat je lid bent. */}
+      <button
+        type="button"
+        onClick={() => setUsageOpen(true)}
+        aria-label={plus ? t("Jouw Plus") : t("CoupleCart Plus")}
+        title={plus ? t("Jouw Plus") : t("CoupleCart Plus")}
+        className={`mr-1 flex h-8 shrink-0 items-center gap-1.5 rounded-full text-xs font-bold transition-colors duration-150 ease-smooth focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-offset-2 ${
+          plus ? 'w-8 justify-center' : 'pl-[5px] pr-2.5'
+        } ${
+          onDark
+            ? `${plus ? '' : 'bg-white/10 ring-1 ring-inset ring-white/15 hover:bg-white/15 dark:bg-card dark:ring-border dark:hover:bg-muted'} text-primary-foreground dark:text-foreground focus-visible:ring-primary-foreground focus-visible:ring-offset-primary dark:focus-visible:ring-foreground`
+            : `${plus ? '' : 'bg-accent-soft hover:bg-accent-soft/70'} text-accent-ink focus-visible:ring-ring`
+        }`}
+      >
+        <PlusMerk maat={plus ? 'md' : 'sm'} className={plus ? 'h-7 w-7 rounded-[9px]' : ''} />
+        {!plus && t("Plus")}
+      </button>
       {/* Met naam erbij: alleen een icoon zegt een nieuw lid niet dat hier het delen zit. */}
       <button type="button" onClick={() => setShareOpen(true)} className={`${iconButton} w-auto gap-1.5 px-2.5 text-[0.8125rem] font-semibold`}>
         <Users className="h-[18px] w-[18px]" strokeWidth={1.9} />
@@ -87,17 +92,6 @@ const HeaderActions = ({ onDark = false }: { onDark?: boolean }) => {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-60">
           {gast && <AccountMenuItem onSelect={() => setAccountOpen(true)} />}
-          {/* Zonder Plus staat dezelfde knop al in de kop; hier alleen als hij daar weg is. */}
-          {plus && (
-            <>
-              <DropdownMenuItem className="gap-2 min-h-11 cursor-pointer font-semibold text-accent-ink focus:text-accent-ink" onSelect={() => setUsageOpen(true)}>
-                <Sparkles className="h-4 w-4" />
-                <span className="flex-1">{t("CoupleCart Plus")}</span>
-                <span className="text-xs font-normal text-muted-foreground">{t("actief")}</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-            </>
-          )}
           <DropdownMenuLabel>{t("Thema")}</DropdownMenuLabel>
           <DropdownMenuRadioGroup value={theme ?? 'system'} onValueChange={setTheme} className="grid grid-cols-3 gap-1 px-1 pb-1">
             {THEMES.map(([value, label]) => (

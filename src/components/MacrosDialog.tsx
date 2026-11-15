@@ -8,6 +8,7 @@ import { Recipe, Macros } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
 import { useAppContext } from '@/contexts/AppContext';
 import PlusSheet from '@/components/PlusSheet';
+import { PlusLabel } from '@/components/PlusMerk';
 import { toast } from 'sonner';
 import { t } from '@/lib/i18n';
 
@@ -144,6 +145,7 @@ const MacrosDialog = ({ recipe, onMacrosCalculated, open, onOpenChange }: Macros
             <p className="text-sm">{t("Bereken ze op basis van de ingrediënten.")}</p>
             <Button className="gap-2" onClick={handleCalculate} disabled={calculating}>
               <Calculator className="h-4 w-4" /> {t("Voedingswaarden berekenen")}
+              {!plus && <PlusLabel />}
             </Button>
           </div>
         )}

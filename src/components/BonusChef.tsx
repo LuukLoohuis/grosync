@@ -8,6 +8,7 @@ import AddToListSheet from '@/components/AddToListSheet';
 import RecipeViewDialog from '@/components/RecipeViewDialog';
 import { useAppContext } from '@/contexts/AppContext';
 import PlusSheet from '@/components/PlusSheet';
+import { PlusLabel } from '@/components/PlusMerk';
 import { leesBonusGeheugen, schrijfBonusGeheugen } from '@/lib/bonusMemory';
 import { productName } from '@/lib/itemAmount';
 import { normalizeSteps, splitSteps } from '@/lib/recipeSteps';
@@ -377,6 +378,7 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
             <Button variant="secondary" className="mt-4 min-h-[50px] w-full gap-2" onClick={() => void think()} disabled={thinking}>
               <Sparkles className="h-4 w-4" />
               {thinking ? t("Even koken…") : t("Laat iets verzinnen uit de bonus")}
+              {!plus && !thinking && <PlusLabel />}
             </Button>
           )}
         </section>
@@ -391,6 +393,7 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
           <Button variant="secondary" className="mt-3 min-h-11 w-full gap-2" onClick={() => void think()} disabled={thinking}>
             <Sparkles className="h-4 w-4" />
             {thinking ? t("Even koken…") : ideas.length > 0 ? t("Drie andere verzinnen") : t("Laat iets verzinnen")}
+            {!plus && !thinking && <PlusLabel />}
           </Button>
         </section>
       )}
@@ -508,6 +511,7 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
         <Button variant="outline" className="min-h-[50px] w-full gap-2" onClick={() => void think()} disabled={thinking}>
           <Sparkles className="h-4 w-4" />
           {t("Laat iets verzinnen uit de bonus")}
+          {!plus && <PlusLabel />}
         </Button>
       )}
 

@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import PlusAanbod from '@/components/PlusAanbod';
+import { PlusMerk } from '@/components/PlusMerk';
 import { useAppContext } from '@/contexts/AppContext';
 import { FREE_LIMIT, type MeteredFeature } from '@/hooks/useEntitlements';
 import { BetalenUitError, openPortal, PLUS_VANAF } from '@/services/plusApi';
@@ -50,6 +51,7 @@ const UsageSheet = ({ open, onOpenChange }: UsageSheetProps) => {
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="mx-auto max-h-[85vh] [@supports(height:100dvh)]:max-h-[85dvh] max-w-lg overflow-y-auto rounded-t-[20px]">
         <SheetHeader className="pr-10 text-left">
+          {!plus && <PlusMerk maat="lg" className="mb-2" />}
           <SheetTitle className="font-display text-xl">{plus ? t("Je tegoed") : t("CoupleCart Plus")}</SheetTitle>
           <SheetDescription>
             {plus

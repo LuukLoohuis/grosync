@@ -2,6 +2,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '
 import { Button } from '@/components/ui/button';
 import { FEATURE_LABEL, FREE_LIMIT, PLUS_FEATURE_LABEL, type MeteredFeature, type PlusFeature } from '@/hooks/useEntitlements';
 import PlusAanbod from '@/components/PlusAanbod';
+import { PlusMerk } from '@/components/PlusMerk';
 import { locale, t } from '@/lib/i18n';
 
 interface PlusSheetProps {
@@ -24,6 +25,7 @@ const PlusSheet = ({ feature, onClose }: PlusSheetProps) => (
   <Sheet open={Boolean(feature)} onOpenChange={(open) => { if (!open) onClose(); }}>
     <SheetContent side="bottom" className="mx-auto max-w-lg rounded-t-[20px]">
       <SheetHeader className="pr-10 text-left">
+        <PlusMerk maat="lg" className="mb-2" />
         <SheetTitle className="font-display text-xl">
           {alleenPlus(feature)
             ? t('{0} hoort bij Plus', [PLUS_FEATURE_LABEL[feature]])

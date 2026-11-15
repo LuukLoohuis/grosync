@@ -789,6 +789,8 @@ export const EN: Record<string, string> = {
   'Plus nemen · {0} {1}': 'Get Plus · {0} {1}',
   'Alles onbeperkt en slimme hulp in de keuken. Vanaf {0} per maand.': 'Everything unlimited, plus smart help in the kitchen. From {0} a month.',
   'Gratis deze maand': 'Free this month',
+  'Jouw Plus': 'Your Plus',
+  'Wat kun je koken? Hoort bij Plus': 'What can you cook? Part of Plus',
   '{0} van elk, voor de hele Cart Club samen. Op {1} weer vol.': '{0} of each, shared by the whole Cart Club. Refills on {1}.',
   'nog {0}': '{0} left',
 

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useAppContext } from '@/contexts/AppContext';
 import PlusSheet from '@/components/PlusSheet';
+import { PlusLabel } from '@/components/PlusMerk';
 import { normalizeSteps, splitSteps } from '@/lib/recipeSteps';
 import { suggestRecipes, RecipeSuggestion } from '@/services/recipeApi';
 import { toast } from 'sonner';
@@ -70,6 +71,7 @@ const RecipeSuggestDialog = ({ trigger }: { trigger?: ReactNode } = {}) => {
         {trigger ?? (
           <Button variant="outline" className="min-h-11 w-full gap-2 px-2">
             <Lightbulb className="h-4 w-4 shrink-0" /> <span className="truncate">{t("Wat kun je koken?")}</span>
+            {!plus && <PlusLabel />}
           </Button>
         )}
       </DialogTrigger>
