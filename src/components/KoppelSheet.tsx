@@ -10,6 +10,7 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useAppContext } from '@/contexts/AppContext';
+import PlusAanbod from '@/components/PlusAanbod';
 import { supabase } from '@/integrations/supabase/client';
 import { t } from '@/lib/i18n';
 import { clubUrl, initialen, leesCode, toonCode } from '@/lib/cartClub';
@@ -47,7 +48,7 @@ const AVATAR = [
  * blijft bij de oprichter.
  */
 const KoppelSheet = ({ open, onOpenChange }: KoppelSheetProps) => {
-  const { groceryItems, selfId, household } = useAppContext();
+  const { groceryItems, selfId, household, plus, refreshEntitlements } = useAppContext();
   const [state, setState] = useState<LinkState>({ status: 'loading' });
   const [leden, setLeden] = useState<Lid[] | null>(null);
   const [busy, setBusy] = useState(false);
@@ -99,6 +100,12 @@ const KoppelSheet = ({ open, onOpenChange }: KoppelSheetProps) => {
       .select('share_code')
       .single();
     setBusy(false);
+    if (error?.code === '42501') {
+      // De server zegt nee: geen Plus (meer). Laat het aanbod zien in plaats van een fout.
+      toast.error(t('Een Cart Club starten hoort bij Plus'));
+      void refreshEntitlements();
+      return;
+    }
     if (error || !data) {
       toast.error(t('Uitnodiging maken lukte niet. Probeer het opnieuw.'));
       return;
@@ -331,11 +338,23 @@ const KoppelSheet = ({ open, onOpenChange }: KoppelSheetProps) => {
             </p>
           )}
 
-          {!lid && state.status === 'ready' && !state.shareCode && (
+          {!lid && state.status === 'ready' && !state.shareCode && plus && (
             <Button className="min-h-11 w-full gap-2" onClick={createLink} disabled={busy}>
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
               {t('Iemand uitnodigen')}
             </Button>
+          )}
+
+          {!lid && state.status === 'ready' && !state.shareCode && !plus && (
+            <section aria-labelledby="club-plus" className="space-y-3">
+              <div>
+                <h3 id="club-plus" className="text-sm font-medium text-foreground">{t('Een Cart Club starten hoort bij Plus')}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {t('Meedoen met iemands club is gratis: vul hieronder de code in die je kreeg.')}
+                </p>
+              </div>
+              <PlusAanbod />
+            </section>
           )}
 
           {!lid && state.status === 'ready' && state.shareCode && (
