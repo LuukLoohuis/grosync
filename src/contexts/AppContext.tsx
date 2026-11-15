@@ -110,7 +110,7 @@ export const AppProvider = ({
   const pantry = usePantryStaples(userId);
   const categoryHook = useRecipeCategories({ userId });
   const pantryHook = usePantry({ userId });
-  // Tegoed en Plus gelden voor het hele huishouden; dat rekent de server uit.
+  // Het gratis tegoed geldt voor het hele huishouden, Plus alleen voor wie het neemt; dat rekent de server uit.
   const entitlements = useEntitlements({ userId: selfId });
 
   // Seintjes sturen heeft alleen zin als er nog iemand in de club zit.

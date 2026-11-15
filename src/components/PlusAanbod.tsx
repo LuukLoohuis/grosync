@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Camera, Check, Link2, Loader2, ShoppingBasket, Sparkles, Tag, UserPlus } from 'lucide-react';
+import { Camera, Check, Link2, Loader2, ShoppingBasket, Sparkles, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import AccountSheet from '@/components/AccountSheet';
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,6 @@ const PERKS = [
   { icon: Camera, text: t('Onbeperkt je kast scannen met een foto') },
   { icon: ShoppingBasket, text: t('Onbeperkt prijzen zoeken en vergelijken') },
   { icon: Sparkles, text: t('Bonuschef, receptsuggesties en voedingswaarden') },
-  { icon: Tag, text: t('Eén keer voor de hele Cart Club') },
 ];
 
 /** What Plus gives and the two prices; a guest first makes an account, so Plus survives logging out. */

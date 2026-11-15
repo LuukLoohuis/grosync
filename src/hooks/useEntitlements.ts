@@ -34,7 +34,7 @@ export const useEntitlements = ({ userId }: UseEntitlementsOptions = {}) => {
   const load = useCallback(async () => {
     if (!userId) { setPlus(false); setUsed({}); setIsAdmin(false); return; }
 
-    // my_plus en my_usage kijken naar het hele huishouden; ze staan nog niet in de
+    // my_plus kijkt naar jouw account, my_usage naar het hele huishouden; ze staan nog niet in de
     // gegenereerde typen. Via de client aanroepen, anders raakt rpc zijn `this` kwijt.
     const client = supabase as unknown as { rpc: (fn: string) => PromiseLike<{ data: unknown; error: unknown }> };
     const [plusRpc, usageRpc, admin] = await Promise.all([

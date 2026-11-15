@@ -52,7 +52,8 @@ const DELEN: Record<string, Deel> = {
           Een gedeelde boodschappenlijst, een receptenboek, een voorraadkast en een overzicht van de
           bonus bij Albert Heijn. De gratis versie kent een maandelijkse grens per huishouden voor het
           ophalen van recepten, het scannen van je kast en het vullen van je karretje bij Albert Heijn;
-          CoupleCart Plus haalt die grens weg voor het hele huishouden.
+          CoupleCart Plus haalt die grens weg voor het account dat Plus afneemt; andere leden van
+          dezelfde Cart Club houden de gratis versie.
         </P>
 
         <H2>Prijzen en betalen</H2>

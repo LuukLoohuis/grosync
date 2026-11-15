@@ -53,7 +53,7 @@ const UsageSheet = ({ open, onOpenChange }: UsageSheetProps) => {
           <SheetTitle className="font-display text-xl">{t("Je tegoed")}</SheetTitle>
           <SheetDescription>
             {plus
-              ? t("Je hebt Plus: alles onbeperkt, voor jullie samen.")
+              ? t("Je hebt Plus: alles onbeperkt.")
               : t("Elke maand {0} van elk, voor de hele Cart Club samen. Op {1} staat de teller weer op nul.", [FREE_LIMIT, resetDate()])}
           </SheetDescription>
         </SheetHeader>

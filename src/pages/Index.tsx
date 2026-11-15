@@ -119,7 +119,7 @@ const Index = () => {
     if (!plus) return;
     setSearchParams({}, { replace: true });
     if (plus === 'gelukt') {
-      toast.success(t("Welkom bij Plus"), { description: t("Alles staat voor jullie allebei open.") });
+      toast.success(t("Welkom bij Plus"), { description: t("Alles staat voor je open.") });
       // Stripe meldt het via de webhook; even later staat het er.
       window.setTimeout(() => { void refreshEntitlements(); }, 2500);
     } else {
