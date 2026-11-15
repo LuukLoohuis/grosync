@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import AddToListSheet from '@/components/AddToListSheet';
 import RecipeViewDialog from '@/components/RecipeViewDialog';
 import { useAppContext } from '@/contexts/AppContext';
+import PlusSheet from '@/components/PlusSheet';
 import { leesBonusGeheugen, schrijfBonusGeheugen } from '@/lib/bonusMemory';
 import { productName } from '@/lib/itemAmount';
 import { normalizeSteps, splitSteps } from '@/lib/recipeSteps';
@@ -59,7 +60,8 @@ const Foto = ({ url, formaat }: { url: string | null; formaat: number }) => (
 
 /** Bonuschef: welke van jouw recepten deze week goedkoper zijn bij Albert Heijn. */
 const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => void }) => {
-  const { recipes, addRecipe, pantryStaples, addGroceryItem } = useAppContext();
+  const { recipes, addRecipe, pantryStaples, addGroceryItem, plus } = useAppContext();
+  const [plusOpen, setPlusOpen] = useState(false);
   const [result, setResult] = useState<BonusResult | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [listRecipe, setListRecipe] = useState<Recipe | null>(null);
@@ -105,6 +107,7 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
   }, [status]);
 
   const think = async () => {
+    if (!plus) { setPlusOpen(true); return; }
     const offers = result?.sample ?? [];
     if (offers.length < 10) return;
     setThinking(true);
@@ -515,6 +518,7 @@ const BonusChef = ({ onNavigate }: { onNavigate?: (tab: 'recipes' | 'list') => v
       )}
 
       <AddToListSheet recipe={listRecipe} onClose={() => setListRecipe(null)} onNavigate={onNavigate} />
+      <PlusSheet feature={plusOpen ? 'bonuschef' : null} onClose={() => setPlusOpen(false)} />
     </div>
   );
 };

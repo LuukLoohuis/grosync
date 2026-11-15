@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Recipe, Macros } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
+import { useAppContext } from '@/contexts/AppContext';
+import PlusSheet from '@/components/PlusSheet';
 import { toast } from 'sonner';
 import { t } from '@/lib/i18n';
 
@@ -78,10 +80,13 @@ const MacrosContent = ({ macros }: { macros: Macros }) => (
 
 const MacrosDialog = ({ recipe, onMacrosCalculated, open, onOpenChange }: MacrosDialogProps) => {
   const controlled = open !== undefined;
+  const { plus } = useAppContext();
   const [calculating, setCalculating] = useState(false);
+  const [plusOpen, setPlusOpen] = useState(false);
   const macros = recipe.macros;
 
   const handleCalculate = async () => {
+    if (!plus) { setPlusOpen(true); return; }
     if (recipe.ingredients.length === 0) {
       toast.error(t("Dit recept heeft geen ingrediënten."));
       return;
@@ -107,6 +112,8 @@ const MacrosDialog = ({ recipe, onMacrosCalculated, open, onOpenChange }: Macros
   };
 
   return (
+    <>
+    <PlusSheet feature={plusOpen ? 'voeding' : null} onClose={() => setPlusOpen(false)} />
     <Dialog open={open} onOpenChange={onOpenChange}>
       {!controlled && (
         <DialogTrigger asChild>
@@ -142,6 +149,7 @@ const MacrosDialog = ({ recipe, onMacrosCalculated, open, onOpenChange }: Macros
         )}
       </DialogContent>
     </Dialog>
+    </>
   );
 };
 

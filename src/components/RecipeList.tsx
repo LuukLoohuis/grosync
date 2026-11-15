@@ -66,6 +66,7 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
   const [editId, setEditId] = useState<string | null>(null);
   const [macrosId, setMacrosId] = useState<string | null>(null);
   const [overLimit, setOverLimit] = useState(false);
+  const [voedingPlus, setVoedingPlus] = useState(false);
   const importOp = !plus && remaining('recept') === 0;
   const [categories, setCategories] = useState<string[]>([]);
   const [filter, setFilter] = useState<string | null>(null);
@@ -221,6 +222,7 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
   };
 
   const calculateMacrosHandler = async () => {
+    if (!plus) { setVoedingPlus(true); return; }
     const ingredients = ingredientText.split('\n').map((l) => l.trim()).filter(Boolean);
     if (!ingredients.length) {
       toast.error(t("Voeg eerst ingrediënten toe"));
@@ -506,6 +508,7 @@ const RecipeList = ({ initialImport, onImportConsumed, onNavigate }: RecipeListP
       </Dialog>
 
       <PlusSheet feature={overLimit ? 'recept' : null} onClose={() => setOverLimit(false)} />
+      <PlusSheet feature={voedingPlus ? 'voeding' : null} onClose={() => setVoedingPlus(false)} />
 
       <RecipeDetailSheet
         recipe={detailRecipe}

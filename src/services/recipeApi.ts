@@ -78,26 +78,11 @@ export async function translateRecipe(recipe: RecipeData) {
 }
 
 export async function calculateMacros(ingredients: string[]) {
-  try {
-    const response = await fetch(`${FUNCTIONS_URL}/calculate-macros`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ ingredients }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Failed to calculate macros');
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('calculateMacros error:', error);
-    throw error;
-  }
+  // Through invoke, so the call carries your own session: the function checks for Plus.
+  const { data, error } = await supabase.functions.invoke('calculate-macros', { body: { ingredients } });
+  if (error) throw error;
+  if (data?.error) throw new Error(data.error);
+  return data;
 }
 
 export interface RecipeSuggestion {

@@ -1,12 +1,12 @@
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { FEATURE_LABEL, FREE_LIMIT, type MeteredFeature } from '@/hooks/useEntitlements';
+import { FEATURE_LABEL, FREE_LIMIT, PLUS_FEATURE_LABEL, type MeteredFeature, type PlusFeature } from '@/hooks/useEntitlements';
 import PlusAanbod from '@/components/PlusAanbod';
 import { locale, t } from '@/lib/i18n';
 
 interface PlusSheetProps {
-  /** The feature that ran out, or null when the sheet is closed. */
-  feature: MeteredFeature | null;
+  /** The feature that ran out, or a Plus-only one that was tapped; null when the sheet is closed. */
+  feature: MeteredFeature | PlusFeature | null;
   onClose: () => void;
 }
 
@@ -17,15 +17,22 @@ const resetDate = () => {
   return next.toLocaleDateString(locale(), { day: 'numeric', month: 'long' });
 };
 
+const alleenPlus = (feature: MeteredFeature | PlusFeature | null): feature is PlusFeature =>
+  feature !== null && feature in PLUS_FEATURE_LABEL;
+
 const PlusSheet = ({ feature, onClose }: PlusSheetProps) => (
   <Sheet open={Boolean(feature)} onOpenChange={(open) => { if (!open) onClose(); }}>
     <SheetContent side="bottom" className="mx-auto max-w-lg rounded-t-[20px]">
       <SheetHeader className="pr-10 text-left">
         <SheetTitle className="font-display text-xl">
-          {t('Je {0} {1} van deze maand zijn op', [FREE_LIMIT, feature ? FEATURE_LABEL[feature] : ''])}
+          {alleenPlus(feature)
+            ? t('{0} hoort bij Plus', [PLUS_FEATURE_LABEL[feature]])
+            : t('Je {0} {1} van deze maand zijn op', [FREE_LIMIT, feature ? FEATURE_LABEL[feature] : ''])}
         </SheetTitle>
         <SheetDescription>
-          {t('Op {0} staat je tegoed weer op {1}. Je lijst, je recepten en je voorraad blijven gewoon werken.', [resetDate(), FREE_LIMIT])}
+          {alleenPlus(feature)
+            ? t('Je lijst, je recepten en je voorraad blijven gewoon gratis werken.')
+            : t('Op {0} staat je tegoed weer op {1}. Je lijst, je recepten en je voorraad blijven gewoon werken.', [resetDate(), FREE_LIMIT])}
         </SheetDescription>
       </SheetHeader>
 

@@ -5,14 +5,16 @@ import { suggestieStappen } from '@/lib/aiStappen';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useAppContext } from '@/contexts/AppContext';
+import PlusSheet from '@/components/PlusSheet';
 import { normalizeSteps, splitSteps } from '@/lib/recipeSteps';
 import { suggestRecipes, RecipeSuggestion } from '@/services/recipeApi';
 import { toast } from 'sonner';
 import { t } from '@/lib/i18n';
 
 const RecipeSuggestDialog = ({ trigger }: { trigger?: ReactNode } = {}) => {
-  const { groceryItems, addRecipe, pantryStaples } = useAppContext();
+  const { groceryItems, addRecipe, pantryStaples, plus } = useAppContext();
   const [open, setOpen] = useState(false);
+  const [plusOpen, setPlusOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<RecipeSuggestion[]>([]);
 
@@ -54,8 +56,17 @@ const RecipeSuggestDialog = ({ trigger }: { trigger?: ReactNode } = {}) => {
   };
 
   return (
+    <>
+    <PlusSheet feature={plusOpen ? 'suggesties' : null} onClose={() => setPlusOpen(false)} />
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setSuggestions([]); }}>
-      <DialogTrigger asChild onClick={() => { setOpen(true); void handleSuggest(); }}>
+      <DialogTrigger
+        asChild
+        onClick={(e) => {
+          if (!plus) { e.preventDefault(); setPlusOpen(true); return; }
+          setOpen(true);
+          void handleSuggest();
+        }}
+      >
         {trigger ?? (
           <Button variant="outline" className="min-h-11 w-full gap-2 px-2">
             <Lightbulb className="h-4 w-4 shrink-0" /> <span className="truncate">{t("Wat kun je koken?")}</span>
@@ -130,6 +141,7 @@ const RecipeSuggestDialog = ({ trigger }: { trigger?: ReactNode } = {}) => {
         )}
       </DialogContent>
     </Dialog>
+    </>
   );
 };
 

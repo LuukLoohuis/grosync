@@ -14,6 +14,15 @@ export const FEATURE_LABEL: Record<MeteredFeature, string> = {
   mandje: t('prijschecks'),
 };
 
+/** AI extras that only Plus gets; free has none of these. */
+export type PlusFeature = 'bonuschef' | 'suggesties' | 'voeding';
+
+export const PLUS_FEATURE_LABEL: Record<PlusFeature, string> = {
+  bonuschef: t('Recepten bedenken bij de bonus'),
+  suggesties: t('Recepten bedenken bij je lijst'),
+  voeding: t('Voedingswaarden berekenen'),
+};
+
 /** The month the meter runs in, in Dutch time, as the database writes it. */
 const currentPeriod = () => {
   const now = new Date();

@@ -50,12 +50,44 @@ async function aiSettings(): Promise<{ provider: string; textModel: string; scan
   }
 }
 
+// Alleen met Plus: wie vraagt het, en heeft die Plus. Bij twijfel geen Plus, want
+// elke aanroep kost een taalmodel.
+async function plusStatus(req: Request): Promise<'anon' | 'free' | 'plus'> {
+  const url = Deno.env.get('SUPABASE_URL') ?? '';
+  const token = req.headers.get('Authorization')?.replace(/^Bearer\s+/i, '');
+  if (!token || !url) return 'anon';
+  const userResponse = await fetch(`${url}/auth/v1/user`, {
+    headers: { apikey: Deno.env.get('SUPABASE_ANON_KEY') ?? '', Authorization: `Bearer ${token}` },
+  });
+  if (!userResponse.ok) return 'anon';
+  const user = await userResponse.json();
+  const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  const plusResponse = await fetch(`${url}/rest/v1/rpc/is_plus`, {
+    method: 'POST',
+    headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ _user: user?.id }),
+  });
+  if (!plusResponse.ok) {
+    console.error('is_plus failed:', plusResponse.status, (await plusResponse.text()).slice(0, 200));
+    return 'free';
+  }
+  return (await plusResponse.json()) === true ? 'plus' : 'free';
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    const status = await plusStatus(req);
+    if (status !== 'plus') {
+      return new Response(JSON.stringify(status === 'anon' ? { error: 'Sign in required' } : { error: 'Plus required', plus_required: true }), {
+        status: status === 'anon' ? 401 : 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const { ingredients } = await req.json();
     if (!ingredients || !Array.isArray(ingredients) || ingredients.length === 0) {
       return new Response(JSON.stringify({ error: 'Ingredients array is required' }), {

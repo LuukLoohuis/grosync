@@ -60,13 +60,28 @@ const json = (body: unknown, status = 200) =>
 
 const env = (name: string) => Deno.env.get(name) ?? '';
 
-async function isSignedIn(req: Request): Promise<boolean> {
+// Alleen met Plus: wie vraagt het, en heeft die Plus. Bij twijfel geen Plus, want
+// elke aanroep kost een taalmodel.
+async function plusStatus(req: Request): Promise<'anon' | 'free' | 'plus'> {
+  const url = Deno.env.get('SUPABASE_URL') ?? '';
   const token = req.headers.get('Authorization')?.replace(/^Bearer\s+/i, '');
-  if (!token) return false;
-  const response = await fetch(`${env('SUPABASE_URL')}/auth/v1/user`, {
-    headers: { apikey: env('SUPABASE_ANON_KEY'), Authorization: `Bearer ${token}` },
+  if (!token || !url) return 'anon';
+  const userResponse = await fetch(`${url}/auth/v1/user`, {
+    headers: { apikey: Deno.env.get('SUPABASE_ANON_KEY') ?? '', Authorization: `Bearer ${token}` },
   });
-  return response.ok;
+  if (!userResponse.ok) return 'anon';
+  const user = await userResponse.json();
+  const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  const plusResponse = await fetch(`${url}/rest/v1/rpc/is_plus`, {
+    method: 'POST',
+    headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ _user: user?.id }),
+  });
+  if (!plusResponse.ok) {
+    console.error('is_plus failed:', plusResponse.status, (await plusResponse.text()).slice(0, 200));
+    return 'free';
+  }
+  return (await plusResponse.json()) === true ? 'plus' : 'free';
 }
 
 type Offer = { title: string; category: string | null; price: number | null; price_before: number | null; mechanism: string | null };
@@ -116,7 +131,9 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
-    if (!(await isSignedIn(req))) return json({ error: 'Sign in required' }, 401);
+    const status = await plusStatus(req);
+    if (status === 'anon') return json({ error: 'Sign in required' }, 401);
+    if (status !== 'plus') return json({ error: 'Plus required', plus_required: true }, 403);
 
     const ai = textApi(await aiSettings());
     if (!ai.key) return json({ error: 'Geen sleutel voor het taalmodel ingesteld' }, 500);
