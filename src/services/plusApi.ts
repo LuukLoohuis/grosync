@@ -1,5 +1,5 @@
 import { callFunction } from '@/services/functions';
-import { t } from '@/lib/i18n';
+import { locale, t } from '@/lib/i18n';
 
 export type PlusPlan = 'maand' | 'jaar';
 
@@ -8,6 +8,11 @@ export const PLUS_PRIJS: Record<PlusPlan, { label: string; bedrag: string; cent:
   maand: { label: t('Per maand'), bedrag: '€ 1,99', cent: 199 },
   jaar: { label: t('Per jaar'), bedrag: '€ 14,99', cent: 1499 },
 };
+
+const euro = new Intl.NumberFormat(locale(), { style: 'currency', currency: 'EUR' });
+
+/** Het jaarplan per maand, als bedrag: de "vanaf"-prijs in koppen. */
+export const PLUS_VANAF = euro.format(PLUS_PRIJS.jaar.cent / 12 / 100);
 
 /** Wordt gegooid zolang er nog geen Stripe-sleutels staan. */
 export class BetalenUitError extends Error {

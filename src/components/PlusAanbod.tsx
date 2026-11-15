@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Camera, Check, Link2, Loader2, ShoppingBasket, Sparkles, UserPlus, Users } from 'lucide-react';
+import { Check, Loader2, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import AccountSheet from '@/components/AccountSheet';
 import { Button } from '@/components/ui/button';
@@ -7,29 +7,25 @@ import { useAuth } from '@/hooks/useAuth';
 import { isGast } from '@/lib/accountUpgrade';
 import { BetalenUitError, PLUS_PRIJS, startCheckout, type PlusPlan } from '@/services/plusApi';
 import { locale, t } from '@/lib/i18n';
+import { PLUS_GROEPEN } from '@/lib/plusPerks';
 
 const euro = new Intl.NumberFormat(locale(), { style: 'currency', currency: 'EUR' });
 // Het jaarplan per maand, en wat dat per maand scheelt: het enige label, en het klopt altijd.
 const JAAR_PER_MAAND = PLUS_PRIJS.jaar.cent / 12 / 100;
 const SCHEELT_PER_MAAND = PLUS_PRIJS.maand.cent / 100 - JAAR_PER_MAAND;
 
-const PERKS = [
-  { icon: Link2, text: t('Onbeperkt recepten ophalen uit een link of video') },
-  { icon: Camera, text: t('Onbeperkt je kast scannen met een foto') },
-  { icon: ShoppingBasket, text: t('Onbeperkt prijzen zoeken en vergelijken') },
-  { icon: Sparkles, text: t('Bonuschef, receptsuggesties en voedingswaarden') },
-  { icon: Users, text: t('Een Cart Club starten en anderen uitnodigen') },
-];
+const PLANNEN: PlusPlan[] = ['jaar', 'maand'];
 
-/** What Plus gives and the two prices; a guest first makes an account, so Plus survives logging out. */
+/** What Plus gives, a plan to pick and one button; a guest first makes an account, so Plus survives logging out. */
 const PlusAanbod = () => {
   const { session } = useAuth();
   const gast = isGast(session?.user);
-  const [bezig, setBezig] = useState<PlusPlan | null>(null);
+  const [plan, setPlan] = useState<PlusPlan>('jaar');
+  const [bezig, setBezig] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
 
-  const afrekenen = async (plan: PlusPlan) => {
-    setBezig(plan);
+  const afrekenen = async () => {
+    setBezig(true);
     try {
       await startCheckout(plan);
     } catch (error) {
@@ -39,23 +35,28 @@ const PlusAanbod = () => {
         console.error('Afrekenen mislukt:', error);
         toast.error(t("Afrekenen lukte niet. Probeer het zo nog eens."));
       }
-      setBezig(null);
+      setBezig(false);
     }
   };
 
   return (
-    <div className="rounded-[14px] border border-border bg-accent-soft p-4">
-      <p className="flex items-center gap-2 font-display text-lg font-bold tracking-[-0.01em] text-foreground">
-        <Sparkles className="h-4 w-4 text-accent-ink" /> {t("CoupleCart Plus")}
-      </p>
-      <ul className="mt-3 space-y-2">
-        {PERKS.map(({ icon: Icon, text }) => (
-          <li key={text} className="flex items-start gap-2 text-sm text-foreground">
-            <Icon className="mt-0.5 h-4 w-4 shrink-0 text-accent-ink" />
-            <span>{text}</span>
-          </li>
+    <div>
+      <div className="space-y-4 rounded-[16px] border border-border bg-card p-4 shadow-flat">
+        {PLUS_GROEPEN.map(({ kop, perks }) => (
+          <div key={kop}>
+            <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.08em] text-muted-foreground">{kop}</p>
+            <ul className="mt-1.5 space-y-1.5">
+              {perks.map(({ icon: Icon, text }) => (
+                <li key={text} className="flex items-start gap-2.5 text-[0.9375rem] leading-snug text-foreground">
+                  <Icon className="mt-0.5 h-4 w-4 shrink-0 text-accent-ink" strokeWidth={2} />
+                  <span>{text}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         ))}
-      </ul>
+      </div>
+
       {gast ? (
         <>
           <p className="mt-4 text-sm text-muted-foreground">
@@ -68,42 +69,49 @@ const PlusAanbod = () => {
         </>
       ) : (
         <>
-          <div className="mt-5 grid grid-cols-2 gap-2">
-            {(['maand', 'jaar'] as PlusPlan[]).map((plan) => (
-              <button
-                key={plan}
-                type="button"
-                onClick={() => afrekenen(plan)}
-                disabled={bezig !== null}
-                aria-label={plan === 'jaar'
-                  ? t('{0} per jaar, {1} per maand, scheelt {2} per maand', [PLUS_PRIJS.jaar.bedrag, euro.format(JAAR_PER_MAAND), euro.format(SCHEELT_PER_MAAND)])
-                  : t('{0} per maand', [PLUS_PRIJS.maand.bedrag])}
-                className={`relative flex min-h-18 flex-col items-center justify-center rounded-[12px] px-2 pb-2.5 pt-4 text-center transition-transform duration-150 ease-smooth active:scale-[.98] disabled:opacity-60 ${
-                  plan === 'jaar' ? 'bg-primary text-primary-foreground' : 'border-[1.5px] border-border-strong bg-card text-foreground'
-                }`}
+          <fieldset className="mt-4 space-y-2" disabled={bezig}>
+            <legend className="sr-only">{t('Kies je plan')}</legend>
+            {PLANNEN.map((optie) => (
+              <label
+                key={optie}
+                className="group flex min-h-16 cursor-pointer items-center gap-3 rounded-[14px] border-[1.5px] border-border-strong bg-card px-4 py-3 transition-[border-color,background-color,box-shadow] duration-150 ease-smooth has-[:checked]:border-primary has-[:checked]:bg-primary-soft has-[:checked]:shadow-[0_0_0_1px_hsl(var(--primary))] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring has-[:focus-visible]:ring-offset-2 ring-offset-background"
               >
-                {plan === 'jaar' && (
-                  <span aria-hidden="true" className="absolute -top-2.5 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-accent-soft px-2 py-0.5 text-[0.6875rem] font-semibold tabular-nums text-accent-ink ring-1 ring-border">
-                    {t('Scheelt {0}/mnd', [euro.format(SCHEELT_PER_MAAND)])}
-                  </span>
-                )}
-                {bezig === plan ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <>
-                    <span className="font-display text-lg font-bold tabular-nums">{PLUS_PRIJS[plan].bedrag}</span>
-                    <span className="text-xs opacity-80">{PLUS_PRIJS[plan].label.toLowerCase()}</span>
-                    {plan === 'jaar' && (
-                      <span className="mt-0.5 text-[0.6875rem] tabular-nums text-primary-muted">
-                        {t('dat is {0} per maand', [euro.format(JAAR_PER_MAAND)])}
+                <input
+                  type="radio"
+                  name="plus-plan"
+                  value={optie}
+                  checked={plan === optie}
+                  onChange={() => setPlan(optie)}
+                  className="peer sr-only"
+                />
+                {/* Eigen bolletje: een gevuld rondje met vinkje als hij gekozen is. */}
+                <span aria-hidden="true" className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[1.5px] border-border-strong text-primary-foreground transition-colors peer-checked:border-primary peer-checked:bg-primary">
+                  <Check className="h-3 w-3 opacity-0 transition-opacity group-has-[:checked]:opacity-100" strokeWidth={3} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                    <span className="whitespace-nowrap font-semibold text-foreground">{PLUS_PRIJS[optie].label}</span>
+                    {optie === 'jaar' && (
+                      <span className="whitespace-nowrap rounded-full bg-accent-soft px-2 py-0.5 text-[0.6875rem] font-semibold tabular-nums text-accent-ink">
+                        {t('Scheelt {0}/mnd', [euro.format(SCHEELT_PER_MAAND)])}
                       </span>
                     )}
-                  </>
-                )}
-              </button>
+                  </span>
+                  {optie === 'jaar' && (
+                    <span className="block text-xs tabular-nums text-muted-foreground">{t('dat is {0} per maand', [euro.format(JAAR_PER_MAAND)])}</span>
+                  )}
+                </span>
+                <span className="font-display text-lg font-bold tabular-nums text-foreground">{PLUS_PRIJS[optie].bedrag}</span>
+              </label>
             ))}
-          </div>
-          <p className="mt-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+          </fieldset>
+
+          <Button className="mt-3 min-h-[52px] w-full gap-2 text-base" onClick={() => void afrekenen()} disabled={bezig}>
+            {bezig
+              ? <Loader2 className="h-5 w-5 animate-spin" />
+              : t('Plus nemen · {0} {1}', [PLUS_PRIJS[plan].bedrag, PLUS_PRIJS[plan].label.toLowerCase()])}
+          </Button>
+          <p className="mt-2 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
             <Check className="h-3.5 w-3.5" /> {t("Opzeggen wanneer je wil, bij Stripe zelf")}
           </p>
         </>

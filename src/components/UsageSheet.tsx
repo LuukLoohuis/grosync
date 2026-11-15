@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import PlusAanbod from '@/components/PlusAanbod';
 import { useAppContext } from '@/contexts/AppContext';
 import { FREE_LIMIT, type MeteredFeature } from '@/hooks/useEntitlements';
-import { BetalenUitError, openPortal } from '@/services/plusApi';
+import { BetalenUitError, openPortal, PLUS_VANAF } from '@/services/plusApi';
 import { locale, t } from '@/lib/i18n';
 
 interface UsageSheetProps {
@@ -50,44 +50,50 @@ const UsageSheet = ({ open, onOpenChange }: UsageSheetProps) => {
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="mx-auto max-h-[85vh] [@supports(height:100dvh)]:max-h-[85dvh] max-w-lg overflow-y-auto rounded-t-[20px]">
         <SheetHeader className="pr-10 text-left">
-          <SheetTitle className="font-display text-xl">{t("Je tegoed")}</SheetTitle>
+          <SheetTitle className="font-display text-xl">{plus ? t("Je tegoed") : t("CoupleCart Plus")}</SheetTitle>
           <SheetDescription>
             {plus
               ? t("Je hebt Plus: alles onbeperkt.")
-              : t("Elke maand {0} van elk, voor de hele Cart Club samen. Op {1} staat de teller weer op nul.", [FREE_LIMIT, resetDate()])}
+              : t("Alles onbeperkt en slimme hulp in de keuken. Vanaf {0} per maand.", [PLUS_VANAF])}
           </SheetDescription>
         </SheetHeader>
 
-        <div className="mt-5 space-y-3">
-          {METERS.map(({ feature, label, icon: Icon }) => {
-            const left = remaining(feature);
-            const used = plus ? 0 : FREE_LIMIT - left;
-            return (
-              <div key={feature} className="rounded-[14px] border border-border bg-card p-3">
-                <div className="flex items-center gap-2">
-                  <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  <span className="flex-1 text-[0.9375rem] text-foreground">{label}</span>
-                  <span className="font-display text-sm font-bold tabular-nums text-foreground">
-                    {plus ? t('onbeperkt') : t('{0} van {1}', [left, FREE_LIMIT])}
-                  </span>
-                </div>
-                {!plus && (
-                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted" role="presentation">
-                    <div
-                      className={`h-full rounded-full transition-[width] duration-300 ease-smooth ${left === 0 ? 'bg-destructive' : 'bg-primary'}`}
-                      style={{ width: `${(used / FREE_LIMIT) * 100}%` }}
-                    />
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-
         {!plus && (
-          <div className="mt-4">
+          <div className="mt-5">
             <PlusAanbod />
           </div>
+        )}
+
+        {!plus && (
+          <section className="mt-6" aria-labelledby="tegoed-kop">
+            <h3 id="tegoed-kop" className="text-sm font-semibold text-foreground">{t("Gratis deze maand")}</h3>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {t("{0} van elk, voor de hele Cart Club samen. Op {1} weer vol.", [FREE_LIMIT, resetDate()])}
+            </p>
+            <ul className="mt-3 divide-y divide-border rounded-[14px] border border-border bg-card">
+              {METERS.map(({ feature, label, icon: Icon }) => {
+                const left = remaining(feature);
+                return (
+                  <li key={feature} className="px-3 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      <span className="flex-1 text-sm text-foreground">{label}</span>
+                      <span className={`text-sm font-semibold tabular-nums ${left === 0 ? 'text-accent-ink' : 'text-foreground'}`}>
+                        {left === 0 ? t('op') : t('nog {0}', [left])}
+                      </span>
+                    </div>
+                    {/* De balk toont wat er over is, net als het getal ernaast. */}
+                    <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted" role="presentation">
+                      <div
+                        className="h-full rounded-full bg-primary transition-[width] duration-300 ease-smooth"
+                        style={{ width: `${(left / FREE_LIMIT) * 100}%` }}
+                      />
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
         )}
 
         {plus && (
@@ -104,7 +110,9 @@ const UsageSheet = ({ open, onOpenChange }: UsageSheetProps) => {
           </a>
         </p>
 
-        <Button className="mt-3 min-h-12 w-full" onClick={() => onOpenChange(false)}>{t("Klaar")}</Button>
+        <Button variant={plus ? 'default' : 'outline'} className="mt-3 min-h-12 w-full" onClick={() => onOpenChange(false)}>
+          {plus ? t("Klaar") : t("Nu even niet")}
+        </Button>
       </SheetContent>
     </Sheet>
   );
